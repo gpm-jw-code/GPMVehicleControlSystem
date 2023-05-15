@@ -1,0 +1,77 @@
+﻿using GPMVehicleControlSystem.Models.Abstracts;
+using Modbus.Device;
+using System.Net;
+using System.Net.Sockets;
+using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDIModule;
+
+namespace GPMVehicleControlSystem.Models.Emulators
+{
+    public class WagoEmulator : Connection
+    {
+        ModbusTcpSlave? slave;
+
+        Dictionary<DI_ITEM, int> INPUT_INDEXS;
+        public WagoEmulator()
+        {
+            INPUT_INDEXS = Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().ToDictionary(e => e, e => (int)e);
+        }
+
+        internal void SetInput(DI_ITEM input, bool state)
+        {
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[input] + 1] = state;
+
+        }
+
+        public override bool Connect()
+        {
+            IPAddress iPAddress = IPAddress.Parse("127.0.0.1");
+            int port = 502;
+            TcpListener tcpListener = new TcpListener(iPAddress, port);
+            tcpListener.Start();
+            try
+            {
+                slave = ModbusTcpSlave.CreateTcp(1, tcpListener);
+                InitializeInputState();
+                slave.ModbusSlaveRequestReceived += Slave_ModbusSlaveRequestReceived;
+                Task.Run(() =>
+                {
+                    slave.ListenAsync().Wait();
+                });
+                return true;
+            }
+            catch (Exception ex)
+            {
+                slave = null;
+                return false;
+            }
+        }
+        private void InitializeInputState()
+        {
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.EMO] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.Bumper_Sensor] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_4] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3] + 1] = true;
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_4] + 1] = true;
+        }
+        private void Slave_ModbusSlaveRequestReceived(object? sender, ModbusSlaveRequestEventArgs e)
+        {
+            var inputs = slave.DataStore.InputDiscretes;
+        }
+
+        public override void Disconnect()
+        {
+            slave.Dispose();
+            slave = null;
+        }
+
+        public override bool IsConnected()
+        {
+            return slave != null;
+        }
+    }
+}
