@@ -1,0 +1,1432 @@
+{
+  "Name": "Map_UMTC_3F_Yellow",
+  "Note": "v230324.1",
+  "PointIndex": 34,
+  "Points": {
+    "1": {
+      "X": 6.659,
+      "Y": 0.008,
+      "Name": "43",
+      "TagNumber": 43,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "43",
+        "X": 350,
+        "Y": 1300
+      },
+      "Target": {
+        "2": 1,
+        "3": 1,
+        "19": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "2": {
+      "X": 6.513,
+      "Y": -1.276,
+      "Name": "2",
+      "TagNumber": 2,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "2",
+        "X": 150,
+        "Y": 1300
+      },
+      "Target": {
+        "1": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "3": {
+      "X": 5.832,
+      "Y": 0.004,
+      "Name": "45",
+      "TagNumber": 45,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "45",
+        "X": 350,
+        "Y": 1150
+      },
+      "Target": {
+        "1": 1,
+        "4": 1,
+        "5": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "4": {
+      "X": 1100.0,
+      "Y": 250.0,
+      "Name": "4",
+      "TagNumber": 4,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "4",
+        "X": 150,
+        "Y": 1150
+      },
+      "Target": {
+        "3": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "5": {
+      "X": 5.018,
+      "Y": 0.03,
+      "Name": "47",
+      "TagNumber": 47,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "47",
+        "X": 350,
+        "Y": 1000
+      },
+      "Target": {
+        "3": 1,
+        "6": 1,
+        "7": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "6": {
+      "X": 1100.0,
+      "Y": 400.0,
+      "Name": "6",
+      "TagNumber": 6,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "6",
+        "X": 150,
+        "Y": 1000
+      },
+      "Target": {
+        "5": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "7": {
+      "X": 4.134,
+      "Y": 0.016,
+      "Name": "49",
+      "TagNumber": 49,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "49",
+        "X": 350,
+        "Y": 850
+      },
+      "Target": {
+        "5": 1,
+        "8": 1,
+        "9": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "8": {
+      "X": 4.167,
+      "Y": -1.336,
+      "Name": "RACK_3_4|13|22",
+      "TagNumber": 50,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 3,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": null,
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK3_4,13,22",
+        "X": 150,
+        "Y": 850
+      },
+      "Target": {
+        "7": 1
+      },
+      "DodgeMode": null,
+      "SpinMode": null,
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "9": {
+      "X": 3.319,
+      "Y": 0.032,
+      "Name": "51",
+      "TagNumber": 51,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "51",
+        "X": 350,
+        "Y": 700
+      },
+      "Target": {
+        "7": 1,
+        "10": 1,
+        "11": 1,
+        "27": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "10": {
+      "X": 1100.0,
+      "Y": 700.0,
+      "Name": "10",
+      "TagNumber": 10,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "10",
+        "X": 150,
+        "Y": 700
+      },
+      "Target": {
+        "9": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "11": {
+      "X": 2.508,
+      "Y": 0.029,
+      "Name": "53",
+      "TagNumber": 53,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "53",
+        "X": 350,
+        "Y": 550
+      },
+      "Target": {
+        "9": 1,
+        "12": 1,
+        "13": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "12": {
+      "X": 2.499,
+      "Y": -1.353,
+      "Name": "RACK_3_6|15|24",
+      "TagNumber": 54,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK_3_6,15,24",
+        "X": 150,
+        "Y": 550
+      },
+      "Target": {
+        "11": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "13": {
+      "X": 1.614,
+      "Y": 0.012,
+      "Name": "55",
+      "TagNumber": 55,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "55",
+        "X": 350,
+        "Y": 400
+      },
+      "Target": {
+        "11": 1,
+        "14": 1,
+        "15": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "14": {
+      "X": 1100.0,
+      "Y": 1000.0,
+      "Name": "14",
+      "TagNumber": 14,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "14",
+        "X": 150,
+        "Y": 400
+      },
+      "Target": {
+        "13": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "15": {
+      "X": 0.796,
+      "Y": 0.016,
+      "Name": "57",
+      "TagNumber": 57,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "57",
+        "X": 350,
+        "Y": 250
+      },
+      "Target": {
+        "13": 1,
+        "16": 1,
+        "17": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "16": {
+      "X": 1100.0,
+      "Y": 1150.0,
+      "Name": "16",
+      "TagNumber": 16,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "16",
+        "X": 150,
+        "Y": 250
+      },
+      "Target": {
+        "15": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "17": {
+      "X": -0.019,
+      "Y": 0.016,
+      "Name": "59",
+      "TagNumber": 59,
+      "Direction": 270,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "59",
+        "X": 350,
+        "Y": 100
+      },
+      "Target": {
+        "15": 1,
+        "18": 1,
+        "31": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "18": {
+      "X": 1100.0,
+      "Y": 1300.0,
+      "Name": "18",
+      "TagNumber": 18,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "18",
+        "X": 150,
+        "Y": 100
+      },
+      "Target": {
+        "17": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "19": {
+      "X": 7.133,
+      "Y": 1.375,
+      "Name": "61",
+      "TagNumber": 61,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "61",
+        "X": 650,
+        "Y": 1350
+      },
+      "Target": {
+        "1": 1,
+        "20": 1,
+        "21": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "20": {
+      "X": 7.135,
+      "Y": 2.762,
+      "Name": "RACK_1_5|10|15",
+      "TagNumber": 62,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK_1_5,10,15",
+        "X": 850,
+        "Y": 1350
+      },
+      "Target": {
+        "19": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "21": {
+      "X": 6.192,
+      "Y": 1.391,
+      "Name": "63",
+      "TagNumber": 63,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "63",
+        "X": 650,
+        "Y": 1200
+      },
+      "Target": {
+        "19": 1,
+        "22": 1,
+        "23": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "22": {
+      "X": 6.194,
+      "Y": 2.706,
+      "Name": "RACK_1_4|9|14",
+      "TagNumber": 64,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK_1_4,9,14",
+        "X": 850,
+        "Y": 1200
+      },
+      "Target": {
+        "21": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "23": {
+      "X": 5.394,
+      "Y": 1.388,
+      "Name": "65",
+      "TagNumber": 9,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "9",
+        "X": 650,
+        "Y": 1050
+      },
+      "Target": {
+        "21": 1,
+        "24": 1,
+        "25": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "24": {
+      "X": 5.37,
+      "Y": 2.743,
+      "Name": "RACK_1_3|8|13",
+      "TagNumber": 66,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK_1_3,8,13",
+        "X": 850,
+        "Y": 1050
+      },
+      "Target": {
+        "23": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "25": {
+      "X": 4.447,
+      "Y": 1.388,
+      "Name": "11",
+      "TagNumber": 11,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "11",
+        "X": 650,
+        "Y": 900
+      },
+      "Target": {
+        "23": 1,
+        "26": 1,
+        "27": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "26": {
+      "X": 4.417,
+      "Y": 2.715,
+      "Name": "RACK_1_2|7|12",
+      "TagNumber": 68,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK_1_2,7,12",
+        "X": 850,
+        "Y": 900
+      },
+      "Target": {
+        "25": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "27": {
+      "X": 3.635,
+      "Y": 1.384,
+      "Name": "69",
+      "TagNumber": 69,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "69",
+        "X": 650,
+        "Y": 750
+      },
+      "Target": {
+        "9": 1,
+        "25": 1,
+        "28": 1,
+        "29": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "28": {
+      "X": 3.601,
+      "Y": 2.739,
+      "Name": "RACK_1_1|6|11",
+      "TagNumber": 70,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 3,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK01_1,6,11",
+        "X": 850,
+        "Y": 750
+      },
+      "Target": {
+        "27": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "29": {
+      "X": 1.076,
+      "Y": 1.373,
+      "Name": "71",
+      "TagNumber": 71,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "71",
+        "X": 650,
+        "Y": 250
+      },
+      "Target": {
+        "27": 1,
+        "30": 1,
+        "31": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "30": {
+      "X": 1.065,
+      "Y": 2.736,
+      "Name": "RACK_2_2|4|6",
+      "TagNumber": 72,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK2_2,4,6",
+        "X": 850,
+        "Y": 250
+      },
+      "Target": {
+        "29": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "31": {
+      "X": 0.117,
+      "Y": 1.387,
+      "Name": "73",
+      "TagNumber": 73,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "73",
+        "X": 650,
+        "Y": 100
+      },
+      "Target": {
+        "17": 1,
+        "29": 1,
+        "32": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "32": {
+      "X": 450.0,
+      "Y": 1300.0,
+      "Name": "RACK_2_1|3|5",
+      "TagNumber": 74,
+      "Direction": 90,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": true,
+      "InvolvePoint": "",
+      "StationType": 2,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "RACK2_1,3,5",
+        "X": 850,
+        "Y": 100
+      },
+      "Target": {
+        "31": 1
+      },
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "false",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "33": {
+      "X": 350.0,
+      "Y": 1550.0,
+      "Name": "42",
+      "TagNumber": 42,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "42",
+        "X": 500,
+        "Y": 1600
+      },
+      "Target": {},
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "true",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    },
+    "34": {
+      "X": 450.0,
+      "Y": 1550.0,
+      "Name": "44",
+      "TagNumber": 44,
+      "Direction": 0,
+      "Enable": true,
+      "AGV_Alarm": false,
+      "IsStandbyPoint": false,
+      "IsSegment": false,
+      "InvolvePoint": "",
+      "StationType": 0,
+      "LsrMode": 1,
+      "Speed": 0,
+      "Bay": "",
+      "IsOverlap": false,
+      "Graph": {
+        "Display": "44",
+        "X": 500,
+        "Y": 1500
+      },
+      "Target": {},
+      "DodgeMode": "0",
+      "SpinMode": "0",
+      "SubMap": "Map_UMTC_3F_Yellow",
+      "IsParking": "true",
+      "IsAvoid": false,
+      "AutoDoor": {
+        "KeyName": "",
+        "KeyPassword": ""
+      },
+      "MotionInfo": {
+        "ControlBypass": {
+          "GroundHoleCCD": "false",
+          "GroundHoleSensor": "false",
+          "UltrasonicSensor": "false"
+        }
+      }
+    }
+  },
+  "Bays": {}
+}

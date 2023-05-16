@@ -13,13 +13,21 @@ namespace GPMVehicleControlSystem.Models.Database
 
         public static void Initialize()
         {
-            var databasePath = Path.Combine(Environment.CurrentDirectory, "VMS.db");
-            db = new SQLiteConnection(databasePath);
-            db.CreateTable<clsAlarmCode>();
-            db.CreateTable<UserEntity>();
+            try
+            {
 
-            CreateDefaultUsers();
+                var databasePath = Path.Combine(Environment.CurrentDirectory, "VMS.db");
+                db = new SQLiteConnection(databasePath);
+                db.CreateTable<clsAlarmCode>();
+                db.CreateTable<UserEntity>();
 
+                CreateDefaultUsers();
+
+            }
+            catch (System.Exception ex)
+            {
+                LOG.Critical($"初始化資料庫時發生錯誤＿{ex.Message}");
+            }
         }
 
         public static void InsertAlarm(clsAlarmCode alarm)

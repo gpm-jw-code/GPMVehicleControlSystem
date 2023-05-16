@@ -80,8 +80,9 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             }
             catch (Exception ex)
             {
-                LOG.ERROR($"[AGVS] Connect Fail..{ex.Message}. Can't Connect To AGVS ({IP}:{Port})..Will Retry it ...");
+                LOG.ERROR($"[AGVS] Connect Fail..{ex.Message}. Can't Connect To AGVS ({IP}:{Port})..Will Retry it after 3 secoond...");
                 tcpClient = null;
+                Thread.Sleep(3000);
                 return false;
             }
         }

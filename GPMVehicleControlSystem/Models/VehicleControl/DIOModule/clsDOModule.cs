@@ -76,7 +76,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         }
         public override void ReadIOSettingsFromIniFile()
         {
-            IniHelper iniHelper = new IniHelper(AppSettingsHelper.GetValue<string>("VCS:IO_ini_Path"));
+            IniHelper iniHelper = new IniHelper(Path.Combine(Environment.CurrentDirectory, "param/IO_Wago.ini"));
 
             try
             {
@@ -86,7 +86,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
                 {
                     var Address = $"Y{i.ToString("X4")}";
                     var RigisterName = iniHelper.GetValue("OUTPUT", Address);
-                    var reg = new clsIOSignal(RigisterName,  Address);
+                    var reg = new clsIOSignal(RigisterName, Address);
                     reg.State = false;
                     VCSOutputs.Add(reg);
                 }

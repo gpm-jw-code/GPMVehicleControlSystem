@@ -16,9 +16,17 @@ namespace GPMVehicleControlSystem.Models.Alarm
         internal static event EventHandler OnAllAlarmClear;
         internal static void LoadAlarmList()
         {
+
+
             string alarm_JsonFile = AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path");
-            AlarmList = JsonConvert.DeserializeObject<List<clsAlarmCode>>(File.ReadAllText(alarm_JsonFile));
-            LOG.INFO("Alarm List Loaded.");
+
+            if (File.Exists(alarm_JsonFile))
+            {
+                AlarmList = JsonConvert.DeserializeObject<List<clsAlarmCode>>(File.ReadAllText(alarm_JsonFile));
+                LOG.INFO("Alarm List Loaded.");
+            }
+            else
+                LOG.WARN("Alarm list not Loaded yet...Please confirm your file path setting(VCS:AlarmList_json_Path)");
         }
         public static void ClearAlarm(AlarmCodes Alarm_code)
         {
@@ -30,7 +38,7 @@ namespace GPMVehicleControlSystem.Models.Alarm
 
             if (CurrentAlarms.Count == 0)
             {
-                OnAllAlarmClear?.Invoke("AlarmManager",EventArgs.Empty);
+                OnAllAlarmClear?.Invoke("AlarmManager", EventArgs.Empty);
             }
         }
 

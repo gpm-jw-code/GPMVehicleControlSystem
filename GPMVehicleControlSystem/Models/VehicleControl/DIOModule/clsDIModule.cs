@@ -114,7 +114,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
 
         virtual public void ReadIOSettingsFromIniFile()
         {
-            IniHelper iniHelper = new IniHelper(AppSettingsHelper.GetValue<string>("VCS:IO_ini_Path"));
+            IniHelper iniHelper = new IniHelper(Path.Combine(Environment.CurrentDirectory, "param/IO_Wago.ini"));
             try
             {
                 Start = ushort.Parse(iniHelper.GetValue("INPUT", "Start"));

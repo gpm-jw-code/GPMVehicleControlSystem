@@ -23,8 +23,8 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         {
             try
             {
-                LoadPlayList();
-                AutoPlayByMainState();
+                //LoadPlayList();
+                //AutoPlayByMainState();
             }
             catch (Exception ex)
             {
@@ -164,10 +164,19 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                 };
 
                 playIngPlayingProcesses = _ffmpegProcess;
-                _ffmpegProcess.Start();
+
+                try
+                {
+                    _ffmpegProcess.Start();
+
+                }
+                catch (System.Exception ex)
+                {
+                    LOG.ERROR($"Couldn't play music by ffmepg...Error Message:{ex.Message}", ex);
+                    return;
+                }
                 _ffmpegProcess.WaitForExit();
                 Console.WriteLine("music process exit");
-
                 if (!playCancelTS.IsCancellationRequested)
                     StartNewFFmpegProcess(_ffmpegProcess, startInfo);
             });
