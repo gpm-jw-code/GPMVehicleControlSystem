@@ -15,7 +15,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         internal clsTaskDownloadData TaskDownload => Header[HeaderKey];
 
     }
-    
+
 
     public class clsTaskDownloadData
     {
@@ -24,11 +24,11 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
         [JsonProperty("Task Simplex")]
         public string Task_Simplex { get; set; }
-        
+
         [JsonProperty("Task Sequence")]
         public int Task_Sequence { get; set; }
         public clsMapPoint[] Trajectory { get; set; } = new clsMapPoint[0];
-        
+
         [JsonProperty("Homing rajectory")]
         public clsMapPoint[] Homing_Trajectory { get; set; } = new clsMapPoint[0];
 
@@ -45,45 +45,63 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public STATION_TYPE Station_Type { get; set; }
 
         internal ACTION_TYPE EAction_Type => Enum.GetValues(typeof(ACTION_TYPE)).Cast<ACTION_TYPE>().First(action_type => action_type.ToString() == Action_Type);
-        internal clsMapPoint[] ActionTrajecory => Trajectory.Length != 0 ? Trajectory : Homing_Trajectory;
+        internal clsMapPoint[] ExecutingTrajecory => Trajectory.Length != 0 ? Trajectory : Homing_Trajectory;
 
-
+        internal string OriTaskDataJson;
         internal TaskCommandGoal RosTaskCommandGoal
         {
             get
             {
-                int finalTag = Trajectory.Length != 0 ? Trajectory.Last().Point_ID : Homing_Trajectory.Last().Point_ID;
-                GUIDE_TYPE mobility_mode = EAction_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : EAction_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
-                TaskCommandGoal goal = new TaskCommandGoal();
-                goal.taskID = Task_Name;
-                goal.finalGoalID = (ushort)finalTag;
-                goal.mobilityModes = (ushort)mobility_mode;
-                goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path();
-                goal.planPath.poses = ActionTrajecory.Select(point => new PoseStamped()
+                try
                 {
-                    header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header()
+                    int finalTag = ExecutingTrajecory.Last().Point_ID;
+                    GUIDE_TYPE mobility_mode = EAction_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : EAction_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
+                    TaskCommandGoal goal = new TaskCommandGoal();
+                    goal.taskID = Task_Name;
+                    goal.finalGoalID = (ushort)finalTag;
+                    goal.mobilityModes = (ushort)mobility_mode;
+                    goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path()
                     {
-                        seq = (uint)point.Point_ID,
-                        frame_id = "map",
-                        stamp = DateTime.Now.ToStdTime()
-                    },
-                    pose = new Pose()
+
+                    };
+                    var poses = ExecutingTrajecory.Select(point => new PoseStamped()
                     {
-                        position = new Point(point.X, point.Y, 0),
-                        orientation = point.Theta.ToQuaternion()
-                    }
-                }).ToArray();
-                goal.pathInfo = ActionTrajecory.Select(point => new PathInfo()
+                        header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header
+                        {
+                            seq = (uint)point.Point_ID,
+                            frame_id = "map",
+                            stamp = DateTime.Now.ToStdTime(),
+                        },
+                        pose = new Pose()
+                        {
+                            position = new Point(point.X, point.Y, 0),
+                            orientation = point.Theta.ToQuaternion()
+                        }
+                    }).ToArray();
+
+                    var pathInfo = ExecutingTrajecory.Select(point => new PathInfo()
+                    {
+                        tagid = (ushort)point.Point_ID,
+                        laserMode = (ushort)point.Laser,
+                        direction = (ushort)point.Control_Mode.Spin,
+                        map = point.Map_Name,
+                        changeMap = 0,
+                        speed = point.Speed,
+                        ultrasonicDistance = point.UltrasonicDistance
+                    }).ToArray();
+
+
+                    goal.planPath.poses = poses;
+                    goal.pathInfo = pathInfo;
+                    return goal;
+                }
+                catch (Exception ec)
                 {
-                    tagid = (ushort)point.Point_ID,
-                    laserMode = (ushort)point.Laser,
-                    direction = (ushort)point.Control_Mode.Spin,
-                    map = point.Map_Name,
-                    changeMap = 0,
-                    speed = point.Speed,
-                    ultrasonicDistance = point.UltrasonicDistance
-                }).ToArray();
-                return goal;
+                    LOG.ERROR("RosTaskCommandGoal_取得ROS任務Goal物件時發生錯誤", ec);
+                    return new TaskCommandGoal();
+
+                }
+
             }
         }
     }
@@ -92,7 +110,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
     public class clsTaskDownloadAckMessage : MessageBase
     {
         internal override string HeaderKey { get; set; } = "0302";
-        public Dictionary<string, SimpleRequestResponse> Header = new Dictionary<string, SimpleRequestResponse>();
+        public Dictionary<string, SimpleRequestResponseWithTimeStamp> Header = new Dictionary<string, SimpleRequestResponseWithTimeStamp>();
     }
     public class clsTaskDownloadAckData
     {

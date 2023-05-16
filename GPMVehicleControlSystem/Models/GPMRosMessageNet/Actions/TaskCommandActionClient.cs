@@ -1,6 +1,7 @@
 ﻿using GPMRosMessageNet.Actions;
 using RosSharp.RosBridgeClient;
 using RosSharp.RosBridgeClient.Actionlib;
+using RosSharp.RosBridgeClient.MessageTypes.Actionlib;
 
 namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
 {
@@ -55,13 +56,15 @@ namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
                 OnTaskCommandActionDone(status);
             }
         }
-
+        private ActionStatus previousActionStatus = ActionStatus.NO_GOAL;
         protected override void OnStatusUpdated()
         {
             if (goalStatus != null)
             {
-                string? status = ((ActionStatus)(goalStatus.status)).ToString();
-                Console.WriteLine("[TaskCommandActionClient] OnStatusUpdated : Status : " + status);
+                var _actionStatus = (ActionStatus)(goalStatus.status);
+                if (previousActionStatus != _actionStatus)
+                    Console.WriteLine("[TaskCommandActionClient] OnStatusUpdated : Status : " + _actionStatus);
+                previousActionStatus = _actionStatus;
             }
 
         }

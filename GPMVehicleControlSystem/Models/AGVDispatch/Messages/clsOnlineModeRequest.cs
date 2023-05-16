@@ -24,8 +24,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
     public class clsOnlineModeRequestResponseMessage : MessageBase
     {
         internal override string HeaderKey { get; set; } = "0104";
-        public Dictionary<string, SimpleRequestResponse> Header { get; set; } = new Dictionary<string, SimpleRequestResponse>();
-        public RETURN_CODE ReturnCode => Header[HeaderKey].ReturnCode;
+        public Dictionary<string, SimpleRequestResponseWithTimeStamp> Header { get; set; } = new Dictionary<string, SimpleRequestResponseWithTimeStamp>();
+        public RETURN_CODE ReturnCode => (RETURN_CODE)Header[HeaderKey].ReturnCode;
     }
 
 

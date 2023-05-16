@@ -42,7 +42,7 @@ namespace GPMVehicleControlSystem
             Log(new LogItem(LogLevel.Error, string.Format("{0}", info)), caller_class_name);
         }
 
-        public static void Error(Exception ex)
+        public static void ERROR(Exception ex)
         {
             var caller_class_name = new StackTrace().GetFrame(1).GetMethod().DeclaringType.Name; ;
 
@@ -132,8 +132,13 @@ namespace GPMVehicleControlSystem
                             break;
                     }
 
+                    Console.BackgroundColor = ConsoleColor.White;
+                    Console.ForegroundColor = ConsoleColor.Black;
+                    Console.Write(logItem.Time + " ");
+
                     Console.ForegroundColor = foreColor;
                     Console.BackgroundColor = backColor;
+
                     Console.WriteLine(logItem.logFullLine);
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.BackgroundColor = ConsoleColor.Black;

@@ -8,7 +8,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public clsStateCheckSpec ChargingCheckSpec = new clsStateCheckSpec { };
 
-        public clsStateCheckSpec DischargeCheckSpec = new clsStateCheckSpec { };
+        public clsStateCheckSpec DischargeCheckSpec = new clsStateCheckSpec
+        {
+            MaxCurrentAllow = 5000
+        };
         public new BatteryState Data => (BatteryState)StateData;
 
         public override COMPOENT_NAME component_name => COMPOENT_NAME.BATTERY;

@@ -15,7 +15,10 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
     public enum RETURN_CODE : int
     {
-        OK = 0, NG = 1, System_Error = 404, Connection_Fail = 405,
+        OK = 0, 
+        NG = 1,
+        System_Error = 404, 
+        Connection_Fail = 405,
         No_Response = 406
     }
 
@@ -74,7 +77,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public string EQName { get; set; }
 
         [JsonProperty("System Bytes")]
-        public uint SystemBytes { get; set; }
+        public int SystemBytes { get; set; }
+        internal string OriJsonString;
 
         public Dictionary<string, MessageHeader> Header { get; set; }
         internal abstract string HeaderKey { get; set; }

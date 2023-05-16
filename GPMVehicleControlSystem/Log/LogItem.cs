@@ -17,7 +17,7 @@
             this.logMsg = logMsg;
         }
 
-        public string logFullLine => $"{Time} |{level}|{Caller}| {logMsg}{(exception != null ? exception.StackTrace : "")}";
+        public string logFullLine => $" [{level}][{Caller}] {logMsg}{(exception != null ? exception.StackTrace : "")}";
 
         public string Caller { get; internal set; }
 

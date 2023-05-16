@@ -11,15 +11,15 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
         internal delegate RunningStatus GetVCSRunningDataDelegate();
         internal static GetVCSRunningDataDelegate OnVCSRunningDataRequest;
 
-        private static uint SystemByteStored = 0;
-        private static uint System_Byte_Cyclic
+        private static int SystemByteStored = 0;
+        private static int System_Byte_Cyclic
         {
             get
             {
                 SystemByteStored = SystemByteStored + 1;
-                if (SystemByteStored >= uint.MaxValue)
+                if (SystemByteStored >= int.MaxValue)
                     SystemByteStored = 1;
-                return SystemByteStored;
+                return int.Parse(SystemByteStored.ToString());
             }
         }
         public static void Setup(string _SID, string _EQName)
@@ -28,18 +28,18 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             EQName = _EQName;
         }
 
-        internal static byte[] CreateSimpleReturnMessageData(string headerKey, bool confirmed, uint system_byte, out clsSimpleReturnMessage ackMesg)
+        internal static byte[] CreateSimpleReturnMessageData(string headerKey, bool confirmed, int system_byte, out clsSimpleReturnWithTimestampMessage ackMesg)
         {
-            ackMesg = new clsSimpleReturnMessage()
+            ackMesg = new clsSimpleReturnWithTimestampMessage()
             {
                 EQName = EQName,
                 SID = SID,
                 SystemBytes = system_byte,
-                Header = new Dictionary<string, SimpleRequestResponse>()
+                Header = new Dictionary<string, SimpleRequestResponseWithTimeStamp>()
                     {
-                        {headerKey, new SimpleRequestResponse()
+                        {headerKey, new SimpleRequestResponseWithTimeStamp()
                         {
-                             ReturnCode = confirmed? RETURN_CODE.OK: RETURN_CODE.NG,
+                             ReturnCode = (int)(confirmed? RETURN_CODE.OK: RETURN_CODE.NG),
                               TimeStamp = DateTime.Now.ToAGVSTimeFormat()
                         }
                         }
@@ -48,7 +48,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             return Encoding.ASCII.GetBytes(FormatSendOutString(ackMesg.Json));
 
         }
-        internal static byte[] CreateTaskDownloadReqAckData(bool accept_task, uint system_byte, out clsSimpleReturnMessage ackMesg)
+        internal static byte[] CreateTaskDownloadReqAckData(bool accept_task, int system_byte, out clsSimpleReturnMessage ackMesg)
         {
             ackMesg = new clsSimpleReturnMessage()
             {
@@ -59,8 +59,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                     {
                         {"0302", new SimpleRequestResponse()
                         {
-                             ReturnCode = accept_task? RETURN_CODE.OK: RETURN_CODE.NG,
-                              TimeStamp = DateTime.Now.ToAGVSTimeFormat()
+                             ReturnCode = (int)(accept_task? RETURN_CODE.OK: RETURN_CODE.NG),
                         }
                         }
                     }
@@ -136,7 +135,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             return string.Format("{0}*{1}", json, "\r");
         }
 
-        internal static byte[] CreateTaskFeekbackMessageData(clsTaskDownloadData taskData, int PointIndex, TASK_RUN_STATUS task_status, out clsTaskFeedbackMessage taskFeedbackMessage)
+        internal static byte[] CreateTaskFeedbackMessageData(clsTaskDownloadData taskData, int PointIndex, TASK_RUN_STATUS task_status, out clsTaskFeedbackMessage taskFeedbackMessage)
         {
             taskFeedbackMessage = new clsTaskFeedbackMessage()
             {
@@ -151,7 +150,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                              TaskSimplex = taskData.Task_Simplex,
                               TaskSequence = taskData.Task_Sequence,
                                PointIndex = PointIndex,
-                                TaskStatus = task_status,
+                                TaskStatus = (int)task_status,
                                  TimeStamp = DateTime.Now.ToAGVSTimeFormat()
                         }
                     }

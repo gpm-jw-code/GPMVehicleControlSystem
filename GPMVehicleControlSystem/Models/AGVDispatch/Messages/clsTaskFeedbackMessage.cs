@@ -26,6 +26,6 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public int PointIndex { get; set; }
 
         [JsonProperty("Task Status")]
-        public TASK_RUN_STATUS TaskStatus { get; set;}
+        public int TaskStatus { get; set; }
     }
 }

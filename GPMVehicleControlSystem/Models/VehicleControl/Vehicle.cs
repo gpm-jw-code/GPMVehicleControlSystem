@@ -5,6 +5,7 @@ using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
 using GPMVehicleControlSystem.Tools;
+using System.Threading.Tasks;
 using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
@@ -17,8 +18,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
         public enum OPERATOR_MODE
         {
+            MANUAL,
             AUTO,
-            MANUAL
         }
 
         public enum MAIN_STATUS
@@ -28,7 +29,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public enum SUB_STATUS
         {
             IDLE = 1, RUN = 2, DOWN = 3, Charging = 4,
-            Initialize = 5
+            Initialize = 5,
+            ALARM = 6,
+            WARNING = 7
         }
         public clsDirectionLighter DirectionLighter { get; set; }
         public clsStatusLighter StatusLighter { get; set; }
@@ -58,10 +61,27 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// 里程數
         /// </summary>
         public double Odometry;
+
+
+
+        private REMOTE_MODE _Remote_Mode = REMOTE_MODE.OFFLINE;
         /// <summary>
         /// Online/Offline 模式
         /// </summary>
-        public REMOTE_MODE Remote_Mode { get; private set; } = REMOTE_MODE.OFFLINE;
+        public REMOTE_MODE Remote_Mode
+        {
+            get => _Remote_Mode;
+            set
+            {
+                _Remote_Mode = value;
+                if (value == REMOTE_MODE.ONLINE)
+                {
+                    StatusLighter.ONLINE();
+                }
+                else
+                    StatusLighter.OFFLINE();
+            }
+        }
         /// <summary>
         /// 手動/自動模式
         /// </summary>
@@ -84,13 +104,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 if (_Sub_Status != value)
                 {
-                    BuzzerPlayer.BuzzerStop();
-                    if (value == SUB_STATUS.DOWN)
+                    if (value != SUB_STATUS.WARNING)
+                        BuzzerPlayer.BuzzerStop();
+
+                    if (value == SUB_STATUS.DOWN | value == SUB_STATUS.ALARM)
                     {
+                        StatusLighter.DOWN();
                         BuzzerPlayer.BuzzerAlarm();
+                    }
+                    else if (value == SUB_STATUS.IDLE)
+                    {
+                        StatusLighter.IDLE();
+                        DirectionLighter.CloseAll();
                     }
                     else if (value == SUB_STATUS.RUN)
                     {
+                        StatusLighter.RUN();
                         if (CarController.IsRunning)
                         {
                             if (CarController.RunningTaskData.EAction_Type == ACTION_TYPE.None)
@@ -150,41 +179,111 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             EventsRegist();
             Laser.Mode = LASER_MODE.Bypass;
             AGVDispatch.AGVSMessageFactory.Setup(SID, CarName);
-            AGVSConnection.Start();
 
-
-            StatusLighter.DOWN();
-            StatusLighter.OFFLINE();
             BuzzerPlayer.BuzzerAlarm();
             IsSystemInitialized = true;
+
+            Task.Factory.StartNew(async () =>
+            {
+                await Task.Delay(1000);
+                AGVSConnection.Start();
+            });
 
         }
         private void EventsRegist()
         {
-            AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest = GenRunningStateReportData;
-            AGVSConnection.OnTaskDownload += AGVSTaskDownload;
+            AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
+            AGVSConnection.OnTaskDownload += AGVSTaskDownloadConfirm;
             AGVSConnection.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
             AGVSConnection.OnTaskResetReq = AGVSTaskResetReqHandle;
+            AGVSConnection.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
+
             CarController.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
             CarController.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
+            CarController.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
             CarController.OnMoveTaskStart += CarController_OnMoveTaskStart;
+
+            WagoDI.OnEMO += WagoDI_OnEMO;
             WagoDI.OnEMO += CarController.EMOHandler;
-            WagoDI.OnEMO += (s, e) => Console.WriteLine("EMO Handle Process 2");
             WagoDI.OnResetButtonPressed += WagoDO.ResetMotor;
             WagoDI.OnResetButtonPressed += WagoDI_OnResetButtonPressed;
             WagoDI.OnFrontFarAreaLaserTrigger += CarController.FarAreaLaserTriggerHandler;
             WagoDI.OnBackFarAreaLaserTrigger += CarController.FarAreaLaserTriggerHandler;
             WagoDI.OnFrontFarAreaLaserRecovery += CarController.FarAreaLaserRecoveryHandler;
             WagoDI.OnBackFarAreaLaserRecovery += CarController.FarAreaLaserRecoveryHandler;
+
+            WagoDI.OnFrontFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+            WagoDI.OnBackFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+
+            WagoDI.OnFrontFarAreaLaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+            WagoDI.OnBackFarAreaLaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+
+            WagoDI.OnFrontNearAreaLaserTrigger += WagoDI_OnNearAreaLaserTrigger;
+            WagoDI.OnBackNearAreaLaserTrigger += WagoDI_OnNearAreaLaserTrigger;
+
+            WagoDI.OnFrontNearAreaLaserRecovery += WagoDI_OnNearAreaLaserRecovery;
+            WagoDI.OnBackNearAreaLaserRecovery += WagoDI_OnNearAreaLaserRecovery;
+
+
+            Navigation.OnDirectionChanged += Navigation_OnDirectionChanged;
         }
 
-        internal void SoftwareEMO()
+
+
+        private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
         {
-            CarController.AbortTask();
-            IsInitialized = false;
-            Main_Status = MAIN_STATUS.DOWN;
-            Sub_Status = SUB_STATUS.DOWN;
-            AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
+
+            if (Operation_Mode != OPERATOR_MODE.AUTO)
+                return;
+            if (Main_Status == MAIN_STATUS.RUN)
+                Sub_Status = SUB_STATUS.RUN;
+            else if (Main_Status == MAIN_STATUS.IDLE)
+                Sub_Status = SUB_STATUS.IDLE;
+            else if (Main_Status == MAIN_STATUS.DOWN)
+                Sub_Status = SUB_STATUS.DOWN;
+
+        }
+
+        private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
+        {
+            if (Operation_Mode == OPERATOR_MODE.AUTO)
+                Sub_Status = SUB_STATUS.WARNING;
+        }
+
+        private void WagoDI_OnNearAreaLaserRecovery(object? sender, EventArgs e)
+        {
+            if (Operation_Mode != OPERATOR_MODE.AUTO)
+                return;
+            if (Main_Status == MAIN_STATUS.RUN)
+                Sub_Status = SUB_STATUS.RUN;
+            else if (Main_Status == MAIN_STATUS.IDLE)
+                Sub_Status = SUB_STATUS.IDLE;
+            else if (Main_Status == MAIN_STATUS.DOWN)
+                Sub_Status = SUB_STATUS.DOWN;
+        }
+
+        private void WagoDI_OnNearAreaLaserTrigger(object? sender, EventArgs e)
+        {
+            if (Operation_Mode == OPERATOR_MODE.AUTO)
+                Sub_Status = SUB_STATUS.ALARM;
+        }
+
+        private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION e)
+        {
+            if (CarController.IsRunning)
+            {
+                DirectionLighter.LightSwitchByAGVDirection(sender, e);
+                Laser.LaserChangeByAGVDirection(sender, e);
+            }
+        }
+
+        private void WagoDI_OnEMO(object? sender, EventArgs e)
+        {
+            SoftwareEMO();
+        }
+
+        private void CarController_OnTaskActionFinishCauseAbort(object? sender, clsTaskDownloadData e)
+        {
         }
 
         internal async Task<bool> Initialize()
@@ -192,11 +291,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             IsInitialized = false;
             Main_Status = MAIN_STATUS.DOWN;
             Sub_Status = SUB_STATUS.Initialize;
-
-            AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, 0, TASK_RUN_STATUS.NO_MISSION);
-
+            Laser.LeftLaserBypass = true;
+            Laser.RightLaserBypass = true;
+            Laser.FrontLaserBypass = true;
+            Laser.BackLaserBypass = true;
+            Laser.Mode = LASER_MODE.Bypass;
+            //AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, 0, TASK_RUN_STATUS.NO_MISSION);
+            StatusLighter.CloseAll();
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Y, 200);
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_R, 200);
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_G, 200);
             await Task.Delay(2000);
             IsInitialized = true;
+            StatusLighter.AbortFlash();
             Main_Status = MAIN_STATUS.IDLE;
             Sub_Status = SUB_STATUS.IDLE;
             return true;
@@ -205,6 +312,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task<bool> CancelInitialize()
         {
             return true;
+        }
+
+        internal void SoftwareEMO()
+        {
+            IsInitialized = false;
+            Main_Status = MAIN_STATUS.DOWN;
+            Sub_Status = SUB_STATUS.DOWN;
+            CarController.EMOHandler("SoftwareEMO", EventArgs.Empty);
+            AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
         }
 
         internal async Task ResetAlarmsAsync()
@@ -216,8 +332,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        private void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
+        private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
         {
+            Main_Status = MAIN_STATUS.RUN;
+            Sub_Status = SUB_STATUS.RUN;
+            await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
 
         }
 
@@ -228,35 +347,41 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <param name="taskData"></param>
         private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
         {
-            BuzzerPlayer.BuzzerStop();
             Main_Status = MAIN_STATUS.IDLE;
             Sub_Status = SUB_STATUS.IDLE;
-            StatusLighter.IDLE();
+
+            await Task.Delay(1200);
+
+            if (Sub_Status == SUB_STATUS.Initialize | Sub_Status == SUB_STATUS.DOWN)
+            {
+                await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                return;
+            }
+
             try
             {
-                int indexOfCurrentTag = taskData.ActionTrajecory.Length - 1;
-                //int indexOfCurrentTag = taskData.ActionTrajecory.ToList().IndexOf(taskData.ActionTrajecory.First(pt => pt.Point_ID == Navigation.Data.lastVisitedNode.data));
-                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
-                TASK_RUN_STATUS task_status = TASK_RUN_STATUS.NO_MISSION;
-                if (isActionFinish)
-                    task_status = TASK_RUN_STATUS.ACTION_FINISH;
-                else
-                    task_status = TASK_RUN_STATUS.NAVIGATING;
 
-                await AGVSConnection.TryTaskFeedBackAsync(taskData, indexOfCurrentTag, task_status);
+                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
+                TASK_RUN_STATUS task_status = isActionFinish ? TASK_RUN_STATUS.ACTION_FINISH : TASK_RUN_STATUS.NAVIGATING;
+               await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+
             }
             catch (Exception ex)
             {
-               LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
+                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
             }
+
         }
 
         private bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
-            Main_Status = MAIN_STATUS.IDLE;
+            Main_Status = MAIN_STATUS.DOWN;
             Sub_Status = SUB_STATUS.DOWN;
             AGV_Reset_Flag = true;
             Task.Factory.StartNew(() => CarController.AbortTask(mode));
+
+             AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+
             return true;
         }
 
@@ -267,64 +392,69 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
                 Task reqTask = new Task(async () =>
                 {
-
+                    if (OnlineModeChangingFlag)
+                    {
+                        return;
+                    }
+                    OnlineModeChangingFlag = true;
                     (bool success, RETURN_CODE return_code) result = await Online_Mode_Switch(mode);
                     if (result.success)
                     {
                         Remote_Mode = mode;
                         Console.WriteLine($"[Online Mode Change] 請求 {mode} 成功!");
-                        if (mode == REMOTE_MODE.ONLINE)
-                            StatusLighter.ONLINE();
-                        else
-                            StatusLighter.OFFLINE();
                     }
                     else
                     {
                         Console.WriteLine($"[Online Mode Change] 請求 {mode} 失敗!(Return Code = {(int)result.return_code}-{result.return_code}) 現在是 {Remote_Mode}");
                     }
+                    OnlineModeChangingFlag = false;
                 });
                 reqTask.Start();
             }
             return true;
         }
 
-        private bool AGVSTaskDownload(clsTaskDownloadData taskDownloadData)
+        private bool AGVSTaskDownloadConfirm(clsTaskDownloadData taskDownloadData)
         {
-            Main_Status = MAIN_STATUS.RUN;
-            Sub_Status = SUB_STATUS.RUN;
-            StatusLighter.RUN();
             AGV_Reset_Flag = false;
-            CarController.AGVSTaskDownloadHandler(taskDownloadData);
-
-            if (taskDownloadData.EAction_Type == ACTION_TYPE.None)
-                BuzzerPlayer.BuzzerMoving();
-            else
-                BuzzerPlayer.BuzzerAction();
-            //Task.Delay(1000).ContinueWith((task) =>
-            //{
-            //    AGVSConnection.TryTaskFeedBackAsync(taskDownloadData, 0, TASK_RUN_STATUS.ACTION_START);
-            //});
             return true;
         }
+        private void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
+        {
+            Task.Run(async () =>
+            {
+                await Task.Delay(300);
+                CarController.AGVSTaskDownloadHandler(taskDownloadData);
+            });
 
+        }
         private RunningStatus GenRunningStateReportData()
         {
-            return new RunningStatus
+            try
             {
-                Cargo_Status = 0,
-                AGV_Status = Main_Status,
-                Electric_Volume = new double[2] { Battery.Data.batteryLevel, Battery.Data.batteryLevel },
-                Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
-                Corrdination = new RunningStatus.clsCorrdination()
+                return new RunningStatus
                 {
-                    X = Navigation.Data.robotPose.pose.position.x,
-                    Y = Navigation.Data.robotPose.pose.position.y,
-                    Theta = CalculateTheta(Navigation.Data.robotPose.pose.orientation)
-                },
-                CSTID = new string[] { CSTReader.Data.data },
-                Odometry = Odometry,
-                AGV_Reset_Flag = AGV_Reset_Flag
-            };
+
+                    Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
+                    AGV_Status = Main_Status,
+                    Electric_Volume = new double[2] { Battery.Data.batteryLevel, Battery.Data.batteryLevel },
+                    Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
+                    Corrdination = new RunningStatus.clsCorrdination()
+                    {
+                        X = Navigation.Data.robotPose.pose.position.x,
+                        Y = Navigation.Data.robotPose.pose.position.y,
+                        Theta = BarcodeReader.Data.theta
+                    },
+                    CSTID = new string[] { CSTReader.Data.data },
+                    Odometry = Odometry,
+                    AGV_Reset_Flag = AGV_Reset_Flag
+                };
+            }
+            catch (Exception ex)
+            {
+                LOG.ERROR("GenRunningStateReportData ", ex);
+                return new RunningStatus();
+            }
         }
 
         double CalculateTheta(RosSharp.RosBridgeClient.MessageTypes.Geometry.Quaternion orientation)
@@ -364,7 +494,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Operation_Mode = mode;
             return true;
         }
-
+        private bool OnlineModeChangingFlag = false;
         internal async Task<(bool success, RETURN_CODE return_code)> Online_Mode_Switch(REMOTE_MODE mode)
         {
             (bool success, RETURN_CODE return_code) result = await AGVSConnection.TrySendOnlineModeChangeRequest(BarcodeReader.CurrentTag, mode);

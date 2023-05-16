@@ -1,6 +1,7 @@
 ﻿using GPMVehicleControlSystem.Models.Abstracts;
 using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using Newtonsoft.Json;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net;
 using System.Net.Sockets;
@@ -12,14 +13,17 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
     {
         TcpClient tcpClient;
         clsSocketState socketState = new clsSocketState();
-        Dictionary<uint, ManualResetEvent> WaitAGVSReplyMREDictionary = new Dictionary<uint, ManualResetEvent>();
-        Dictionary<uint, MessageBase> AGVSMessageStoreDictionary = new Dictionary<uint, MessageBase>();
+        ConcurrentDictionary<int, ManualResetEvent> WaitAGVSReplyMREDictionary = new ConcurrentDictionary<int, ManualResetEvent>();
+        ConcurrentDictionary<int, MessageBase> AGVSMessageStoreDictionary = new ConcurrentDictionary<int, MessageBase>();
         internal delegate bool taskDonwloadExecuteDelage(clsTaskDownloadData taskDownloadData);
         internal delegate bool onlineModeChangeDelelage(REMOTE_MODE mode);
         internal delegate bool taskResetReqDelegate(RESET_MODE reset_data);
+        internal event EventHandler<clsTaskDownloadData> OnTaskDownloadFeekbackDone;
         internal taskDonwloadExecuteDelage OnTaskDownload;
         internal onlineModeChangeDelelage OnRemoteModeChanged;
         internal taskResetReqDelegate OnTaskResetReq;
+        private clsRunningStatusReportMessage lastRunningStatusDataReport = new clsRunningStatusReportMessage();
+
         public enum MESSAGE_TYPE
         {
             REQ_0101 = 0101,
@@ -84,71 +88,84 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
         public void Start()
         {
-            Task.Run(async () =>
+            Thread thread = new Thread(() =>
             {
                 while (true)
                 {
-                    Thread.Sleep(200);
+                    Thread.Sleep(10);
                     if (!IsConnected())
                     {
                         Connect();
                         continue;
                     }
-                    (bool, OnlineModeQueryResponse onlineModeQuAck) result = await TryOnlineModeQueryAsync();
+                    (bool, OnlineModeQueryResponse onlineModeQuAck) result = TryOnlineModeQueryAsync().Result;
                     if (!result.Item1)
                     {
-                        Console.WriteLine("[AGVS] OnlineMode Query Fail...AGVS No Response");
+                        LOG.Critical("[AGVS] OnlineMode Query Fail...AGVS No Response");
                         continue;
                     }
-                    (bool, SimpleRequestResponse runningStateReportAck) runningStateReport_result = await TryRnningStateReportAsync();
+                    else
+                    {
+                        // LOG.TRACE($" OnlineMode Query Done=>Remote Mode : {result.onlineModeQuAck.RemoteMode}");
+                    }
+                    (bool, SimpleRequestResponseWithTimeStamp runningStateReportAck) runningStateReport_result = TryRnningStateReportAsync().Result;
                     if (!runningStateReport_result.Item1)
-                        Console.WriteLine("[AGVS] Running State Report Fail...AGVS No Response");
+                        LOG.Critical("[AGVS] Running State Report Fail...AGVS No Response");
+                    else
+                    {
+                        // LOG.TRACE($" RunningState Report Done=> ReturnCode: {runningStateReport_result.runningStateReportAck.ReturnCode}");
+                    }
 
                 }
             });
+            thread.IsBackground = true;
+            thread.Start();
         }
         void ReceieveCallbaak(IAsyncResult ar)
         {
             clsSocketState _socketState = (clsSocketState)ar.AsyncState;
-            int rev_len = _socketState.stream.EndRead(ar);
-
-            string _revStr = Encoding.ASCII.GetString(_socketState.buffer, _socketState.offset, rev_len);
-            _socketState.revStr += _revStr;
-            _socketState.offset += rev_len;
-
-            if (_revStr.EndsWith("*\r"))
-            {
-                string strHandle = _socketState.revStr.Replace("*\r", "$");
-                string[] splited = strHandle.Split('$');//預防粘包，包含多個message包
-
-                foreach (var str in splited)
-                {
-                    if (str == "" | str == null | str == "\r")
-                        continue;
-                    string _json = str.TrimEnd(new char[] { '*' });
-
-                    if (_json.Contains("\"Header\": {\"03"))
-                    {
-                       LOG.WARN(_json);
-                    }
-                    HandleAGVSJsonMsg(_json);
-                }
-                _socketState.Reset();
-                _socketState.waitSignal.Set();
-
-            }
-            else
-            {
-
-            }
-
             try
             {
-                Task.Factory.StartNew(() => _socketState.stream.BeginRead(_socketState.buffer, _socketState.offset, clsSocketState.buffer_size - _socketState.offset, ReceieveCallbaak, _socketState));
+
+
+                int rev_len = _socketState.stream.EndRead(ar);
+
+                string _revStr = Encoding.ASCII.GetString(_socketState.buffer, _socketState.offset, rev_len);
+                _socketState.revStr += _revStr;
+                _socketState.offset += rev_len;
+
+                if (_revStr.EndsWith("*\r"))
+                {
+                    string strHandle = _socketState.revStr.Replace("*\r", "$");
+                    string[] splited = strHandle.Split('$');//預防粘包，包含多個message包
+
+                    foreach (var str in splited)
+                    {
+                        if (str == "" | str == null | str == "\r")
+                            continue;
+                        string _json = str.TrimEnd(new char[] { '*' });
+                        HandleAGVSJsonMsg(_json);
+                    }
+                    _socketState.Reset();
+                    _socketState.waitSignal.Set();
+
+                }
+                else
+                {
+                }
+
+                try
+                {
+                    Task.Factory.StartNew(() => _socketState.stream.BeginRead(_socketState.buffer, _socketState.offset, clsSocketState.buffer_size - _socketState.offset, ReceieveCallbaak, _socketState));
+                }
+                catch (Exception ex)
+                {
+                    throw ex;
+                }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                throw ex;
+                tcpClient.Dispose();
             }
 
         }
@@ -162,17 +179,18 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
         private void HandleAGVSJsonMsg(string _json)
         {
+            MessageBase? MSG = null;
+            MESSAGE_TYPE msgType = GetMESSAGE_TYPE(_json);
+
             try
             {
-                var _Message = JsonConvert.DeserializeObject<Dictionary<string, object>>(_json);
-                MESSAGE_TYPE msgType = GetMESSAGE_TYPE(_Message);
-                MessageBase? MSG = null;
                 if (msgType == MESSAGE_TYPE.ACK_0102)
                 {
                     clsOnlineModeQueryResponseMessage? onlineModeQuAck = JsonConvert.DeserializeObject<clsOnlineModeQueryResponseMessage>(_json);
                     CurrentREMOTE_MODE_Downloaded = onlineModeQuAck.OnlineModeQueryResponse.RemoteMode;
                     OnRemoteModeChanged(CurrentREMOTE_MODE_Downloaded);
                     MSG = onlineModeQuAck;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
                 }
                 else if (msgType == MESSAGE_TYPE.ACK_0104)  //AGV上線請求的回覆
                 {
@@ -180,76 +198,92 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                     AGVOnlineReturnCode = onlineModeRequestResponse.ReturnCode;
                     WaitAGVSAcceptOnline.Set();
                     MSG = onlineModeRequestResponse;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
                 }
                 else if (msgType == MESSAGE_TYPE.ACK_0106)  //Running State Report的回覆
                 {
                     clsRunningStatusReportResponseMessage? runningStateReportAck = JsonConvert.DeserializeObject<clsRunningStatusReportResponseMessage>(_json);
                     MSG = runningStateReportAck;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
                 }
                 else if (msgType == MESSAGE_TYPE.REQ_0301)  //TASK DOWNLOAD
                 {
                     clsTaskDownloadMessage? taskDownloadReq = JsonConvert.DeserializeObject<clsTaskDownloadMessage>(_json);
                     MSG = taskDownloadReq;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
+                    taskDownloadReq.TaskDownload.OriTaskDataJson = _json;
+                    LOG.WARN($"New Task Download! => {taskDownloadReq.TaskDownload.Task_Name}_{taskDownloadReq.TaskDownload.Task_Simplex}");
                     bool accept_task = OnTaskDownload(taskDownloadReq.TaskDownload);
-                    TryTaskDownloadReqAckAsync(accept_task, taskDownloadReq.SystemBytes);
+                    if (TryTaskDownloadReqAckAsync(accept_task, taskDownloadReq.SystemBytes))
+                    {
+                        OnTaskDownloadFeekbackDone?.Invoke(this, taskDownloadReq.TaskDownload);
+                    }
                 }
                 else if (msgType == MESSAGE_TYPE.ACK_0304)  //TASK Feedback的回傳
                 {
                     clsSimpleReturnMessage? taskFeedbackAck = JsonConvert.DeserializeObject<clsSimpleReturnMessage>(_json);
                     MSG = taskFeedbackAck;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
                 }
                 else if (msgType == MESSAGE_TYPE.REQ_0305)
                 {
                     clsTaskResetReqMessage? taskResetMsg = JsonConvert.DeserializeObject<clsTaskResetReqMessage>(_json);
                     MSG = taskResetMsg;
+                    AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
                     bool reset_accept = OnTaskResetReq(taskResetMsg.ResetData.ResetMode);
                     TryTaskResetReqAckAsync(reset_accept, taskResetMsg.SystemBytes);
                 }
+                MSG.OriJsonString = _json;
 
-                AGVSMessageStoreDictionary.TryAdd(MSG.SystemBytes, MSG);
 
-                if (WaitAGVSReplyMREDictionary.TryGetValue(MSG.SystemBytes, out ManualResetEvent mse))
+                if (WaitAGVSReplyMREDictionary.TryRemove(MSG.SystemBytes, out ManualResetEvent mse))
                 {
                     mse.Set();
-                    WaitAGVSReplyMREDictionary.Remove(MSG.SystemBytes);
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("HandleAGVSJsonMsg_Code Error" + ex.Message);
+                LOG.ERROR("HandleAGVSJsonMsg_Code Error", ex);
             }
         }
 
-        public MESSAGE_TYPE GetMESSAGE_TYPE(Dictionary<string, object> message_obj)
+        public MESSAGE_TYPE GetMESSAGE_TYPE(string message_json)
         {
-            string headerContent = message_obj["Header"].ToString();
-            if (headerContent.Contains("0101"))
+
+            var _Message = JsonConvert.DeserializeObject<Dictionary<string, object>>(message_json);
+
+            string headerContent = _Message["Header"].ToString();
+            var headers = JsonConvert.DeserializeObject<Dictionary<string, object>>(headerContent);
+
+            var firstHeaderKey = headers.Keys.First();
+
+            if (firstHeaderKey.Contains("0101"))
                 return MESSAGE_TYPE.REQ_0101;
-            if (headerContent.Contains("0102"))
+            if (firstHeaderKey.Contains("0102"))
                 return MESSAGE_TYPE.ACK_0102;
-            if (headerContent.Contains("0103"))
+            if (firstHeaderKey.Contains("0103"))
                 return MESSAGE_TYPE.REQ_0103;
-            if (headerContent.Contains("0104"))
+            if (firstHeaderKey.Contains("0104"))
                 return MESSAGE_TYPE.ACK_0104;
-            if (headerContent.Contains("0105"))
+            if (firstHeaderKey.Contains("0105"))
                 return MESSAGE_TYPE.REQ_0105;
-            if (headerContent.Contains("0106"))
+            if (firstHeaderKey.Contains("0106"))
                 return MESSAGE_TYPE.ACK_0106;
-            if (headerContent.Contains("0301"))
+            if (firstHeaderKey.Contains("0301"))
                 return MESSAGE_TYPE.REQ_0301;
-            if (headerContent.Contains("0302"))
+            if (firstHeaderKey.Contains("0302"))
                 return MESSAGE_TYPE.ACK_0302;
 
-            if (headerContent.Contains("0303"))
+            if (firstHeaderKey.Contains("0303"))
                 return MESSAGE_TYPE.REQ_0303;
 
-            if (headerContent.Contains("0304"))
+            if (firstHeaderKey.Contains("0304"))
                 return MESSAGE_TYPE.ACK_0304;
 
-            if (headerContent.Contains("0305"))
+            if (firstHeaderKey.Contains("0305"))
                 return MESSAGE_TYPE.REQ_0305;
 
-            if (headerContent.Contains("0306"))
+            if (firstHeaderKey.Contains("0306"))
                 return MESSAGE_TYPE.ACK_0306;
             else
                 return MESSAGE_TYPE.UNKNOWN;
@@ -265,42 +299,64 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
         }
 
 
-        private bool TryTaskDownloadReqAckAsync(bool accept_task, uint system_byte)
+        private bool TryTaskDownloadReqAckAsync(bool accept_task, int system_byte)
         {
-
-            byte[] data = AGVSMessageFactory.CreateTaskDownloadReqAckData(accept_task, system_byte, out clsSimpleReturnMessage ackMsg);
-            LOG.INFO($"TaskDownload Ack : {ackMsg.Json}");
-            return WriteDataOut(data);
+            if (AGVSMessageStoreDictionary.TryRemove(system_byte, out MessageBase _retMsg))
+            {
+                byte[] data = AGVSMessageFactory.CreateTaskDownloadReqAckData(accept_task, system_byte, out clsSimpleReturnMessage ackMsg);
+                LOG.INFO($"TaskDownload Ack : {ackMsg.Json}");
+                return WriteDataOut(data);
+            }
+            else
+                return false;
         }
 
         internal async Task TryTaskFeedBackAsync(clsTaskDownloadData taskData, int point_index, TASK_RUN_STATUS task_status)
         {
-            await Task.Run(async () =>
-            {
-                byte[] data = AGVSMessageFactory.CreateTaskFeekbackMessageData(taskData, point_index, task_status, out clsTaskFeedbackMessage msg);
-                bool success = await WriteDataOut(data, msg.SystemBytes);
+            _ = Task.Run(async () =>
+          {
+              await Task.Delay(100);
+              LOG.WARN($"Try Task Feedback to AGVS: Task:{taskData.Task_Name}_{taskData.Task_Simplex}| Point Index : {point_index} | Status : {task_status.ToString()}");
+              byte[] data = AGVSMessageFactory.CreateTaskFeedbackMessageData(taskData, point_index, task_status, out clsTaskFeedbackMessage msg);
 
+              var lastState = lastRunningStatusDataReport.Header["0105"];
+              LOG.INFO($"Before TaskFeedBack :Status: = {lastState.ToJson()}");
+              bool success = await WriteDataOut(data, msg.SystemBytes);
 
-                if (AGVSMessageStoreDictionary.TryGetValue(msg.SystemBytes, out MessageBase _retMsg))
-                {
-                    clsSimpleReturnMessage msg_return = (clsSimpleReturnMessage)_retMsg;
-                    msg_return.HeaderKey = "0304";
-                    Console.WriteLine($"[Task Feedback ] {taskData.Task_Name}_{taskData.Task_Simplex} :: AGVS Return Code = { msg_return.ReturnData.ReturnCode}");
-                }
-            });
+              if (AGVSMessageStoreDictionary.TryRemove(msg.SystemBytes, out MessageBase _retMsg))
+              {
+                  try
+                  {
+                      clsSimpleReturnMessage msg_return = (clsSimpleReturnMessage)_retMsg;
+                      msg_return.HeaderKey = "0304";
+                      LOG.INFO($" Task Feedback to AGVS RESULT(Task:{taskData.Task_Name}_{taskData.Task_Simplex}| Point Index : {point_index} | Status : {task_status.ToString()}) ===> {msg_return.ReturnData.ReturnCode}");
+
+                  }
+                  catch (Exception ex)
+                  {
+
+                  }
+
+              }
+              else
+              {
+
+              }
+          });
 
         }
 
 
-        private async Task<(bool, SimpleRequestResponse runningStateReportAck)> TryRnningStateReportAsync()
+        private async Task<(bool, SimpleRequestResponseWithTimeStamp runningStateReportAck)> TryRnningStateReportAsync()
         {
             try
             {
                 byte[] data = AGVSMessageFactory.CreateRunningStateReportQueryData(out clsRunningStatusReportMessage msg);
                 await WriteDataOut(data, msg.SystemBytes);
-
-                if (AGVSMessageStoreDictionary.TryGetValue(msg.SystemBytes, out MessageBase mesg))
+                lastRunningStatusDataReport = msg;
+                if (AGVSMessageStoreDictionary.TryRemove(msg.SystemBytes, out MessageBase mesg))
                 {
+
                     clsRunningStatusReportResponseMessage QueryResponseMessage = mesg as clsRunningStatusReportResponseMessage;
                     if (QueryResponseMessage != null)
                         return (true, QueryResponseMessage.RuningStateReportAck);
@@ -316,9 +372,9 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             }
         }
 
-        private void TryTaskResetReqAckAsync(bool reset_accept, uint system_byte)
+        private void TryTaskResetReqAckAsync(bool reset_accept, int system_byte)
         {
-            byte[] data = AGVSMessageFactory.CreateSimpleReturnMessageData("0306", reset_accept, system_byte, out clsSimpleReturnMessage msg);
+            byte[] data = AGVSMessageFactory.CreateSimpleReturnMessageData("0306", reset_accept, system_byte, out clsSimpleReturnWithTimestampMessage msg);
             Console.WriteLine(msg.Json);
             bool writeOutSuccess = WriteDataOut(data);
             Console.WriteLine("TryTaskResetReqAckAsync : " + writeOutSuccess);
@@ -327,45 +383,17 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
         internal async Task<(bool success, RETURN_CODE return_code)> TrySendOnlineModeChangeRequest(int currentTag, REMOTE_MODE mode)
         {
             Console.WriteLine($"[Online Mode Change] 車載請求 {mode} , Tag {currentTag}");
-            if (CurrentREMOTE_MODE_Downloaded == mode)
-            {
-                return (true, RETURN_CODE.OK);
-            }
             try
             {
                 WaitAGVSAcceptOnline = new ManualResetEvent(false);
                 byte[] data = AGVSMessageFactory.CreateOnlineModeChangeRequesData(currentTag, mode, out clsOnlineModeRequestMessage msg);
                 await WriteDataOut(data, msg.SystemBytes);
-
-                if (AGVSMessageStoreDictionary.TryGetValue(msg.SystemBytes, out MessageBase mesg))
+                if (AGVSMessageStoreDictionary.TryRemove(msg.SystemBytes, out MessageBase mesg))
                 {
-                    AGVSMessageStoreDictionary.Remove(msg.SystemBytes);
-                    clsOnlineModeRequestResponseMessage QueryResponseMessage = mesg as clsOnlineModeRequestResponseMessage;
-                    return (QueryResponseMessage.ReturnCode == RETURN_CODE.OK, QueryResponseMessage.ReturnCode);
                 }
-                else
-                {
-
-                    if (mode == REMOTE_MODE.ONLINE)
-                    {
-                        WaitAGVSAcceptOnline.WaitOne(1000);
-                        bool success = CurrentREMOTE_MODE_Downloaded == REMOTE_MODE.ONLINE && AGVOnlineReturnCode == RETURN_CODE.OK;
-
-                        return (success, AGVOnlineReturnCode);
-                    }
-                    else
-                    {
-                        bool success = CurrentREMOTE_MODE_Downloaded == REMOTE_MODE.OFFLINE;
-                        return (success, success ? RETURN_CODE.OK : RETURN_CODE.NG);
-                    }
-                }
-
-
-                //else
-                //{
-                //    Console.WriteLine("[AGVS] OnlineModeChangeRequest Fail...AGVS No Response");
-                //    return (false, RETURN_CODE.No_Response);
-                //}
+                WaitAGVSAcceptOnline.WaitOne(1000);
+                bool success = AGVOnlineReturnCode == RETURN_CODE.OK;
+                return (success, AGVOnlineReturnCode);
             }
             catch (Exception ex)
             {
@@ -382,7 +410,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                 byte[] data = AGVSMessageFactory.CreateOnlineModeQueryData(out clsOnlineModeQueryMessage msg);
                 await WriteDataOut(data, msg.SystemBytes);
 
-                if (AGVSMessageStoreDictionary.TryGetValue(msg.SystemBytes, out MessageBase mesg))
+                if (AGVSMessageStoreDictionary.TryRemove(msg.SystemBytes, out MessageBase mesg))
                 {
                     clsOnlineModeQueryResponseMessage QueryResponseMessage = mesg as clsOnlineModeQueryResponseMessage;
                     return (true, QueryResponseMessage.OnlineModeQueryResponse);
@@ -409,26 +437,26 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
         }
 
-        private object lockObject = new object();
 
-        public async Task<bool> WriteDataOut(byte[] dataByte, uint systemBytes)
+        public async Task<bool> WriteDataOut(byte[] dataByte, int systemBytes)
         {
             Task _task = new Task(() =>
             {
                 try
                 {
-                    lock (lockObject)
+                    ManualResetEvent manualResetEvent = new ManualResetEvent(false);
+                    socketState.stream.Write(dataByte, 0, dataByte.Length);
+                    if (WaitAGVSReplyMREDictionary.ContainsKey(systemBytes))
                     {
-                        ManualResetEvent manualResetEvent = new ManualResetEvent(false);
-                        socketState.stream.Write(dataByte, 0, dataByte.Length);
-                        bool addsucess = WaitAGVSReplyMREDictionary.TryAdd(systemBytes, manualResetEvent);
 
-                        if (addsucess)
-                            manualResetEvent.WaitOne();
-                        else
-                        {
-                            LOG.WARN($"[WriteDataOut] 將 'ManualResetEvent' 加入 'WaitAGVSReplyMREDictionary' 失敗");
-                        }
+                    }
+                    bool addsucess = WaitAGVSReplyMREDictionary.TryAdd(systemBytes, manualResetEvent);
+
+                    if (addsucess)
+                        manualResetEvent.WaitOne();
+                    else
+                    {
+                        LOG.WARN($"[WriteDataOut] 將 'ManualResetEvent' 加入 'WaitAGVSReplyMREDictionary' 失敗");
                     }
 
                 }
@@ -444,7 +472,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                 }
 
             });
-            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 13 : 3));
+            CancellationTokenSource cts = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 13 : 1));
 
             try
             {

@@ -17,8 +17,10 @@ namespace GPMVehicleControlSystem.Models.Abstracts
         {
             flash_cts.Cancel();
         }
-        public void Flash(DO_ITEM light_DO)
+        public void Flash(DO_ITEM light_DO, int flash_period = 400)
         {
+            this.DOModule.SetState(light_DO, true);
+
             flash_cts = new CancellationTokenSource();
             Task.Factory.StartNew(async () =>
             {
@@ -29,8 +31,7 @@ namespace GPMVehicleControlSystem.Models.Abstracts
 
                     bool previous_state_on = DOModule.GetState(light_DO);
                     this.DOModule.SetState(light_DO, !previous_state_on);
-                    Console.WriteLine(previous_state_on + "");
-                    await Task.Delay(400);
+                    await Task.Delay(flash_period);
                 }
             });
         }

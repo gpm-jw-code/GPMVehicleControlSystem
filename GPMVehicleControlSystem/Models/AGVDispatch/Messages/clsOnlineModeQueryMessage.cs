@@ -11,7 +11,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
     public class OnlineModeQuery
     {
         [JsonProperty("Time Stamp")]
-        public string TimeStamp { get; set; }
+        public string TimeStamp { get; set; } = DateTime.Now.ToAGVSTimeFormat();
     }
 
     public class clsOnlineModeQueryResponseMessage : MessageBase

@@ -83,6 +83,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         }
 
+        internal void LightSwitchByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION e)
+        {
+            CloseAll();
 
+            if (e == clsNavigation.AGV_DIRECTION.FORWARD)
+                Forward();
+            else if (e == clsNavigation.AGV_DIRECTION.RIGHT)
+                TurnRight();
+            else if (e == clsNavigation.AGV_DIRECTION.LEFT)
+                TurnLeft();
+            else if (e == clsNavigation.AGV_DIRECTION.STOP)
+                CloseAll();
+
+        }
     }
 }

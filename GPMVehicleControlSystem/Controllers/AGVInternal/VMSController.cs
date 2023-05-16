@@ -53,6 +53,14 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
             try
             {
+                if(agv.BarcodeReader.CurrentTag ==0)
+                {
+                    return Ok(new
+                    {
+                        Success = false,
+                        Message = "上線時車子必須停在Tag上."
+                    });
+                }
                 (bool success, RETURN_CODE return_code) result = await agv.Online_Mode_Switch(mode);
                 return Ok(new
                 {

@@ -32,38 +32,52 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 mode_bools[i] = ((mode_int >> i) & 1) != 1;
             }
             DOModule.PauseSignal.Reset();
-            Thread.Sleep(100);
+            Thread.Sleep(400);
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_1, mode_bools[0]);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_1, mode_bools[0]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_1, !mode_bools[0]);
 
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_2, mode_bools[1]);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_2, mode_bools[1]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_2, !mode_bools[1]);
 
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_3, mode_bools[2]);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_3, mode_bools[2]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_3, !mode_bools[2]);
 
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_4, mode_bools[3]);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_4, mode_bools[3]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_4, !mode_bools[3]);
 
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_1, !mode_bools[0]);
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_1, !mode_bools[0]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_1, mode_bools[0]);
 
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_2, !mode_bools[1]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_2, mode_bools[1]);
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_2, !mode_bools[1]);
 
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_3, !mode_bools[2]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_3, mode_bools[2]);
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_3, !mode_bools[2]);
 
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_4, !mode_bools[3]);
+            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_4, mode_bools[3]);
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_4, !mode_bools[3]);
             DOModule.PauseSignal.Set();
 
+            LOG.TRACE($"Laser Mode Chaged To : {mode_int}({_Mode})");
         }
+
+        internal void LaserChangeByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION direction)
+        {
+            if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
+                Mode = LASER_MODE.Move;
+            else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)
+                Mode = LASER_MODE.Spin;
+        }
+
         private LASER_MODE _Mode = LASER_MODE.Bypass;
         public LASER_MODE Mode
         {
             get => _Mode;
-            set => ModeSwitch((int)value);
+            set
+            {
+                _Mode = value;
+                ModeSwitch((int)value);
+            }
         }
 
         public bool FrontLaserBypass

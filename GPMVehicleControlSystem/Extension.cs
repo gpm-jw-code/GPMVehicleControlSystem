@@ -25,7 +25,7 @@ namespace GPMVehicleControlSystem
             double yaw_radians = Theta * Math.PI / 180.0;
             double cos_yaw = Math.Cos(yaw_radians / 2.0);
             double sin_yaw = Math.Sin(yaw_radians / 2.0);
-            return new Quaternion(0.0, 0.0, sin_yaw, cos_yaw);
+            return new Quaternion(0.0f, 0.0f, (float)sin_yaw, (float)cos_yaw);
         }
         public static string ToJson(this object obj)
         {

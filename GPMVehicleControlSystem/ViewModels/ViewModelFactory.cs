@@ -23,6 +23,8 @@ namespace GPMVehicleControlSystem.ViewModels
                 {
                     Agv_Type = AgvEntity.AgvType,
                     Simulation = AgvEntity.SimulationMode,
+                    AutoMode = AgvEntity.Operation_Mode,
+                    OnlineMode = AgvEntity.Remote_Mode,
                     IsInitialized = AgvEntity.IsInitialized,
                     IsSystemIniting = !AgvEntity.IsSystemInitialized,
                     AGVC_ID = AgvEntity.SID,
@@ -39,8 +41,6 @@ namespace GPMVehicleControlSystem.ViewModels
                         IsError = AgvEntity.Battery.State == Models.VehicleControl.VehicleComponent.Abstracts.CarComponent.STATE.ABNORMAL
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
-                    AutoMode = AgvEntity.Operation_Mode,
-                    OnlineMode = AgvEntity.Remote_Mode,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
                     //AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),

@@ -11,6 +11,9 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
     public class RunningStatus
     {
+        [JsonProperty("Time Stamp")]
+        public string Time_Stamp { get; set; } = DateTime.Now.ToAGVSTimeFormat();
+
         public clsCorrdination Corrdination { get; set; } = new clsCorrdination();
         [JsonProperty("Last Visited Node")]
         public int Last_Visited_Node { get; set; } = 0;
@@ -25,9 +28,21 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public MAIN_STATUS AGV_Status { get; set; } = MAIN_STATUS.DOWN;
         [JsonProperty("Escape Flag")]
         public bool Escape_Flag { get; set; } = false;
+        [JsonProperty("Sensor Status")]
+
+        public Dictionary<string, int> Sensor_Status { get; set; } = new Dictionary<string, int>
+        {
+            {"Barcode Reader" ,0 },
+            {"Guide Sensor" ,0 },
+            {"LiDAR Sensor" ,0 },
+            {"Driver" ,0 },
+            {"Tag_Reader" ,0 },
+            {"G-Sensor" ,0 },
+        };
 
         [JsonProperty("CPU Usage Percent")]
         public double CPU_Usage_Percent { get; set; } = 0;
+
         [JsonProperty("RAM Usage Percent")]
         public double RAM_Usage_Percent { get; set; } = 0;
 
@@ -35,24 +50,27 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public bool AGV_Reset_Flag { get; set; } = true;
         [JsonProperty("Signal Strength")]
         public double Signal_Strength { get; set; } = 0;
+        
         [JsonProperty("Cargo Status")]
         public int Cargo_Status { get; set; } = 0;
 
         public string[] CSTID { get; set; } = new string[0];
         public double Odometry { get; set; } = 0;
+       
 
         [JsonProperty("Electric Volume")]
         public double[] Electric_Volume { get; set; } = new double[2] { 0, 0 };
+        
         [JsonProperty("Alarm Code")]
         public clsAlarmCode[] Alarm_Code { get; set; } = new clsAlarmCode[0];
         [JsonProperty("Fork Height")]
-        public double Fork_Height { get; set; } = 0;
+        public double Fork_Height { get; set; } 
 
         public class clsCorrdination
         {
-            public double X { get; set; } = 0;
-            public double Y { get; set; } = 0;
-            public double Theta { get; set; } = 0;
+            public double X { get; set; }
+            public double Y { get; set; } 
+            public double Theta { get; set; }
         }
         public class clsAlarmCode
         {
@@ -69,8 +87,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
     public class clsRunningStatusReportResponseMessage : MessageBase
     {
         internal override string HeaderKey { get; set; } = "0106";
-        public Dictionary<string, SimpleRequestResponse> Header { get; set; }
-        internal SimpleRequestResponse RuningStateReportAck => Header[HeaderKey];
+        public Dictionary<string, SimpleRequestResponseWithTimeStamp> Header { get; set; }
+        internal SimpleRequestResponseWithTimeStamp RuningStateReportAck => Header[HeaderKey];
 
     }
 

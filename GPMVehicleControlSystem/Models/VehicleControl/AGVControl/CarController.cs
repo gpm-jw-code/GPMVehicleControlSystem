@@ -146,7 +146,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal void FarAreaLaserTriggerHandler(object? sender, EventArgs e)
         {
             Console.Error.WriteLine($"遠處雷射觸發,減速停止請求. {sender?.ToJson()}");
-            CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE, "");
+            //CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE, "");
         }
 
         internal void FarAreaLaserRecoveryHandler(object? sender, EventArgs e)
@@ -157,7 +157,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal void EMOHandler(object? sender, EventArgs e)
         {
             Console.Error.WriteLine($"EMO 觸發,緊急停止. {sender?.ToJson()}");
-            CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
+            taskCommandActionClient.goal = new TaskCommandGoal();
+            taskCommandActionClient.SendGoal();
+            //CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
         }
         public override bool IsConnected()
         {
@@ -174,7 +176,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private void AdviseActionServer()
         {
             taskCommandActionClient = new TaskCommandActionClient("/barcodemovebase", rosSocket);
-            taskCommandActionClient.OnTaskCommandActionDone += OnTaskCommandActionDone;
             taskCommandActionClient.Initialize();
         }
 
@@ -200,6 +201,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         private void OnTaskCommandActionDone(ActionStatus Status)
         {
+            taskCommandActionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
             IsRunning = false;
             if (Status == ActionStatus.SUCCEEDED)
                 OnTaskActionFinishAndSuccess?.Invoke(this, this.RunningTaskData);
@@ -237,18 +239,49 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             {
                 return false;
             }
+            LOG.TRACE($"要求車控 {cmd},Result: {(res.confirm ? "OK" : "NG")}");
             return res.confirm;
         }
 
         internal void SendGoal(TaskCommandGoal rosGoal)
         {
-            IsRunning = true;
+            LOG.WARN($"====================Send Goal To AGVC===================" +
+                $"\r\nNav Path      = {string.Join("->", rosGoal.planPath.poses.Select(pose => pose.header.seq).ToArray())}" +
+                $"\r\nmobilityModes  = {rosGoal.mobilityModes}" +
+                $"\r\nTaskID        = {rosGoal.taskID}" +
+                $"\r\nFinal Goal ID = {rosGoal.finalGoalID}" +
+                $"\r\n==========================================================");
+
             EmergencyStopFlag = false;
+            
             Thread.Sleep(100);
+            
+            if(!IsRunning)
+            {
+                taskCommandActionClient.OnTaskCommandActionDone += OnTaskCommandActionDone;
+            }
+            else
+            {
+                LOG.WARN("路徑擴充");
+            }
             taskCommandActionClient.goal = rosGoal;
             taskCommandActionClient.SendGoal();
             OnMoveTaskStart?.Invoke(this, RunningTaskData);
+            IsRunning = true;
         }
 
+        internal int GetCurrentTagIndexOfTrajectory(int currentTag)
+        {
+            try
+            {
+                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == currentTag));
+
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+
+        }
     }
 }
