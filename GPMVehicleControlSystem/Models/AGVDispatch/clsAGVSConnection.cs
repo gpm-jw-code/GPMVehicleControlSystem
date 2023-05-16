@@ -1,6 +1,5 @@
 ﻿using GPMVehicleControlSystem.Models.Abstracts;
 using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
-using GPMVehicleControlSystem.Models.Log;
 using Newtonsoft.Json;
 using System.Diagnostics;
 using System.Net;
@@ -71,14 +70,13 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                 }
                 socketState.stream = tcpClient.GetStream();
                 socketState.Reset();
-                socketState.stream.BeginRead(socketState.buffer, socketState.offset, clsSocketState.buffer_size - socketState.offset, ReceieveBallbaak, socketState);
-                Console.WriteLine($"[AGVS] Connect To AGVS !!");
+                socketState.stream.BeginRead(socketState.buffer, socketState.offset, clsSocketState.buffer_size - socketState.offset, ReceieveCallbaak, socketState);
+                LOG.INFO($"[AGVS] Connect To AGVS Success !!");
                 return true;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[AGVS] Connect Fail..{ex.Message}");
-                Console.WriteLine($"[AGVS] Can't Connect To AGVS ({IP}:{Port})..Retrying");
+                LOG.ERROR($"[AGVS] Connect Fail..{ex.Message}. Can't Connect To AGVS ({IP}:{Port})..Will Retry it ...");
                 tcpClient = null;
                 return false;
             }
@@ -109,7 +107,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                 }
             });
         }
-        void ReceieveBallbaak(IAsyncResult ar)
+        void ReceieveCallbaak(IAsyncResult ar)
         {
             clsSocketState _socketState = (clsSocketState)ar.AsyncState;
             int rev_len = _socketState.stream.EndRead(ar);
@@ -131,7 +129,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
                     if (_json.Contains("\"Header\": {\"03"))
                     {
-                        Log.LOG.Warning(_json);
+                       LOG.WARN(_json);
                     }
                     HandleAGVSJsonMsg(_json);
                 }
@@ -146,7 +144,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
             try
             {
-                Task.Factory.StartNew(() => _socketState.stream.BeginRead(_socketState.buffer, _socketState.offset, clsSocketState.buffer_size - _socketState.offset, ReceieveBallbaak, _socketState));
+                Task.Factory.StartNew(() => _socketState.stream.BeginRead(_socketState.buffer, _socketState.offset, clsSocketState.buffer_size - _socketState.offset, ReceieveCallbaak, _socketState));
             }
             catch (Exception ex)
             {
@@ -371,7 +369,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
             }
             catch (Exception ex)
             {
-                LOG.Warning($"[AGVS] OnlineModeChangeRequest Fail...Code Error:{ex.Message}");
+                LOG.WARN($"[AGVS] OnlineModeChangeRequest Fail...Code Error:{ex.Message}");
                 return (false, RETURN_CODE.System_Error);
             }
         }
@@ -429,7 +427,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                             manualResetEvent.WaitOne();
                         else
                         {
-                            LOG.Warning($"[WriteDataOut] 將 'ManualResetEvent' 加入 'WaitAGVSReplyMREDictionary' 失敗");
+                            LOG.WARN($"[WriteDataOut] 將 'ManualResetEvent' 加入 'WaitAGVSReplyMREDictionary' 失敗");
                         }
                     }
 

@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 
-namespace GPMVehicleControlSystem.Models.Log
+namespace GPMVehicleControlSystem 
 {
     public class clsConsoleLog
     {

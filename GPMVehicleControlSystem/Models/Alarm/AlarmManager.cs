@@ -1,5 +1,4 @@
 ﻿using GPMVehicleControlSystem.Models.Database;
-using GPMVehicleControlSystem.Models.Log;
 using GPMVehicleControlSystem.Tools;
 using Newtonsoft.Json;
 using SQLite;

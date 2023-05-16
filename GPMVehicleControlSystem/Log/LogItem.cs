@@ -1,4 +1,4 @@
-﻿namespace GPMVehicleControlSystem.Models.Log
+﻿namespace GPMVehicleControlSystem
 {
     public class LogItem
     {

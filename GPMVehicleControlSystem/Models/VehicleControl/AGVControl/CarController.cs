@@ -109,11 +109,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             while (!IsConnected())
             {
-                Thread.Sleep(1);
+                Thread.Sleep(1000);
+                LOG.WARN($"Connect to ROSBridge Server (ws://{IP}:{Port}) Processing...");
                 try
                 {
                     rosSocket = new RosSocket(new RosSharp.RosBridgeClient.Protocols.WebSocketSharpProtocol($"ws://{IP}:{Port}"));
-                    Console.WriteLine($"ROS Connected ! ws://{IP}:{Port}");
                 }
                 catch (Exception ex)
                 {
@@ -122,12 +122,20 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                     Thread.Sleep(5000);
                 }
             }
+            rosSocket.protocol.OnClosed += Protocol_OnClosed;
+            LOG.INFO($"ROS Connected ! ws://{IP}:{Port}");
             ManualController = new MoveControl(rosSocket);
             AdviseActionServer();
             SubScribeTopics();
             return true;
         }
 
+        private void Protocol_OnClosed(object? sender, EventArgs e)
+        {
+            rosSocket.protocol.OnClosed -= Protocol_OnClosed;
+            LOG.WARN("Rosbridger Server On Closed...Retry connecting...");
+            Connect();
+        }
 
         public override void Disconnect()
         {

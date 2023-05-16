@@ -1,7 +1,6 @@
 ﻿using GPMRosMessageNet.Messages;
 using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using GPMVehicleControlSystem.Models.Buzzer;
-using GPMVehicleControlSystem.Models.Log;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
@@ -248,7 +247,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             catch (Exception ex)
             {
-                Log.LOG.Error("AGVMoveTaskActionSuccessHandle", ex);
+               LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
             }
         }
 
@@ -370,7 +369,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             (bool success, RETURN_CODE return_code) result = await AGVSConnection.TrySendOnlineModeChangeRequest(BarcodeReader.CurrentTag, mode);
             if (!result.success)
-                Log.LOG.Error($"車輛上線失敗 : Return Code : {result.return_code}");
+                LOG.ERROR($"車輛上線失敗 : Return Code : {result.return_code}");
             else
                 Remote_Mode = mode;
             return result;

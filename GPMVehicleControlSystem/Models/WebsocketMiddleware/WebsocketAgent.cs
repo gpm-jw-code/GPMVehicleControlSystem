@@ -1,5 +1,4 @@
-﻿using GPMVehicleControlSystem.Models.Log;
-using GPMVehicleControlSystem.ViewModels;
+﻿using GPMVehicleControlSystem.ViewModels;
 using Newtonsoft.Json;
 using System.Text;
 using System.Threading;
@@ -80,7 +79,7 @@ namespace GPMVehicleControlSystem.Models.WebsocketMiddleware
                     }
                     catch (Exception ex)
                     {
-                        Log.LOG.Error(ex.Message);
+                        LOG.ERROR(ex.Message);
                         break;
                     }
 

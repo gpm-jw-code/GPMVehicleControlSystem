@@ -2,7 +2,7 @@
 using System.Diagnostics;
 using System.Drawing;
 
-namespace GPMVehicleControlSystem.Models.Log
+namespace GPMVehicleControlSystem
 {
     public class LOG
     {
@@ -11,7 +11,7 @@ namespace GPMVehicleControlSystem.Models.Log
         private static Task WriteLogToFileTask;
         private static ConcurrentQueue<LogItem> logItemQueue = new ConcurrentQueue<LogItem>();
 
-        internal static void Trace(string info)
+        internal static void TRACE(string info)
         {
             var caller_class_name = new StackTrace().GetFrame(1).GetMethod().DeclaringType.Name; ;
 
@@ -23,19 +23,19 @@ namespace GPMVehicleControlSystem.Models.Log
 
             Log(new LogItem(LogLevel.Information, info), caller_class_name);
         }
-        public static void Warning(string info)
+        public static void WARN(string info)
         {
             var caller_class_name = new StackTrace().GetFrame(1).GetMethod().DeclaringType.Name; ;
 
             Log(new LogItem(LogLevel.Warning, info), caller_class_name);
         }
-        public static void Error(string info, Exception ex)
+        public static void ERROR(string info, Exception ex)
         {
             var caller_class_name = new StackTrace().GetFrame(1).GetMethod().DeclaringType.Name; ;
 
             Log(new LogItem(LogLevel.Error, string.Format("{0}。Exception Message:{1}", info, ex.Message + "\r\n" + ex.StackTrace)) { exception = ex }, caller_class_name);
         }
-        public static void Error(string info)
+        public static void ERROR(string info)
         {
             var caller_class_name = new StackTrace().GetFrame(1).GetMethod().DeclaringType.Name; ;
 
