@@ -8,6 +8,7 @@ namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
     public class TaskCommandActionClient : ActionClient<TaskCommandAction, TaskCommandActionGoal, TaskCommandActionResult, TaskCommandActionFeedback, TaskCommandGoal, TaskCommandResult, TaskCommandFeedback>, IDisposable
     {
         public Action<ActionStatus> OnTaskCommandActionDone;
+        public Action<ActionStatus> OnActionStatusChanged;
         public TaskCommandGoal goal;
         private bool disposedValue;
 
@@ -63,7 +64,13 @@ namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
             {
                 var _actionStatus = (ActionStatus)(goalStatus.status);
                 if (previousActionStatus != _actionStatus)
+                {
+                    if (OnActionStatusChanged != null)
+                    {
+                        OnActionStatusChanged(_actionStatus);
+                    }
                     Console.WriteLine("[TaskCommandActionClient] OnStatusUpdated : Status : " + _actionStatus);
+                }
                 previousActionStatus = _actionStatus;
             }
 

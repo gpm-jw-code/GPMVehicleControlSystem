@@ -46,7 +46,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
         internal ACTION_TYPE EAction_Type => Enum.GetValues(typeof(ACTION_TYPE)).Cast<ACTION_TYPE>().First(action_type => action_type.ToString() == Action_Type);
         internal clsMapPoint[] ExecutingTrajecory => Trajectory.Length != 0 ? Trajectory : Homing_Trajectory;
-
+        internal List<int> TagsOfTrajectory => ExecutingTrajecory.Select(pt => pt.Point_ID).ToList();
         internal string OriTaskDataJson;
         internal TaskCommandGoal RosTaskCommandGoal
         {

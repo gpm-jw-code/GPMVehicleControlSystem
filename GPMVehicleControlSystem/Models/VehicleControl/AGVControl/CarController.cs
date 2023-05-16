@@ -11,6 +11,9 @@ using RosSharp.RosBridgeClient.Actionlib;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 {
+    /// <summary>
+    /// 使用ＲＯＳ與車控端通訊
+    /// </summary>
     public class CarController : Connection
     {
         public enum LOCALIZE_STATE : byte
@@ -75,6 +78,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         public event EventHandler<clsTaskDownloadData> OnMoveTaskStart;
 
         TaskCommandActionClient taskCommandActionClient;
+
+        private ActionStatus _currentTaskCmdActionStatus = ActionStatus.PENDING;
+        public ActionStatus currentTaskCmdActionStatus
+        {
+            get => _currentTaskCmdActionStatus;
+            private set
+            {
+                if (value == ActionStatus.ACTIVE)
+                    OnMoveTaskStart?.Invoke(this, RunningTaskData);
+                _currentTaskCmdActionStatus = value;
+            }
+        }
+
         private ModuleInformation _module_info;
         public ModuleInformation module_info
         {
@@ -93,7 +109,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         /// </summary>
         public MoveControl ManualController { get; set; }
         public double CurrentSpeedLimit { get; internal set; }
-        public bool IsRunning { get; internal set; }
+
+        /// <summary>
+        /// 車控是否在執行任務
+        /// </summary>
+        /// <value></value>
+        public bool IsAGVExecutingTask => _currentTaskCmdActionStatus == ActionStatus.ACTIVE;
 
         private bool EmergencyStopFlag = false;
         public CarController()
@@ -124,9 +145,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             }
             rosSocket.protocol.OnClosed += Protocol_OnClosed;
             LOG.INFO($"ROS Connected ! ws://{IP}:{Port}");
+            rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback));
+            rosSocket.Subscribe<LocalizationControllerResultMessage0502>("localizationcontroller/out/localizationcontroller_result_message_0502", SickStateCallback, 100);
+
             ManualController = new MoveControl(rosSocket);
-            AdviseActionServer();
-            SubScribeTopics();
             return true;
         }
 
@@ -166,16 +188,23 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             return rosSocket != null && rosSocket.protocol.IsAlive();
         }
 
-        internal bool AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
-        {
-            this.RunningTaskData = taskDownloadData;
-            SendGoal(taskDownloadData.RosTaskCommandGoal);
-            return true;
-        }
 
-        private void AdviseActionServer()
+
+        private void InitTaskCommandActionClient()
         {
+            if (taskCommandActionClient != null)
+            {
+                taskCommandActionClient.OnTaskCommandActionDone -= this.OnTaskCommandActionDone;
+                taskCommandActionClient.Terminate();
+                taskCommandActionClient.Dispose();
+            }
+
             taskCommandActionClient = new TaskCommandActionClient("/barcodemovebase", rosSocket);
+            taskCommandActionClient.OnTaskCommandActionDone += this.OnTaskCommandActionDone;
+            taskCommandActionClient.OnActionStatusChanged += (status) =>
+            {
+                currentTaskCmdActionStatus = status;
+            };
             taskCommandActionClient.Initialize();
         }
 
@@ -202,19 +231,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private void OnTaskCommandActionDone(ActionStatus Status)
         {
             taskCommandActionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
-            IsRunning = false;
             if (Status == ActionStatus.SUCCEEDED)
                 OnTaskActionFinishAndSuccess?.Invoke(this, this.RunningTaskData);
-            else if (Status == ActionStatus.ABORTED)
+            else
                 OnTaskActionFinishCauseAbort?.Invoke(this, this.RunningTaskData);
 
         }
 
-        private void SubScribeTopics()
-        {
-            rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback));
-            rosSocket.Subscribe<LocalizationControllerResultMessage0502>("localizationcontroller/out/localizationcontroller_result_message_0502", SickStateCallback, 100);
-        }
 
         private void SickStateCallback(LocalizationControllerResultMessage0502 _LocalizationControllerResult)
         {
@@ -242,32 +265,52 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             LOG.TRACE($"要求車控 {cmd},Result: {(res.confirm ? "OK" : "NG")}");
             return res.confirm;
         }
+        internal async Task<bool> AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
+        {
+            string new_path = string.Join("->", taskDownloadData.TagsOfTrajectory);
 
+            this.RunningTaskData = taskDownloadData;
+            if (IsAGVExecutingTask)
+            {
+                SendGoal(taskDownloadData.RosTaskCommandGoal);
+                RunningTaskData = taskDownloadData;
+                string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
+                LOG.TRACE($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
+            }
+            else
+            {
+                InitTaskCommandActionClient();
+                SendGoal(RunningTaskData.RosTaskCommandGoal);
+
+            }
+            //wait goal status change to  ACTIVE
+            CancellationTokenSource wait_cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            while (currentTaskCmdActionStatus != ActionStatus.ACTIVE)
+            {
+                if (wait_cts.IsCancellationRequested)
+                {
+                    LOG.Critical($"Send Goal To AGVC But Status Not Change To ACTIVE(AGV NOT RUNNING.)");
+                    return false;
+                }
+                await Task.Delay(100);
+            }
+            return true;
+        }
         internal void SendGoal(TaskCommandGoal rosGoal)
         {
             LOG.WARN($"====================Send Goal To AGVC===================" +
-                $"\r\nNav Path      = {string.Join("->", rosGoal.planPath.poses.Select(pose => pose.header.seq).ToArray())}" +
-                $"\r\nmobilityModes  = {rosGoal.mobilityModes}" +
+                $"\r\nPlanPath      = {string.Join("->", rosGoal.planPath.poses.Select(pose => pose.header.seq).ToArray())}" +
+                $"\r\nmobilityModes = {rosGoal.mobilityModes}" +
                 $"\r\nTaskID        = {rosGoal.taskID}" +
                 $"\r\nFinal Goal ID = {rosGoal.finalGoalID}" +
                 $"\r\n==========================================================");
 
             EmergencyStopFlag = false;
-            
+
             Thread.Sleep(100);
-            
-            if(!IsRunning)
-            {
-                taskCommandActionClient.OnTaskCommandActionDone += OnTaskCommandActionDone;
-            }
-            else
-            {
-                LOG.WARN("路徑擴充");
-            }
+
             taskCommandActionClient.goal = rosGoal;
             taskCommandActionClient.SendGoal();
-            OnMoveTaskStart?.Invoke(this, RunningTaskData);
-            IsRunning = true;
         }
 
         internal int GetCurrentTagIndexOfTrajectory(int currentTag)

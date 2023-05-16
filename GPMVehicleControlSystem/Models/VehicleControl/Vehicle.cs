@@ -120,7 +120,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     else if (value == SUB_STATUS.RUN)
                     {
                         StatusLighter.RUN();
-                        if (CarController.IsRunning)
+                        if (CarController.IsAGVExecutingTask)
                         {
                             if (CarController.RunningTaskData.EAction_Type == ACTION_TYPE.None)
                                 BuzzerPlayer.BuzzerMoving();
@@ -270,7 +270,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION e)
         {
-            if (CarController.IsRunning)
+            if (CarController.IsAGVExecutingTask)
             {
                 DirectionLighter.LightSwitchByAGVDirection(sender, e);
                 Laser.LaserChangeByAGVDirection(sender, e);
@@ -363,7 +363,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
                 bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
                 TASK_RUN_STATUS task_status = isActionFinish ? TASK_RUN_STATUS.ACTION_FINISH : TASK_RUN_STATUS.NAVIGATING;
-               await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
 
             }
             catch (Exception ex)
@@ -380,7 +380,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGV_Reset_Flag = true;
             Task.Factory.StartNew(() => CarController.AbortTask(mode));
 
-             AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+            AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
 
             return true;
         }
@@ -424,7 +424,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task.Run(async () =>
             {
                 await Task.Delay(300);
-                CarController.AGVSTaskDownloadHandler(taskDownloadData);
+                bool agv_running = await CarController.AGVSTaskDownloadHandler(taskDownloadData);
             });
 
         }
