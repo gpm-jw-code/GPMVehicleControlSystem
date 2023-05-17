@@ -19,6 +19,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
     public class clsTaskDownloadData
     {
+        internal delegate (int tag, double locx, double locy, double theta) OnCurrentPoseReqDelegate();
+        internal static OnCurrentPoseReqDelegate OnCurrentPoseReq;
         [JsonProperty("Task Name")]
         public string Task_Name { get; set; }
 
@@ -29,11 +31,11 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         public int Task_Sequence { get; set; }
         public clsMapPoint[] Trajectory { get; set; } = new clsMapPoint[0];
 
-        [JsonProperty("Homing rajectory")]
+        [JsonProperty("Homing Trajectory")]
         public clsMapPoint[] Homing_Trajectory { get; set; } = new clsMapPoint[0];
 
         [JsonProperty("Action Type")]
-        public string Action_Type { get; set; }
+        public ACTION_TYPE Action_Type { get; set; }
 
         public clsCST[] CST { get; set; } = new clsCST[0];
         public int Destination { get; set; }
@@ -44,18 +46,30 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         [JsonProperty("Station Type")]
         public STATION_TYPE Station_Type { get; set; }
 
-        internal ACTION_TYPE EAction_Type => Enum.GetValues(typeof(ACTION_TYPE)).Cast<ACTION_TYPE>().First(action_type => action_type.ToString() == Action_Type);
         internal clsMapPoint[] ExecutingTrajecory => Trajectory.Length != 0 ? Trajectory : Homing_Trajectory;
         internal List<int> TagsOfTrajectory => ExecutingTrajecory.Select(pt => pt.Point_ID).ToList();
         internal string OriTaskDataJson;
+        internal bool IsAfterLoadingAction = false;
+
         internal TaskCommandGoal RosTaskCommandGoal
         {
             get
             {
                 try
                 {
-                    int finalTag = ExecutingTrajecory.Last().Point_ID;
-                    GUIDE_TYPE mobility_mode = EAction_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : EAction_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
+                    (int tag, double locx, double locy, double theta) currentPos = OnCurrentPoseReq();
+
+                    LOG.INFO($"[RosTaskCommandGoal] Gen RosTaskCommandGoal,Current Pose=>Tag:{currentPos.tag}," +
+                        $"X:{currentPos.locx},Y:{currentPos.locy},Theta:{currentPos.theta}");
+
+                    clsMapPoint[] _ExecutingTrajecory = new clsMapPoint[0];
+                    _ExecutingTrajecory = ExecutingTrajecory;
+                    if (ExecutingTrajecory.Length == 0)
+                    {
+                        throw new Exception("一般移動任務但是路徑長度為0");
+                    }
+                    int finalTag = Destination; //需要預先下發目標點(注意!並不是Trajection的最後一點,是整段導航任務的最後一點==>Trajection的最後一點如果跟Destination不同,表示AGVS在AGV行進途中會下發新的路徑過來)
+                    GUIDE_TYPE mobility_mode = Action_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : Action_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
                     TaskCommandGoal goal = new TaskCommandGoal();
                     goal.taskID = Task_Name;
                     goal.finalGoalID = (ushort)finalTag;
@@ -64,7 +78,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
                     {
 
                     };
-                    var poses = ExecutingTrajecory.Select(point => new PoseStamped()
+                    var poses = _ExecutingTrajecory.Select(point => new PoseStamped()
                     {
                         header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header
                         {
@@ -79,7 +93,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
                         }
                     }).ToArray();
 
-                    var pathInfo = ExecutingTrajecory.Select(point => new PathInfo()
+                    var pathInfo = _ExecutingTrajecory.Select(point => new PathInfo()
                     {
                         tagid = (ushort)point.Point_ID,
                         laserMode = (ushort)point.Laser,
@@ -90,6 +104,15 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
                         ultrasonicDistance = point.UltrasonicDistance
                     }).ToArray();
 
+
+                    if (IsAfterLoadingAction) //Loading 結束
+                    {
+                        poses = poses.Reverse().ToArray();
+                        pathInfo = pathInfo.Reverse().ToArray();
+                        goal.finalGoalID = (ushort)Homing_Trajectory.First().Point_ID;
+                        goal.mobilityModes = (ushort)GUIDE_TYPE.Color_Tap_Backward;
+
+                    }
 
                     goal.planPath.poses = poses;
                     goal.pathInfo = pathInfo;
@@ -104,6 +127,28 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
             }
         }
+
+        internal clsTaskDownloadData TurnToBackTaskData()
+        {
+            var taskData = JsonConvert.DeserializeObject<clsTaskDownloadData>(this.ToJson());
+            taskData.IsAfterLoadingAction = true;
+            taskData.Destination = Homing_Trajectory.First().Point_ID;
+            return taskData;
+        }
+        double CalculateTheta(RosSharp.RosBridgeClient.MessageTypes.Geometry.Quaternion orientation)
+        {
+            double yaw;
+            double x = orientation.x;
+            double y = orientation.y;
+            double z = orientation.z;
+            double w = orientation.w;
+            // 計算角度
+            double siny_cosp = 2.0 * (w * z + x * y);
+            double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
+            yaw = Math.Atan2(siny_cosp, cosy_cosp);
+            return yaw * 180.0 / Math.PI;
+        }
+
     }
 
 

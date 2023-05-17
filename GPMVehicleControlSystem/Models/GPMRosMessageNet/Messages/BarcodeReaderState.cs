@@ -16,6 +16,8 @@ namespace GPMRosMessageNet.Messages
         public double yValue { get; set; }
         public double theta { get; set; }
 
+        internal int Theta_Int => (int)theta;
+
         public BarcodeReaderState()
         {
             this.state = 0;

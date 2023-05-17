@@ -94,6 +94,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         /// 後方遠處雷射觸發恢復
         /// </summary>
         public event EventHandler OnBackNearAreaLaserRecovery;
+        public Action OnFrontSecondObstacleSensorDetected { get; internal set; }
+        public Action OnResetButtonPressing { get; internal set; }
 
 
         Dictionary<DI_ITEM, int> INPUT_INDEXS = new Dictionary<DI_ITEM, int>();
@@ -101,6 +103,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         internal List<clsIOSignal> VCSInputs = new List<clsIOSignal>();
         public ushort Start { get; set; }
         public ushort Size { get; set; }
+
         public clsDIModule()
         {
             ReadIOSettingsFromIniFile();
@@ -195,12 +198,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnBackFarAreaLaserRecovery?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnBackFarAreaLaserRecovery?.Invoke(s, e);
 
-
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnFrontNearAreaLaserTrigger?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnFrontNearAreaLaserRecovery?.Invoke(s, e);
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnBackNearAreaLaserRecovery?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnBackNearAreaLaserTrigger?.Invoke(s, e);
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Obstacle_Sensor]].OnSignalOFF += (s, e) => OnFrontSecondObstacleSensorDetected();
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressing();
+
+
 
         }
 

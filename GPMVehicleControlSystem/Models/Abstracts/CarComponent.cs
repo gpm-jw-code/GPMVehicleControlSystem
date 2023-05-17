@@ -46,7 +46,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstrac
             bool removed = ErrorCodes.Remove(alarm);
             if (removed)
             {
-                Console.WriteLine($"[{alarm}] 已排除");
+               // Console.WriteLine($"[{alarm}] 已排除");
             }
         }
         public STATE State => CheckStateDataContent();

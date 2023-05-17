@@ -58,17 +58,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             }
         }
 
-        public void Forward(bool opened = true)
+        public async void Forward(bool opened = true)
         {
-
+            await Task.Delay(500);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, opened);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, false);
         }
-        public void Backward(bool opened = true)
+        public async void Backward(bool opened = true)
         {
-
+            await Task.Delay(500);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, opened);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, false);

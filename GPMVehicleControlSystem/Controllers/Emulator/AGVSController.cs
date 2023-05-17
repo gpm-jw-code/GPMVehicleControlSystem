@@ -18,7 +18,7 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
                 Task_Simplex = task_name + "_1",
                 Task_Sequence = 1,
                 Destination = 7,
-                Action_Type = "None",
+                Action_Type = Models.AGVDispatch.Messages.ACTION_TYPE.None,
                 Station_Type = Models.AGVDispatch.Messages.STATION_TYPE.Normal,
                 Trajectory = new Models.AGVDispatch.Messages.clsMapPoint[]
                     {

@@ -1,10 +1,12 @@
 ﻿using GPMRosMessageNet.Messages;
 using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
+using GPMVehicleControlSystem.Models.Alarm;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
 using GPMVehicleControlSystem.Tools;
+using RosSharp.RosBridgeClient.MessageTypes.Geometry;
 using System.Threading.Tasks;
 using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
@@ -130,14 +132,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         Main_Status = MAIN_STATUS.RUN;
                         StatusLighter.RUN();
-                        LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {CarController.currentTaskCmdActionStatus}");
-                        if (CarController.IsAGVExecutingTask)
+                        Task.Factory.StartNew(async () =>
                         {
-                            if (CarController.RunningTaskData.EAction_Type == ACTION_TYPE.None)
-                                BuzzerPlayer.BuzzerMoving();
-                            else
-                                BuzzerPlayer.BuzzerAction();
-                        }
+                            await Task.Delay(200);
+                            LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {CarController.currentTaskCmdActionStatus}");
+                            if (CarController.IsAGVExecutingTask)
+                            {
+                                if (CarController.RunningTaskData.Action_Type == ACTION_TYPE.None)
+                                    BuzzerPlayer.BuzzerMoving();
+                                else
+                                    BuzzerPlayer.BuzzerAction();
+                            }
+                        });
+
                     }
 
                     _Sub_Status = value;
@@ -210,6 +217,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             WagoDI.OnEMO += WagoDI_OnEMO;
             WagoDI.OnEMO += CarController.EMOHandler;
+            WagoDI.OnResetButtonPressing += () => ResetAlarmsAsync();
             WagoDI.OnResetButtonPressed += WagoDO.ResetMotor;
             WagoDI.OnResetButtonPressed += WagoDI_OnResetButtonPressed;
             WagoDI.OnFrontFarAreaLaserTrigger += CarController.FarAreaLaserTriggerHandler;
@@ -231,9 +239,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
 
             Navigation.OnDirectionChanged += Navigation_OnDirectionChanged;
+
+            clsTaskDownloadData.OnCurrentPoseReq = CurrentPoseReqCallback;
         }
 
-
+        private (int tag, double locx, double locy, double theta) CurrentPoseReqCallback()
+        {
+            return new(Navigation.Data.lastVisitedNode.data, BarcodeReader.Data.xValue, BarcodeReader.Data.yValue, BarcodeReader.Data.theta);
+        }
 
         private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
         {
@@ -290,6 +303,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal async Task<bool> Initialize()
         {
+            BuzzerPlayer.BuzzerStop();
+
+            if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
+            {
+                AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);
+                BuzzerPlayer.BuzzerAlarm();
+                return false;
+            }
+
+            DirectionLighter.CloseAll();
             IsInitialized = false;
             Sub_Status = SUB_STATUS.Initializing;
             Laser.LeftLaserBypass = true;
@@ -317,9 +340,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal void SoftwareEMO()
         {
             IsInitialized = false;
-            Sub_Status = SUB_STATUS.DOWN;
             CarController.EMOHandler("SoftwareEMO", EventArgs.Empty);
             AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
+            Task.Factory.StartNew(async () =>
+            {
+                await Task.Delay(100);
+                Sub_Status = SUB_STATUS.DOWN;
+            });
+
         }
 
         internal async Task ResetAlarmsAsync()
@@ -384,7 +412,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         X = Navigation.Data.robotPose.pose.position.x,
                         Y = Navigation.Data.robotPose.pose.position.y,
-                        Theta = BarcodeReader.Data.theta
+                        Theta = BarcodeReader.Data.Theta_Int
                     },
                     CSTID = new string[] { CSTReader.Data.data },
                     Odometry = Odometry,
@@ -423,6 +451,36 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CSTReader.StateData = _ModuleInformation.CSTReader;
             for (int i = 0; i < _ModuleInformation.Wheel_Driver.driversState.Length; i++)
                 WheelDrivers[i].StateData = _ModuleInformation.Wheel_Driver.driversState[i];
+
+            if (Battery.IsCharging)
+            {
+                Sub_Status = SUB_STATUS.Charging;
+            }
+            else
+            {
+                //Task.Factory.StartNew(async () =>
+                //{
+                //    await Task.Delay(3000);
+                //    if (IsInitialized)
+                //    {
+
+                //        if (CarController.IsAGVExecutingTask)
+                //        {
+                //            Sub_Status = SUB_STATUS.RUN;
+                //        }
+                //        else
+                //        {
+                //            Sub_Status = SUB_STATUS.IDLE;
+                //        }
+                //    }
+                //    else
+                //    {
+                //        Sub_Status = SUB_STATUS.DOWN;
+                //    }
+                //});
+
+            }
+
         }
 
         private void WagoDI_OnResetButtonPressed(object? sender, EventArgs e)
@@ -444,6 +502,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             else
                 Remote_Mode = mode;
             return result;
+        }
+
+        internal bool HasAnyCargoOnAGV()
+        {
+            return !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_2);
         }
     }
 }

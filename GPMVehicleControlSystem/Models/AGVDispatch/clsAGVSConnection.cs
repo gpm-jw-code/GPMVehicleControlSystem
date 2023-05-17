@@ -161,12 +161,14 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
                 }
                 catch (Exception ex)
                 {
-                    throw ex;
+                    tcpClient.Dispose();
+                    tcpClient = null;
                 }
             }
             catch (Exception)
             {
                 tcpClient.Dispose();
+                tcpClient = null;
             }
 
         }
@@ -320,8 +322,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
               LOG.WARN($"Try Task Feedback to AGVS: Task:{taskData.Task_Name}_{taskData.Task_Simplex}| Point Index : {point_index} | Status : {task_status.ToString()}");
               byte[] data = AGVSMessageFactory.CreateTaskFeedbackMessageData(taskData, point_index, task_status, out clsTaskFeedbackMessage msg);
 
-              var lastState = lastRunningStatusDataReport.Header["0105"];
-              LOG.INFO($"Before TaskFeedBack :Status: = {lastState.ToJson()}");
+              //var lastState = lastRunningStatusDataReport.Header["0105"];
+              //LOG.INFO($"Before TaskFeedBack :Status: = {lastState.ToJson()}");
               bool success = await WriteDataOut(data, msg.SystemBytes);
 
               if (AGVSMessageStoreDictionary.TryRemove(msg.SystemBytes, out MessageBase _retMsg))
@@ -426,6 +428,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
         }
         public bool WriteDataOut(byte[] dataByte)
         {
+            if (!IsConnected())
+                return false;
             try
             {
                 socketState.stream.Write(dataByte, 0, dataByte.Length);
@@ -441,6 +445,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch
 
         public async Task<bool> WriteDataOut(byte[] dataByte, int systemBytes)
         {
+            if (!IsConnected())
+                return false;
             Task _task = new Task(() =>
             {
                 try
