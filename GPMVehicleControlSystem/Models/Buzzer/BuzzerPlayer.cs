@@ -21,43 +21,9 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 
         public static void Initialize()
         {
-            try
-            {
-                //LoadPlayList();
-                //AutoPlayByMainState();
-            }
-            catch (Exception ex)
-            {
-            }
+            BuzzerAlarm();
         }
 
-        private static void AutoPlayByMainState()
-        {
-        }
-
-        //private async static void VMSEntity_MainStateOnChanged(object? sender, ESUB_STATE subState)
-        //{
-        //    await BuzzerStop();
-        //    playCancelTS = new CancellationTokenSource();
-        //    if (subState ==  ESUB_STATE.MOVE)
-        //        BuzzerMoving();
-        //    else if (subState == ESUB_STATE.Working)
-        //        BuzzerACtion();
-        //    else if (subState == ESUB_STATE.Alarm)
-        //        BuzzerAlarm();
-        //}
-
-        public static void LoadPlayList()
-        {
-            if (File.Exists(PlayListFileName))
-            {
-                playList = JsonConvert.DeserializeObject<clsPlayList>(File.ReadAllText(PlayListFileName));
-            }
-            else
-            {
-                File.WriteAllText(PlayListFileName, JsonConvert.SerializeObject(playList, Formatting.Indented));
-            }
-        }
 
         public static async void BuzzerAlarm()
         {
@@ -122,6 +88,11 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 
         private static void Play(string filePath)
         {
+            if (!File.Exists(filePath))
+            {
+                LOG.ERROR($"Can't play {filePath}, File not exist");
+                return;
+            }
             try
             {
                 if (Environment.OSVersion.Platform == PlatformID.Unix)

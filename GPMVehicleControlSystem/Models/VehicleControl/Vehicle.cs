@@ -112,8 +112,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         if (value == SUB_STATUS.DOWN | value == SUB_STATUS.Initializing)
                             Main_Status = MAIN_STATUS.DOWN;
+                        if (value != SUB_STATUS.Initializing)
+                            BuzzerPlayer.BuzzerAlarm();
                         StatusLighter.DOWN();
-                        BuzzerPlayer.BuzzerAlarm();
                     }
                     else if (value == SUB_STATUS.IDLE)
                     {
@@ -129,6 +130,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         Main_Status = MAIN_STATUS.RUN;
                         StatusLighter.RUN();
+                        LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {CarController.currentTaskCmdActionStatus}");
                         if (CarController.IsAGVExecutingTask)
                         {
                             if (CarController.RunningTaskData.EAction_Type == ACTION_TYPE.None)
@@ -191,10 +193,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             Pilot = new AGVPILOT(this);
 
-            BuzzerPlayer.BuzzerAlarm();
             IsSystemInitialized = true;
-
-
 
             Task.Factory.StartNew(async () =>
             {

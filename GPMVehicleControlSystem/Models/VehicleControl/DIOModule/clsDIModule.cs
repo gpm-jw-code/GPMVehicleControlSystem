@@ -96,7 +96,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         public event EventHandler OnBackNearAreaLaserRecovery;
 
 
-        Dictionary<DI_ITEM, int> INPUT_INDEXS => Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().ToDictionary(e => e, e => (int)e);
+        Dictionary<DI_ITEM, int> INPUT_INDEXS = new Dictionary<DI_ITEM, int>();
 
         internal List<clsIOSignal> VCSInputs = new List<clsIOSignal>();
         public ushort Start { get; set; }
@@ -124,6 +124,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
                     var Address = $"X{i.ToString("X4")}";
                     var RigisterName = iniHelper.GetValue("INPUT", Address);
                     var reg = new clsIOSignal(RigisterName, Address);
+                    if (RigisterName != "")
+                    {
+
+                        var di_item = Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().First(di => di.ToString() == RigisterName);
+                        if (di_item != DI_ITEM.Unknown)
+                        {
+                            INPUT_INDEXS.Add(di_item, i);
+                        }
+                    }
                     VCSInputs.Add(reg);
                 }
             }

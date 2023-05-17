@@ -61,7 +61,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
             Back_Protection_Sensor_IN_4,
             Back_Protection_Sensor_CIN_4,
         }
-        Dictionary<DO_ITEM, int> OUTPUT_INDEXS => Enum.GetValues(typeof(DO_ITEM)).Cast<DO_ITEM>().ToDictionary(e => e, e => (int)e);
+        Dictionary<DO_ITEM, int> OUTPUT_INDEXS = new Dictionary<DO_ITEM, int>();
 
         internal List<clsIOSignal> VCSOutputs = new List<clsIOSignal>();
         internal ManualResetEvent PauseSignal = new ManualResetEvent(true);
@@ -87,7 +87,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
                     var Address = $"Y{i.ToString("X4")}";
                     var RigisterName = iniHelper.GetValue("OUTPUT", Address);
                     var reg = new clsIOSignal(RigisterName, Address);
+                    
                     reg.State = false;
+                    if (RigisterName != "")
+                    {
+
+                        var do_item = Enum.GetValues(typeof(DO_ITEM)).Cast<DO_ITEM>().First(di => di.ToString() == RigisterName);
+                        if (do_item != DO_ITEM.Unknown)
+                        {
+                            OUTPUT_INDEXS.Add(do_item, i);
+                        }
+                    }
+
                     VCSOutputs.Add(reg);
                 }
             }

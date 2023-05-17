@@ -12,7 +12,7 @@
             Moving = Path.Combine(sounds_folder, "move.wav");
             Action = Path.Combine(sounds_folder, "action.wav");
         }
-        private string sounds_folder => Environment.CurrentDirectory;
+        private string sounds_folder => Path.Combine( Environment.CurrentDirectory,@"param\sounds");
         public string Alarm { get; set; } = "D:\\sounds\\alarm.wav";
         public string Moving { get; set; } = "D:\\sounds\\move.wav";
         public string Action { get; set; } = "D:\\sounds\\action.wav";

@@ -114,7 +114,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         /// 車控是否在執行任務
         /// </summary>
         /// <value></value>
-        public bool IsAGVExecutingTask => _currentTaskCmdActionStatus == ActionStatus.ACTIVE;
+        public bool IsAGVExecutingTask => _currentTaskCmdActionStatus == ActionStatus.ACTIVE| _currentTaskCmdActionStatus == ActionStatus.SUCCEEDED;
 
         private bool EmergencyStopFlag = false;
         public CarController()
@@ -167,20 +167,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         internal void FarAreaLaserTriggerHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"遠處雷射觸發,減速停止請求. {sender?.ToJson()}");
+            Console.Error.WriteLine($"遠處雷射觸發,減速停止請求. ");
             //CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE, "");
         }
 
         internal void FarAreaLaserRecoveryHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"遠處雷射解除,速度恢復請求. {sender?.ToJson()}");
+            Console.Error.WriteLine($"遠處雷射解除,速度恢復請求.");
             CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
         }
         internal void EMOHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"EMO 觸發,緊急停止. {sender?.ToJson()}");
-            taskCommandActionClient.goal = new TaskCommandGoal();
-            taskCommandActionClient.SendGoal();
+            Console.Error.WriteLine($"EMO 觸發,緊急停止.");
+            AbortTask();
+            _currentTaskCmdActionStatus = ActionStatus.ABORTED;
+
+
             //CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
         }
         public override bool IsConnected()
@@ -224,21 +226,36 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         internal void AbortTask()
         {
+            _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             EmergencyStopFlag = true;
-            taskCommandActionClient.goal = new TaskCommandGoal();
-            taskCommandActionClient.SendGoal();
+            if (taskCommandActionClient != null)
+            {
+                taskCommandActionClient.goal = new TaskCommandGoal();
+                taskCommandActionClient.SendGoal();
+            }
         }
 
         private void OnTaskCommandActionDone(ActionStatus Status)
         {
-            taskCommandActionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
+            LOG.INFO($"AGVC Action Done. Status={Status}");
             if (Status == ActionStatus.SUCCEEDED)
                 OnTaskActionFinishAndSuccess?.Invoke(this, this.RunningTaskData);
             else
                 OnTaskActionFinishCauseAbort?.Invoke(this, this.RunningTaskData);
-
+            _currentTaskCmdActionStatus = ActionStatus.PENDING;
+            DisposeTaskCommandActionClient();
         }
 
+        private void DisposeTaskCommandActionClient()
+        {
+            if (taskCommandActionClient != null)
+            {
+                taskCommandActionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
+                taskCommandActionClient.Terminate();
+                taskCommandActionClient.Dispose();
+                taskCommandActionClient = null;
+            }
+        }
 
         private void SickStateCallback(LocalizationControllerResultMessage0502 _LocalizationControllerResult)
         {
@@ -295,6 +312,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 }
                 await Task.Delay(100);
             }
+            LOG.TRACE($"AGVC Accept Task and Start Executing：Path Tracking = {new_path}");
+
             return true;
         }
         internal void SendGoal(TaskCommandGoal rosGoal)
