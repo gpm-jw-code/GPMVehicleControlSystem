@@ -45,7 +45,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public clsLaser Laser;
         public string CarName { get; set; }
         public string SID { get; set; }
-
+     
+        public AGVPILOT Pilot { get; set; }
         public clsNavigation Navigation = new clsNavigation();
         public clsBattery Battery = new clsBattery();
         public clsIMU IMU = new clsIMU();
@@ -85,10 +86,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 手動/自動模式
         /// </summary>
-        public OPERATOR_MODE Operation_Mode { get; private set; } = OPERATOR_MODE.MANUAL;
+        public OPERATOR_MODE Operation_Mode { get; internal set; } = OPERATOR_MODE.MANUAL;
 
-        public MAIN_STATUS Main_Status { get; private set; } = MAIN_STATUS.DOWN;
-        public bool AGV_Reset_Flag { get; private set; } = false;
+        public MAIN_STATUS Main_Status { get; internal set; } = MAIN_STATUS.DOWN;
+        public bool AGV_Reset_Flag { get; internal set; } = false;
 
         public MoveControl ManualController => CarController.ManualController;
 
@@ -180,8 +181,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Laser.Mode = LASER_MODE.Bypass;
             AGVDispatch.AGVSMessageFactory.Setup(SID, CarName);
 
+            Pilot = new AGVPILOT(this);
+
             BuzzerPlayer.BuzzerAlarm();
             IsSystemInitialized = true;
+
+
 
             Task.Factory.StartNew(async () =>
             {
@@ -193,15 +198,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         private void EventsRegist()
         {
             AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
-            AGVSConnection.OnTaskDownload += AGVSTaskDownloadConfirm;
             AGVSConnection.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
-            AGVSConnection.OnTaskResetReq = AGVSTaskResetReqHandle;
-            AGVSConnection.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
-
             CarController.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
-            CarController.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
-            CarController.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
-            CarController.OnMoveTaskStart += CarController_OnMoveTaskStart;
 
             WagoDI.OnEMO += WagoDI_OnEMO;
             WagoDI.OnEMO += CarController.EMOHandler;
@@ -282,9 +280,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             SoftwareEMO();
         }
 
-        private void CarController_OnTaskActionFinishCauseAbort(object? sender, clsTaskDownloadData e)
-        {
-        }
 
         internal async Task<bool> Initialize()
         {
@@ -332,58 +327,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
-        {
-            Main_Status = MAIN_STATUS.RUN;
-            Sub_Status = SUB_STATUS.RUN;
-            await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
-
-        }
 
         /// <summary>
         /// 成功完成移動任務的處理
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="taskData"></param>
-        private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
-        {
-            Main_Status = MAIN_STATUS.IDLE;
-            Sub_Status = SUB_STATUS.IDLE;
-
-            await Task.Delay(1200);
-
-            if (Sub_Status == SUB_STATUS.Initialize | Sub_Status == SUB_STATUS.DOWN)
-            {
-                await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-                return;
-            }
-
-            try
-            {
-
-                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
-                TASK_RUN_STATUS task_status = isActionFinish ? TASK_RUN_STATUS.ACTION_FINISH : TASK_RUN_STATUS.NAVIGATING;
-                await AGVSConnection.TryTaskFeedBackAsync(taskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
-            }
-            catch (Exception ex)
-            {
-                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
-            }
-
-        }
-
-        private bool AGVSTaskResetReqHandle(RESET_MODE mode)
-        {
-            Main_Status = MAIN_STATUS.DOWN;
-            Sub_Status = SUB_STATUS.DOWN;
-            AGV_Reset_Flag = true;
-            Task.Factory.StartNew(() => CarController.AbortTask(mode));
-
-            AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, CarController.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
-            return true;
-        }
+      
 
         private bool AGVSRemoteModeChangeReq(REMOTE_MODE mode)
         {
@@ -414,20 +364,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return true;
         }
 
-        private bool AGVSTaskDownloadConfirm(clsTaskDownloadData taskDownloadData)
-        {
-            AGV_Reset_Flag = false;
-            return true;
-        }
-        private void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
-        {
-            Task.Run(async () =>
-            {
-                await Task.Delay(300);
-                bool agv_running = await CarController.AGVSTaskDownloadHandler(taskDownloadData);
-            });
-
-        }
+       
         private RunningStatus GenRunningStateReportData()
         {
             try
