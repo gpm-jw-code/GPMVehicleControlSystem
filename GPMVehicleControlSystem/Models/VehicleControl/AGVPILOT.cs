@@ -9,11 +9,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
     /// </summary>
     public class AGVPILOT
     {
+        /// <summary>
+        /// 車子
+        /// </summary>
         public Vehicle AGV { get; }
         /// <summary>
         /// 車控
         /// </summary>
         private CarController AGVC => AGV.CarController;
+
+        /// <summary>
+        /// 派車
+        /// </summary>
         private AGVDispatch.clsAGVSConnection AGVS => AGV.AGVSConnection;
         public AGVPILOT(Vehicle AGV)
         {
