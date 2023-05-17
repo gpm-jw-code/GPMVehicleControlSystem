@@ -218,6 +218,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         private void CycleStop()
         {
+            AbortTask();
 
         }
 
