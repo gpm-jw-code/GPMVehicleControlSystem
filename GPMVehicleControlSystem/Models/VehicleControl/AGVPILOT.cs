@@ -500,8 +500,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
 
-            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right);
-            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left);
+            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right,200);
+            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
 
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
