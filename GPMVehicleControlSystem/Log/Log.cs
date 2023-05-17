@@ -107,6 +107,7 @@ namespace GPMVehicleControlSystem
 
                     ConsoleColor foreColor = ConsoleColor.White;
                     ConsoleColor backColor = ConsoleColor.Black;
+
                     switch (logItem.level)
                     {
                         case LogLevel.Trace:
@@ -115,16 +116,16 @@ namespace GPMVehicleControlSystem
                         case LogLevel.Debug:
                             break;
                         case LogLevel.Information:
-                            backColor = ConsoleColor.Blue;
+                            foreColor = ConsoleColor.Cyan;
                             break;
                         case LogLevel.Warning:
                             foreColor = ConsoleColor.Yellow;
                             break;
                         case LogLevel.Error:
-                            backColor = ConsoleColor.Red;
+                            foreColor = ConsoleColor.Red;
                             break;
                         case LogLevel.Critical:
-                            backColor = ConsoleColor.Red;
+                            foreColor = ConsoleColor.Red;
                             break;
                         case LogLevel.None:
                             break;
@@ -132,6 +133,8 @@ namespace GPMVehicleControlSystem
                             break;
                     }
 
+
+                    Console.Write(" ");
                     Console.BackgroundColor = ConsoleColor.White;
                     Console.ForegroundColor = ConsoleColor.Black;
                     Console.Write(logItem.Time + " ");
@@ -140,6 +143,7 @@ namespace GPMVehicleControlSystem
                     Console.BackgroundColor = backColor;
 
                     Console.WriteLine(logItem.logFullLine);
+                    Console.WriteLine(" ");
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.BackgroundColor = ConsoleColor.Black;
 

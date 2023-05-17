@@ -82,7 +82,6 @@ namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
             {
                 if (disposing)
                 {
-                    // TODO: 處置受控狀態 (受控物件)
                 }
 
                 OnTaskCommandActionDone = null;
@@ -92,7 +91,6 @@ namespace GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions
             }
         }
 
-        // // TODO: 僅有當 'Dispose(bool disposing)' 具有會釋出非受控資源的程式碼時，才覆寫完成項
         // ~TaskCommandActionClient()
         // {
         //     // 請勿變更此程式碼。請將清除程式碼放入 'Dispose(bool disposing)' 方法
