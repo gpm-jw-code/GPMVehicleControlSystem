@@ -36,7 +36,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
         {
-            AGV.Main_Status = MAIN_STATUS.RUN;
             AGV.Sub_Status = SUB_STATUS.RUN;
             await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
 
@@ -48,12 +47,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
         {
-            AGV.Main_Status = MAIN_STATUS.IDLE;
             AGV.Sub_Status = SUB_STATUS.IDLE;
 
             await Task.Delay(1200);
 
-            if (AGV.Sub_Status == SUB_STATUS.Initialize | AGV.Sub_Status == SUB_STATUS.DOWN)
+            if (AGV.Sub_Status == SUB_STATUS.Initializing | AGV.Sub_Status == SUB_STATUS.DOWN)
             {
                 await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
                 return;
@@ -73,9 +71,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="taskDownloadData"></param>
+        /// <returns></returns>
         internal bool AGVSTaskDownloadConfirm(clsTaskDownloadData taskDownloadData)
         {
             AGV.AGV_Reset_Flag = false;
+
+            if (AGV.Sub_Status != SUB_STATUS.IDLE) //TODO More Status Confirm when recieve AGVS Task
+                return false;
+
             return true;
         }
 
@@ -83,7 +90,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
-            AGV.Main_Status = MAIN_STATUS.DOWN;
             AGV.Sub_Status = SUB_STATUS.DOWN;
             AGV.AGV_Reset_Flag = true;
             Task.Factory.StartNew(() => AGVC.AbortTask(mode));

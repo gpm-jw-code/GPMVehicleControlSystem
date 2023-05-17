@@ -29,7 +29,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public enum SUB_STATUS
         {
             IDLE = 1, RUN = 2, DOWN = 3, Charging = 4,
-            Initialize = 5,
+            Initializing = 5,
             ALARM = 6,
             WARNING = 7
         }
@@ -45,7 +45,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public clsLaser Laser;
         public string CarName { get; set; }
         public string SID { get; set; }
-     
+
         public AGVPILOT Pilot { get; set; }
         public clsNavigation Navigation = new clsNavigation();
         public clsBattery Battery = new clsBattery();
@@ -108,18 +108,26 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     if (value != SUB_STATUS.WARNING)
                         BuzzerPlayer.BuzzerStop();
 
-                    if (value == SUB_STATUS.DOWN | value == SUB_STATUS.ALARM)
+                    if (value == SUB_STATUS.DOWN | value == SUB_STATUS.ALARM | value == SUB_STATUS.Initializing)
                     {
+                        if (value == SUB_STATUS.DOWN | value == SUB_STATUS.Initializing)
+                            Main_Status = MAIN_STATUS.DOWN;
                         StatusLighter.DOWN();
                         BuzzerPlayer.BuzzerAlarm();
                     }
                     else if (value == SUB_STATUS.IDLE)
                     {
+                        Main_Status = MAIN_STATUS.IDLE;
                         StatusLighter.IDLE();
                         DirectionLighter.CloseAll();
                     }
+                    else if (value == SUB_STATUS.Charging)
+                    {
+                        Main_Status = MAIN_STATUS.Charging;
+                    }
                     else if (value == SUB_STATUS.RUN)
                     {
+                        Main_Status = MAIN_STATUS.RUN;
                         StatusLighter.RUN();
                         if (CarController.IsAGVExecutingTask)
                         {
@@ -284,8 +292,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task<bool> Initialize()
         {
             IsInitialized = false;
-            Main_Status = MAIN_STATUS.DOWN;
-            Sub_Status = SUB_STATUS.Initialize;
+            Sub_Status = SUB_STATUS.Initializing;
             Laser.LeftLaserBypass = true;
             Laser.RightLaserBypass = true;
             Laser.FrontLaserBypass = true;
@@ -299,7 +306,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             await Task.Delay(2000);
             IsInitialized = true;
             StatusLighter.AbortFlash();
-            Main_Status = MAIN_STATUS.IDLE;
             Sub_Status = SUB_STATUS.IDLE;
             return true;
         }
@@ -312,7 +318,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal void SoftwareEMO()
         {
             IsInitialized = false;
-            Main_Status = MAIN_STATUS.DOWN;
             Sub_Status = SUB_STATUS.DOWN;
             CarController.EMOHandler("SoftwareEMO", EventArgs.Empty);
             AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
@@ -333,7 +338,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="taskData"></param>
-      
+
 
         private bool AGVSRemoteModeChangeReq(REMOTE_MODE mode)
         {
@@ -364,7 +369,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return true;
         }
 
-       
+
         private RunningStatus GenRunningStateReportData()
         {
             try
