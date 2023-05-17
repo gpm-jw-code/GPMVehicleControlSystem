@@ -72,7 +72,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return true;
         }
 
-      
+
 
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
@@ -87,8 +87,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
         {
+            LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
+
             Task.Run(async () =>
             {
+
+
                 await Task.Delay(300);
                 bool agv_running = await AGVC.AGVSTaskDownloadHandler(taskDownloadData);
             });
