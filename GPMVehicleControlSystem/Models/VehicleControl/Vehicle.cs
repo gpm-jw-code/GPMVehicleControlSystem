@@ -304,7 +304,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task<bool> Initialize()
         {
             BuzzerPlayer.BuzzerStop();
-
+            WagoDO.ResetHandshakeSignals();
             if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
             {
                 AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);

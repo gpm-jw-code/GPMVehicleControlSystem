@@ -144,7 +144,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         {
             return VCSOutputs.FirstOrDefault(k => k.Name == signal + "").State;
         }
-
+        internal void ResetHandshakeSignals()
+        {
+            SetState( DO_ITEM.AGV_COMPT,false);
+            SetState( DO_ITEM.AGV_BUSY,false);
+            SetState( DO_ITEM.AGV_AGV_READY,false);
+            SetState( DO_ITEM.AGV_TR_REQ,false);
+            SetState( DO_ITEM.AGV_VALID,false);
+        }
         public override async void StartAsync()
         {
             if (!IsConnected())

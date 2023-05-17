@@ -363,6 +363,9 @@
         Task_Feedback_T1_Timeout = 860010,
         EQP_LOAD_BUT_EQP_HAS_OBSTACLE = 860011,
         EQP_UNLOAD_BUT_EQP_HAS_NO_CARGO = 860012,
-        Cant_Change_Online_Mode_Code_Error = 860013
+        Cant_Change_Online_Mode_Code_Error = 860013,
+        Cant_TransferTask_TO_AGVC = 860014,
+        Handshake_Fail_EQ_BUSY_ON = 860015,
+        Handshake_Fail_EQ_BUSY_OFF = 860016,
     }
 }

@@ -12,6 +12,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
     /// </summary>
     public class AGVPILOT
     {
+
+        public enum HS_METHOD
+        {
+            E84, MODBUS, EMULATION
+        }
+
         /// <summary>
         /// 車子
         /// </summary>
@@ -25,6 +31,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// 派車
         /// </summary>
         private AGVDispatch.clsAGVSConnection AGVS => AGV.AGVSConnection;
+        public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
         public AGVPILOT(Vehicle AGV)
         {
             this.AGV = AGV;
@@ -55,6 +62,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return true;
         }
 
+
+        /// <summary>
+        /// 執行派車系統任務
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="taskDownloadData"></param>
         internal void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
         {
             LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
@@ -62,7 +75,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task.Run(async () =>
             {
                 await Task.Delay(100);
-                ExecuteActionBeforeMoving(taskDownloadData);
+                var check_result_before_Task = await ExecuteActionBeforeMoving(taskDownloadData);
+
+                if (!check_result_before_Task.confirm)
+                {
+                    AlarmManager.AddAlarm(check_result_before_Task.alarm_code);
+                    AGV.Sub_Status = SUB_STATUS.DOWN;
+                    return;
+                }
                 if (AGVC.IsAGVExecutingTask)
                 {
                     LOG.Critical($"在 TAG {AGV.BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
@@ -88,7 +108,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 開始移動任務前要做的事
         /// </summary>
-        private void ExecuteActionBeforeMoving(clsTaskDownloadData taskDownloadData)
+        private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteActionBeforeMoving(clsTaskDownloadData taskDownloadData)
         {
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
@@ -110,57 +130,103 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             else if (action == ACTION_TYPE.Load)
             {
+                //TODO 在席檢查開關
+                ////檢查在席全ON(車上應該要有貨)
+                //if (!AGV.HasAnyCargoOnAGV())
+                //{
+                //    return (false, AlarmCodes.Has_Job_Without_Cst);
+                //}
+
+
                 bool Enable = AppSettingsHelper.GetValue<bool>("VCS:LOAD_OBS_DETECTION:Enable_Load");
                 if (Enable)
                     StartFrontendObstcleDetection("ACTION_TYPE.Load");
             }
             else if (action == ACTION_TYPE.Unload)
             {
+                //TODO 在席檢查開關
+                ////檢查在席全ON(車上應該要沒貨)
+                //if (AGV.HasAnyCargoOnAGV())
+                //{
+                //    return (false, AlarmCodes.Has_Cst_Without_Job);
+                //}
+
+
                 bool Enable = AppSettingsHelper.GetValue<bool>("VCS:LOAD_OBS_DETECTION:Enable_Unload");
                 if (Enable)
                     StartFrontendObstcleDetection("ACTION_TYPE.Unload");
             }
+
+            //EQ LDULD需要交握
+            if (taskDownloadData.Station_Type == STATION_TYPE.EQ)
+            {
+                //交握
+                (bool eqready, AlarmCodes alarmCode) eqReady_HS_Result = await WaitEQReadyON(action);
+                if (!eqReady_HS_Result.eqready)
+                {
+                    return (false, eqReady_HS_Result.alarmCode);
+                }
+                else
+                {
+                    LOG.Critical("[EQ Handshake] EQ Ready,AGV 開始侵入");
+                }
+            }
+
+            return (true, AlarmCodes.None);
+
         }
 
         /// <summary>
         /// 移動任務結束後
         /// </summary>
         /// <param name="taskDownloadData"></param>
-        private async void ExecuteActionAfterMoving(clsTaskDownloadData taskDownloadData)
+        private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteActionAfterMoving(clsTaskDownloadData taskDownloadData)
         {
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
             if (action == ACTION_TYPE.Load | action == ACTION_TYPE.Unload)
             {
 
-                if (action == ACTION_TYPE.Load)
+
+                if (taskDownloadData.Station_Type == STATION_TYPE.EQ)
                 {
-                    //檢查在席全ON(車上應該要沒貨)
-                    if (AGV.HasAnyCargoOnAGV())
+                    //交握
+                    var eqBusy_OFF_HS_Result = await WaitEQBusyOFF(action);
+                    if (!eqBusy_OFF_HS_Result.eq_busy_off)
                     {
-                        Alarm.AlarmManager.AddAlarm( AlarmCodes.Has_Cst_Without_Job);
-                        AGV.Sub_Status = SUB_STATUS.DOWN;
-                        return;
+                        return (false, eqBusy_OFF_HS_Result.alarmCode);
                     }
-
+                    else
+                        LOG.Critical("[EQ Handshake] EQ BUSY OFF,AGV 開始退出EQ");
+                    AGV.DirectionLighter.AbortFlash();
                 }
+                //TODO 在席檢查開關
+                //if (action == ACTION_TYPE.Load)
+                //{
+                //    //檢查在席全ON(車上應該要沒貨)
+                //    if (AGV.HasAnyCargoOnAGV())
+                //    {
+                //        return (false, AlarmCodes.Has_Cst_Without_Job);
+                //    }
+                //}
 
-                if(action == ACTION_TYPE.Unload)
-                {
-                    //檢查在席全ON(車上應該要沒貨)
-                    if (!AGV.HasAnyCargoOnAGV())
-                    {
-                        Alarm.AlarmManager.AddAlarm(AlarmCodes.Has_Job_Without_Cst);
-                        AGV.Sub_Status = SUB_STATUS.DOWN;
-                        return;
-                    }
-                }
-
-
+                //if (action == ACTION_TYPE.Unload)
+                //{
+                //    //檢查在席全ON(車上應該要沒貨)
+                //    if (!AGV.HasAnyCargoOnAGV())
+                //    {
+                //        return (false, AlarmCodes.Has_Job_Without_Cst);
+                //    }
+                //}
 
                 clsTaskDownloadData _AGVBackTaskDownloadData = taskDownloadData.TurnToBackTaskData();
-                await AGVC.AGVSTaskDownloadHandler(_AGVBackTaskDownloadData);
+                if (!await AGVC.AGVSTaskDownloadHandler(_AGVBackTaskDownloadData))
+                {
+                    return (false, AlarmCodes.Cant_TransferTask_TO_AGVC);
+
+                }
             }
+            return (true, AlarmCodes.None);
 
         }
         /// <summary>
@@ -180,7 +246,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 {
                     cancelDetectCTS.Cancel();
                     stopwatch.Stop();
-                    LOG.WARN($"前方二次檢Sensor觸發(第 {stopwatch.ElapsedMilliseconds / 1000.0} 秒)");
+                    LOG.Critical($"前方二次檢Sensor觸發(第 {stopwatch.ElapsedMilliseconds / 1000.0} 秒)");
                     try
                     {
                         AGVC.EMOHandler(this, EventArgs.Empty);
@@ -257,11 +323,33 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     if (!taskData.IsAfterLoadingAction)
                     {
                         await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
-                        ExecuteActionAfterMoving(taskData);
+                        var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
+
+                        if (!check_result_after_Task.confirm)
+                        {
+                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
+                            AGV.Sub_Status = SUB_STATUS.DOWN;
+                            return;
+                        }
                     }
                     else
+                    {
+                        if (taskData.Station_Type == STATION_TYPE.EQ)
+                        {
+                            (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
+                            if (!result.eqready_off)
+                            {
+                                AlarmManager.AddAlarm(result.alarmCode);
+                                AGV.Sub_Status = SUB_STATUS.DOWN;
+                            }
+                            else
+                            {
+                                LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
+                            }
+                        }
                         await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
 
+                    }
                 }
                 else
                     await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
@@ -281,8 +369,197 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         }
 
+        #region 交握
+
+        /// <summary>
+        /// 開始與EQ進行交握_等待EQ READY
+        /// </summary>
+        private async Task<(bool eqready, AlarmCodes alarmCode)> WaitEQReadyON(ACTION_TYPE action)
+        {
+            CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            Task wait_eq_UL_req_ON = new Task(() =>
+            {
+                while (action == ACTION_TYPE.Load ? !AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : !AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+            Task wait_eq_ready = new Task(() =>
+            {
+                while (!AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, true);
+
+            if (Hs_Method == HS_METHOD.EMULATION)
+            {
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                return (true, AlarmCodes.None);
+            }
+
+            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                wait_eq_UL_req_ON.Start();
+                wait_eq_UL_req_ON.Wait(waitEQSignalCST.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return (false, action == ACTION_TYPE.Load ? AlarmCodes.Handshake_Fail_EQ_L_REQ : AlarmCodes.Handshake_Fail_EQ_U_REQ);
+
+            }
+
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+            try
+            {
+                wait_eq_ready.Start();
+                wait_eq_ready.Wait(waitEQSignalCST.Token);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                return (true, AlarmCodes.None);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return (false, AlarmCodes.Handshake_Fail_EQ_READY);
+
+            }
+
+        }
+
+        /// <summary>
+        /// 開始與EQ進行交握_等待EQ READY OFF
+        /// </summary>
+        private async Task<(bool eqready_off, AlarmCodes alarmCode)> WaitEQReadyOFF(ACTION_TYPE action)
+        {
+            LOG.Critical("[EQ Handshake] 等待EQ READY OFF");
+            CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            Task wait_eq_UL_req_OFF = new Task(() =>
+            {
+                while (action == ACTION_TYPE.Load ? AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+            Task wait_eq_ready_off = new Task(() =>
+            {
+                while (AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, true);
 
 
+            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            try
+            {
+                wait_eq_UL_req_OFF.Start();
+                wait_eq_UL_req_OFF.Wait(waitEQSignalCST.Token);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return (false, action == ACTION_TYPE.Load ? AlarmCodes.Handshake_Fail_EQ_L_REQ : AlarmCodes.Handshake_Fail_EQ_U_REQ);
+            }
+            try
+            {
+                wait_eq_ready_off.Start();
+                wait_eq_ready_off.Wait(waitEQSignalCST.Token);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, false);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, false);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, false);
+
+                LOG.Critical("[EQ Handshake] EQ READY OFF=>Handshake Done");
+                return (true, AlarmCodes.None);
+            }
+            catch (OperationCanceledException ex)
+            {
+                return (false, AlarmCodes.Handshake_Fail_EQ_READY);
+
+            }
+
+        }
+
+
+        /// <summary>
+        /// 等待EQ交握訊號 BUSY OFF＝＞表示ＡＧＶ可以退出了(模擬模式下:用CST在席有無表示是否BUSY結束 LOAD=>貨被拿走. Unload=>貨被放上來)
+        /// </summary>
+        private async Task<(bool eq_busy_off, AlarmCodes alarmCode)> WaitEQBusyOFF(ACTION_TYPE action)
+        {
+            LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
+
+            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right);
+            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left);
+
+            CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
+            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, true);
+
+            Task wait_eq_busy_ON = new Task(() =>
+            {
+                while (!AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+            Task wait_eq_busy_OFF = new Task(() =>
+            {
+                while (Hs_Method != HS_METHOD.EMULATION ? AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY) : (action == ACTION_TYPE.Load ? AGV.HasAnyCargoOnAGV() : !AGV.HasAnyCargoOnAGV()))
+                {
+                    if (waitEQSignalCST.IsCancellationRequested)
+                        return;
+                    Thread.Sleep(1);
+                }
+            });
+
+            if (Hs_Method != HS_METHOD.EMULATION)
+            {
+                try
+                {
+                    wait_eq_busy_ON.Start();
+                    wait_eq_busy_ON.Wait(waitEQSignalCST.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    return (false, AlarmCodes.Handshake_Fail_EQ_BUSY_ON);
+                }
+            }
+
+            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 10 : 90));
+
+            try
+            {
+                wait_eq_busy_OFF.Start();
+                wait_eq_busy_OFF.Wait(waitEQSignalCST.Token);
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, false); //AGV BUSY 開始退出
+                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true); //AGV BUSY 開始退出
+                return (true, AlarmCodes.None);
+            }
+            catch (OperationCanceledException)
+            {
+                return (false, AlarmCodes.Handshake_Fail_EQ_BUSY_OFF);
+
+            }
+
+
+        }
+
+
+        #endregion
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
             AGV.Sub_Status = SUB_STATUS.IDLE;

@@ -97,6 +97,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         public Action OnFrontSecondObstacleSensorDetected { get; internal set; }
         public Action OnResetButtonPressing { get; internal set; }
 
+        public Action OnHS_EQ_READY { get; internal set; }
 
         Dictionary<DI_ITEM, int> INPUT_INDEXS = new Dictionary<DI_ITEM, int>();
 
@@ -208,6 +209,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressing();
 
+            VCSInputs[INPUT_INDEXS[DI_ITEM.EQ_READY]].OnSignalON += (s, e) => OnResetButtonPressing();
 
 
         }
