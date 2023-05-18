@@ -3,6 +3,7 @@ using GPMRosMessageNet.Messages;
 using GPMVehicleControlSystem.Models.VehicleControl;
 using GPMVehicleControlSystem.Models;
 using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDOModule;
+using GPMVehicleControlSystem.Models.Alarm;
 
 namespace GPMVehicleControlSystem.ViewModels
 {
@@ -32,7 +33,7 @@ namespace GPMVehicleControlSystem.ViewModels
                     MainState = AgvEntity.Main_Status.ToString(),
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
-                    CST_Data = AgvEntity.CSTReader.Data.data,
+                    CST_Data = AgvEntity.CSTReader.Data?.data,
                     BatteryStatus = new BatteryStateVM
                     {
                         BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
@@ -43,19 +44,19 @@ namespace GPMVehicleControlSystem.ViewModels
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
-                    //AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),
+                    AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),
                     //MapComparsionRate = AgvEntity.SickData.MapScore,
                     //ZAxisDriverState = AgvEntity.ModuleInformation.Action_Driver,
                     //ZAxisActionName = AgvEntity.currentVerticalAction,
-                    //AGV_Direct = AgvEntity.CurrentDirect.ToString().ToUpper(),
+                    AGV_Direct = AgvEntity.Navigation.Direction.ToString().ToUpper(),
                     DriversStates = driverStates.ToArray(),
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
                     //UltrSensorState = AgvEntity.ModuleInformation.UltrasonicSensor,
                     //IsAGVPoseError = ((clsAGVPoseMonitor)ComponentMonitorManager.agvPoseMonitor).IsPoseError,
                     NavInfo = new NavStateVM
                     {
-                        Destination = AgvEntity.CarController.RunningTaskData.Destination + "",
-                        Speed_max_limit = AgvEntity.CarController.CurrentSpeedLimit
+                        Destination = AgvEntity.AGVC.RunningTaskData.Destination + "",
+                        Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit
                     },
                     Current_LASER_MODE = AgvEntity.Laser.Mode.ToString(),
                     LightsStates = new AGV_VMS.ViewModels.LightsStatesVM
@@ -94,8 +95,8 @@ namespace GPMVehicleControlSystem.ViewModels
 
             ConnectionStateVM data_view_model = new ConnectionStateVM()
             {
-                RosbridgeServer = AgvEntity.CarController.IsConnected() ? ConnectionStateVM.CONNECTION.CONNECTED : ConnectionStateVM.CONNECTION.DISCONNECT,
-                VMS = AgvEntity.AGVSConnection.IsConnected() ? ConnectionStateVM.CONNECTION.CONNECTED : ConnectionStateVM.CONNECTION.DISCONNECT,
+                RosbridgeServer = AgvEntity.AGVC.IsConnected() ? ConnectionStateVM.CONNECTION.CONNECTED : ConnectionStateVM.CONNECTION.DISCONNECT,
+                VMS = AgvEntity.AGVS.IsConnected() ? ConnectionStateVM.CONNECTION.CONNECTED : ConnectionStateVM.CONNECTION.DISCONNECT,
                 WAGO = AgvEntity.WagoDI.IsConnected() ? ConnectionStateVM.CONNECTION.CONNECTED : ConnectionStateVM.CONNECTION.DISCONNECT,
             };
             return data_view_model;

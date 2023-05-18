@@ -12,8 +12,17 @@
 
         public static void StartAGVROSEmu()
         {
-            
+
             agvRosEmu = new AGVROSEmulator();
+        }
+
+        internal static void Start()
+        {
+            Task.Factory.StartNew(() =>
+            {
+                StartWagoEmu();
+                StartAGVROSEmu();
+            });
         }
     }
 }

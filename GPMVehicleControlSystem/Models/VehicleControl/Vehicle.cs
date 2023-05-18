@@ -5,6 +5,7 @@ using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
+using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
 using GPMVehicleControlSystem.Tools;
 using RosSharp.RosBridgeClient.MessageTypes.Geometry;
 using System.Threading.Tasks;
@@ -12,43 +13,23 @@ using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsL
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
-    public class Vehicle
+    public partial class Vehicle
     {
-        public enum AGV_TYPE
-        {
-            FORK, SUBMERGED_SHIELD
-        }
-        public enum OPERATOR_MODE
-        {
-            MANUAL,
-            AUTO,
-        }
 
-        public enum MAIN_STATUS
-        {
-            IDLE = 1, RUN = 2, DOWN = 3, Charging = 4
-        }
-        public enum SUB_STATUS
-        {
-            IDLE = 1, RUN = 2, DOWN = 3, Charging = 4,
-            Initializing = 5,
-            ALARM = 6,
-            WARNING = 7
-        }
         public clsDirectionLighter DirectionLighter { get; set; }
         public clsStatusLighter StatusLighter { get; set; }
 
-        public AGVDispatch.clsAGVSConnection AGVSConnection;
+        public AGVDispatch.clsAGVSConnection AGVS;
 
         public clsDOModule WagoDO;
         public clsDIModule WagoDI;
-        public CarController CarController;
+        public CarController AGVC;
 
         public clsLaser Laser;
         public string CarName { get; set; }
         public string SID { get; set; }
 
-        public AGVPILOT Pilot { get; set; }
+        //public AGVPILOT Pilot { get; set; }
         public clsNavigation Navigation = new clsNavigation();
         public clsBattery Battery = new clsBattery();
         public clsIMU IMU = new clsIMU();
@@ -65,6 +46,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// </summary>
         public double Odometry;
 
+        private List<CarComponent> CarComponents
+        {
+            get
+            {
+                var ls = new List<CarComponent>()
+                {
+                    Navigation,Battery,IMU,GuideSensor, BarcodeReader,CSTReader,
+                };
+                ls.AddRange(WheelDrivers);
+                return ls;
+            }
+        }
 
 
         private REMOTE_MODE _Remote_Mode = REMOTE_MODE.OFFLINE;
@@ -93,7 +86,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public MAIN_STATUS Main_Status { get; internal set; } = MAIN_STATUS.DOWN;
         public bool AGV_Reset_Flag { get; internal set; } = false;
 
-        public MoveControl ManualController => CarController.ManualController;
+        public MoveControl ManualController => AGVC.ManualController;
 
         public AGV_TYPE AgvType { get; internal set; } = AGV_TYPE.SUBMERGED_SHIELD;
         public bool SimulationMode { get; internal set; } = false;
@@ -135,10 +128,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         Task.Factory.StartNew(async () =>
                         {
                             await Task.Delay(200);
-                            LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {CarController.currentTaskCmdActionStatus}");
-                            if (CarController.IsAGVExecutingTask)
+                            LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {AGVC.currentTaskCmdActionStatus}");
+                            if (AGVC.IsAGVExecutingTask)
                             {
-                                if (CarController.RunningTaskData.Action_Type == ACTION_TYPE.None)
+                                if (AGVC.RunningTaskData.Action_Type == ACTION_TYPE.None)
                                     BuzzerPlayer.BuzzerMoving();
                                 else
                                     BuzzerPlayer.BuzzerAction();
@@ -171,14 +164,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             WagoDO = new clsDOModule(Wago_IP, Wago_Port);
             WagoDI = new clsDIModule(Wago_IP, Wago_Port);
-            CarController = new CarController(RosBridge_IP, RosBridge_Port);
-            AGVSConnection = new AGVDispatch.clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
+            AGVC = new CarController(RosBridge_IP, RosBridge_Port);
+            AGVS = new AGVDispatch.clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
 
             DirectionLighter = new clsDirectionLighter(WagoDO);
             StatusLighter = new clsStatusLighter(WagoDO);
             Laser = new clsLaser(WagoDO, WagoDI);
 
-            Task RosConnTask = new Task(() => CarController.Connect());
+            Task RosConnTask = new Task(async () =>
+            {
+                await Task.Delay(1).ContinueWith(t =>
+                AGVC.Connect());
+            });
+
             Task WagoDOConnTask = new Task(() =>
             {
                 WagoDO.Connect();
@@ -198,32 +196,32 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Laser.Mode = LASER_MODE.Bypass;
             AGVDispatch.AGVSMessageFactory.Setup(SID, CarName);
 
-            Pilot = new AGVPILOT(this);
+            //Pilot = new AGVPILOT(this);
 
             IsSystemInitialized = true;
 
             Task.Factory.StartNew(async () =>
             {
                 await Task.Delay(1000);
-                AGVSConnection.Start();
+                AGVS.Start();
             });
 
         }
         private void EventsRegist()
         {
             AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
-            AGVSConnection.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
-            CarController.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
+            AGVS.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
+            AGVC.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
 
             WagoDI.OnEMO += WagoDI_OnEMO;
-            WagoDI.OnEMO += CarController.EMOHandler;
+            WagoDI.OnEMO += AGVC.EMOHandler;
             WagoDI.OnResetButtonPressing += () => ResetAlarmsAsync();
             WagoDI.OnResetButtonPressed += WagoDO.ResetMotor;
             WagoDI.OnResetButtonPressed += WagoDI_OnResetButtonPressed;
-            WagoDI.OnFrontFarAreaLaserTrigger += CarController.FarAreaLaserTriggerHandler;
-            WagoDI.OnBackFarAreaLaserTrigger += CarController.FarAreaLaserTriggerHandler;
-            WagoDI.OnFrontFarAreaLaserRecovery += CarController.FarAreaLaserRecoveryHandler;
-            WagoDI.OnBackFarAreaLaserRecovery += CarController.FarAreaLaserRecoveryHandler;
+            WagoDI.OnFrontFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
+            WagoDI.OnBackFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
+            WagoDI.OnFrontFarAreaLaserRecovery += AGVC.FarAreaLaserRecoveryHandler;
+            WagoDI.OnBackFarAreaLaserRecovery += AGVC.FarAreaLaserRecoveryHandler;
 
             WagoDI.OnFrontFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnBackFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
@@ -241,8 +239,46 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Navigation.OnDirectionChanged += Navigation_OnDirectionChanged;
 
             clsTaskDownloadData.OnCurrentPoseReq = CurrentPoseReqCallback;
-        }
 
+            AGVC.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
+            AGVC.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
+            AGVC.OnTaskActionFinishButNeedToExpandPath += AGVC_OnTaskActionFinishButNeedToExpandPath; ;
+            AGVC.OnMoveTaskStart += CarController_OnMoveTaskStart;
+            AGVS.OnTaskDownload += AGVSTaskDownloadConfirm;
+            AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
+            AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
+
+        }
+        internal async Task<bool> Initialize()
+        {
+            BuzzerPlayer.BuzzerStop();
+            WagoDO.ResetHandshakeSignals();
+            if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
+            {
+                AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);
+                BuzzerPlayer.BuzzerAlarm();
+                return false;
+            }
+
+            DirectionLighter.CloseAll();
+            IsInitialized = false;
+            Sub_Status = SUB_STATUS.Initializing;
+            Laser.LeftLaserBypass = true;
+            Laser.RightLaserBypass = true;
+            Laser.FrontLaserBypass = true;
+            Laser.BackLaserBypass = true;
+            Laser.Mode = LASER_MODE.Bypass;
+            //AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, 0, TASK_RUN_STATUS.NO_MISSION);
+            StatusLighter.CloseAll();
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Y, 200);
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_R, 200);
+            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_G, 200);
+            await Task.Delay(2000);
+            IsInitialized = true;
+            StatusLighter.AbortFlash();
+            Sub_Status = SUB_STATUS.IDLE;
+            return true;
+        }
         private (int tag, double locx, double locy, double theta) CurrentPoseReqCallback()
         {
             return new(Navigation.Data.lastVisitedNode.data, BarcodeReader.Data.xValue, BarcodeReader.Data.yValue, BarcodeReader.Data.theta);
@@ -288,7 +324,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION e)
         {
-            if (CarController.IsAGVExecutingTask)
+            if (AGVC.IsAGVExecutingTask)
             {
                 DirectionLighter.LightSwitchByAGVDirection(sender, e);
                 Laser.LaserChangeByAGVDirection(sender, e);
@@ -301,36 +337,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        internal async Task<bool> Initialize()
-        {
-            BuzzerPlayer.BuzzerStop();
-            WagoDO.ResetHandshakeSignals();
-            if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
-            {
-                AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);
-                BuzzerPlayer.BuzzerAlarm();
-                return false;
-            }
 
-            DirectionLighter.CloseAll();
-            IsInitialized = false;
-            Sub_Status = SUB_STATUS.Initializing;
-            Laser.LeftLaserBypass = true;
-            Laser.RightLaserBypass = true;
-            Laser.FrontLaserBypass = true;
-            Laser.BackLaserBypass = true;
-            Laser.Mode = LASER_MODE.Bypass;
-            //AGVSConnection.TryTaskFeedBackAsync(CarController.RunningTaskData, 0, TASK_RUN_STATUS.NO_MISSION);
-            StatusLighter.CloseAll();
-            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Y, 200);
-            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_R, 200);
-            StatusLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_G, 200);
-            await Task.Delay(2000);
-            IsInitialized = true;
-            StatusLighter.AbortFlash();
-            Sub_Status = SUB_STATUS.IDLE;
-            return true;
-        }
 
         internal async Task<bool> CancelInitialize()
         {
@@ -340,12 +347,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal void SoftwareEMO()
         {
             IsInitialized = false;
-            CarController.EMOHandler("SoftwareEMO", EventArgs.Empty);
+            AGVC.EMOHandler("SoftwareEMO", EventArgs.Empty);
             AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
             Task.Factory.StartNew(async () =>
             {
                 await Task.Delay(100);
                 Sub_Status = SUB_STATUS.DOWN;
+                AlarmManager.AddAlarm(AlarmCodes.SoftwareEMS);
             });
 
         }
@@ -354,6 +362,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (WheelDrivers.Any(dr => dr.State != VehicleComponent.Abstracts.CarComponent.STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
                 await WagoDO.ResetMotor();
+            AlarmManager.ClearAlarm();
             BuzzerPlayer.BuzzerStop();
             return;
         }
@@ -452,6 +461,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             for (int i = 0; i < _ModuleInformation.Wheel_Driver.driversState.Length; i++)
                 WheelDrivers[i].StateData = _ModuleInformation.Wheel_Driver.driversState[i];
 
+
+            foreach (var item in CarComponents.Select(comp => comp.ErrorCodes).ToList())
+            {
+                foreach (var alarm in item.Keys)
+                {
+                    AlarmManager.AddAlarm(alarm);
+                }
+            }
+
             if (Battery.IsCharging)
             {
                 Sub_Status = SUB_STATUS.Charging;
@@ -496,7 +514,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         private bool OnlineModeChangingFlag = false;
         internal async Task<(bool success, RETURN_CODE return_code)> Online_Mode_Switch(REMOTE_MODE mode)
         {
-            (bool success, RETURN_CODE return_code) result = await AGVSConnection.TrySendOnlineModeChangeRequest(BarcodeReader.CurrentTag, mode);
+            (bool success, RETURN_CODE return_code) result = await AGVS.TrySendOnlineModeChangeRequest(BarcodeReader.CurrentTag, mode);
             if (!result.success)
                 LOG.ERROR($"車輛上線失敗 : Return Code : {result.return_code}");
             else

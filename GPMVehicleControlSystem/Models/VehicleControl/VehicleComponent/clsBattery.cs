@@ -12,7 +12,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         {
             MaxCurrentAllow = 5000
         };
-        public new BatteryState Data => (BatteryState)StateData;
+        public new BatteryState Data => StateData == null ? new BatteryState() : (BatteryState)StateData;
 
         public override COMPOENT_NAME component_name => COMPOENT_NAME.BATTERY;
 

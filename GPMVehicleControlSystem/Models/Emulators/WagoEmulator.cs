@@ -16,11 +16,6 @@ namespace GPMVehicleControlSystem.Models.Emulators
             INPUT_INDEXS = Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().ToDictionary(e => e, e => (int)e);
         }
 
-        internal void SetInput(DI_ITEM input, bool state)
-        {
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[input] + 1] = state;
-
-        }
 
         public override bool Connect()
         {
@@ -47,16 +42,23 @@ namespace GPMVehicleControlSystem.Models.Emulators
         }
         private void InitializeInputState()
         {
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.EMO] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.Bumper_Sensor] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_4] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3] + 1] = true;
-            slave.DataStore.InputDiscretes[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_4] + 1] = true;
+            SetState(DI_ITEM.EMO,true);
+            SetState(DI_ITEM.Bumper_Sensor,true);
+            SetState(DI_ITEM.Horizon_Motor_Switch,true);
+         
+            SetState(DI_ITEM.FrontProtection_Area_Sensor_1,true);
+            SetState(DI_ITEM.FrontProtection_Area_Sensor_2,true);
+            SetState(DI_ITEM.FrontProtection_Area_Sensor_3,true);
+            SetState(DI_ITEM.FrontProtection_Area_Sensor_4,true);
+            SetState(DI_ITEM.BackProtection_Area_Sensor_1,true);
+            SetState(DI_ITEM.BackProtection_Area_Sensor_2,true);
+            SetState(DI_ITEM.BackProtection_Area_Sensor_3,true);
+            SetState(DI_ITEM.BackProtection_Area_Sensor_4, true);
+
+        }
+        public void SetState(DI_ITEM item,bool state)
+        {
+            slave.DataStore.InputDiscretes[INPUT_INDEXS[item] + 1] = state;
         }
         private void Slave_ModbusSlaveRequestReceived(object? sender, ModbusSlaveRequestEventArgs e)
         {

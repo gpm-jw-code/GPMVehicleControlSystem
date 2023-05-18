@@ -12,7 +12,7 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
         [HttpGet("SetInput")]
         public async Task<IActionResult> SetInput(DI_ITEM Input, bool State)
         {
-            StaEmuManager.wagoEmu.SetInput(Input, State);
+            StaEmuManager.wagoEmu.SetState(Input, State);
             return Ok(new { Address = Input.ToString(), State });
         }
 
@@ -21,19 +21,27 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
         [HttpGet("Emo")]
         public async Task<IActionResult> Emo()
         {
-            StaEmuManager.wagoEmu.SetInput(DI_ITEM.EMO, false);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.EMO, false);
             return Ok();
         }
 
 
 
+        [HttpGet("Horizon_Moto_Switch")]
+        public async Task<IActionResult> Horizon_Motor_Switch(bool state)
+        {
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Horizon_Motor_Switch, state);
+            return Ok();
+        }
+
+
         [HttpGet("ResetButton")]
         public async Task<IActionResult> ResetButton()
         {
-            StaEmuManager.wagoEmu.SetInput(DI_ITEM.Panel_Reset_PB, true);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Panel_Reset_PB, true);
             await Task.Delay(500);
-            StaEmuManager.wagoEmu.SetInput(DI_ITEM.Panel_Reset_PB, false);
-            StaEmuManager.wagoEmu.SetInput(DI_ITEM.EMO, true);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Panel_Reset_PB, false);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.EMO, true);
             return Ok();
         }
     }

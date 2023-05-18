@@ -11,7 +11,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
         public override COMPOENT_NAME component_name => COMPOENT_NAME.NAVIGATION;
 
-        public new NavigationState Data => (NavigationState)base.StateData;
+        public new NavigationState Data => StateData == null ? new NavigationState() : (NavigationState)StateData;
 
         public event EventHandler<AGV_DIRECTION> OnDirectionChanged;
         private AGV_DIRECTION _previousDirection = AGV_DIRECTION.STOP;

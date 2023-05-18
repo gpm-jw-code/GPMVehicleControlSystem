@@ -8,8 +8,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
     {
         public override COMPOENT_NAME component_name => COMPOENT_NAME.BARCODE_READER;
 
-        public int CurrentTag => (int)Data.tagID;
         public new BarcodeReaderState Data => (BarcodeReaderState)StateData;
+        public int CurrentTag => Data == null ? 0 : (int)Data.tagID;
 
         public override STATE CheckStateDataContent()
         {

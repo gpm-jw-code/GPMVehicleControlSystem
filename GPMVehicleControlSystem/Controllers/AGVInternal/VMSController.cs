@@ -84,7 +84,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> ROSConnected()
         {
             await Task.Delay(1);
-            return Ok(StaStored.CurrentVechicle.CarController.IsConnected());
+            return Ok(StaStored.CurrentVechicle.AGVC.IsConnected());
         }
 
         [HttpGet("Mileage")]

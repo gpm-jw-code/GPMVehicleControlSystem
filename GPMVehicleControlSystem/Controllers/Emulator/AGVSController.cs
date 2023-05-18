@@ -12,7 +12,7 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
         public async Task<IActionResult> TaskDownload()
         {
             string task_name = $"Local_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}";
-            StaStored.CurrentVechicle.AGVSConnection.OnTaskDownload.Invoke(new Models.AGVDispatch.Messages.clsTaskDownloadData
+            StaStored.CurrentVechicle.AGVS.OnTaskDownload.Invoke(new Models.AGVDispatch.Messages.clsTaskDownloadData
             {
                 Task_Name = task_name,
                 Task_Simplex = task_name + "_1",

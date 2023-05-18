@@ -95,6 +95,9 @@ namespace GPMVehicleControlSystem.Models.Alarm
             {
                 DBhelper.InsertAlarm(alarm_save);
             }
+
+            if (buzzer_alarm)
+                Buzzer.BuzzerPlayer.BuzzerAlarm();
         }
 
     }

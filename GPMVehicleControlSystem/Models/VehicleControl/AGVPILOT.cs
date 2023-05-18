@@ -10,42 +10,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
     /// <summary>
     /// AGV駕駛員,可以控制車子(包含元件跟車控)以及跟AGVS溝通
     /// </summary>
-    public class AGVPILOT
+    public partial class Vehicle
     {
 
         public enum HS_METHOD
         {
             E84, MODBUS, EMULATION
         }
-
-        /// <summary>
-        /// 車子
-        /// </summary>
-        public Vehicle AGV { get; }
-        /// <summary>
-        /// 車控
-        /// </summary>
-        private CarController AGVC => AGV.CarController;
-
-        /// <summary>
-        /// 派車
-        /// </summary>
-        private AGVDispatch.clsAGVSConnection AGVS => AGV.AGVSConnection;
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
-        public AGVPILOT(Vehicle AGV)
-        {
-            this.AGV = AGV;
-            AGVC.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
-            AGVC.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
-            AGVC.OnTaskActionFinishButNeedToExpandPath += AGVC_OnTaskActionFinishButNeedToExpandPath; ;
-            AGVC.OnMoveTaskStart += CarController_OnMoveTaskStart;
-            AGVS.OnTaskDownload += AGVSTaskDownloadConfirm;
-            AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
-            AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
-
-        }
-
-
 
         /// <summary>
         /// 
@@ -54,9 +26,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <returns></returns>
         internal bool AGVSTaskDownloadConfirm(clsTaskDownloadData taskDownloadData)
         {
-            AGV.AGV_Reset_Flag = false;
+            AGV_Reset_Flag = false;
 
-            if (AGV.Sub_Status != SUB_STATUS.IDLE) //TODO More Status Confirm when recieve AGVS Task
+            if (Sub_Status != SUB_STATUS.IDLE) //TODO More Status Confirm when recieve AGVS Task
                 return false;
 
             return true;
@@ -80,12 +52,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 if (!check_result_before_Task.confirm)
                 {
                     AlarmManager.AddAlarm(check_result_before_Task.alarm_code);
-                    AGV.Sub_Status = SUB_STATUS.DOWN;
+                    Sub_Status = SUB_STATUS.DOWN;
                     return;
                 }
                 if (AGVC.IsAGVExecutingTask)
                 {
-                    LOG.Critical($"在 TAG {AGV.BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
+                    LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
                     await AGVC.AGVSPathExpand(taskDownloadData);
                 }
                 else
@@ -94,12 +66,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     bool agv_running = await AGVC.AGVSTaskDownloadHandler(taskDownloadData);
                     if (agv_running)
                     {
-                        AGV.Sub_Status = SUB_STATUS.RUN;
+                        Sub_Status = SUB_STATUS.RUN;
                     }
                     else
                     {
                         LOG.Critical($"無法發送任務給車控執行");
-                        AGV.Sub_Status = SUB_STATUS.DOWN;
+                        Sub_Status = SUB_STATUS.DOWN;
                     }
                 }
             });
@@ -114,25 +86,25 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             if (action != ACTION_TYPE.None && action != ACTION_TYPE.Discharge && action != ACTION_TYPE.Escape)
             {
-                AGV.DirectionLighter.Forward();
+                DirectionLighter.Forward();
             }
             else
-                AGV.DirectionLighter.Backward();
+                DirectionLighter.Backward();
 
 
             if (action == ACTION_TYPE.Charge)
             {
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, true);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, true);
             }
             else if (action == ACTION_TYPE.Discharge)
             {
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, false);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, false);
             }
             else if (action == ACTION_TYPE.Load)
             {
                 //TODO 在席檢查開關
                 ////檢查在席全ON(車上應該要有貨)
-                //if (!AGV.HasAnyCargoOnAGV())
+                //if (!HasAnyCargoOnAGV())
                 //{
                 //    return (false, AlarmCodes.Has_Job_Without_Cst);
                 //}
@@ -146,7 +118,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 //TODO 在席檢查開關
                 ////檢查在席全ON(車上應該要沒貨)
-                //if (AGV.HasAnyCargoOnAGV())
+                //if (HasAnyCargoOnAGV())
                 //{
                 //    return (false, AlarmCodes.Has_Cst_Without_Job);
                 //}
@@ -198,13 +170,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                     else
                         LOG.Critical("[EQ Handshake] EQ BUSY OFF,AGV 開始退出EQ");
-                    AGV.DirectionLighter.AbortFlash();
+                    DirectionLighter.AbortFlash();
                 }
                 //TODO 在席檢查開關
                 //if (action == ACTION_TYPE.Load)
                 //{
                 //    //檢查在席全ON(車上應該要沒貨)
-                //    if (AGV.HasAnyCargoOnAGV())
+                //    if (HasAnyCargoOnAGV())
                 //    {
                 //        return (false, AlarmCodes.Has_Cst_Without_Job);
                 //    }
@@ -213,7 +185,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 //if (action == ACTION_TYPE.Unload)
                 //{
                 //    //檢查在席全ON(車上應該要沒貨)
-                //    if (!AGV.HasAnyCargoOnAGV())
+                //    if (!HasAnyCargoOnAGV())
                 //    {
                 //        return (false, AlarmCodes.Has_Job_Without_Cst);
                 //    }
@@ -256,12 +228,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         throw ex;
                     }
-                    AGV.Sub_Status = SUB_STATUS.DOWN;
-                    AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-                    AGV.Online_Mode_Switch(REMOTE_MODE.OFFLINE);
+                    Sub_Status = SUB_STATUS.DOWN;
+                    AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                    Online_Mode_Switch(REMOTE_MODE.OFFLINE);
                 }
             }
-            AGV.WagoDI.OnFrontSecondObstacleSensorDetected += FrontendObsSensorDetectAction;
+            WagoDI.OnFrontSecondObstacleSensorDetected += FrontendObsSensorDetectAction;
             Task.Run(() =>
             {
                 while (!cancelDetectCTS.IsCancellationRequested)
@@ -272,23 +244,23 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 {
                     LOG.WARN($"前方二次檢Sensor Pass. ");
                 }
-                AGV.WagoDI.OnFrontSecondObstacleSensorDetected -= FrontendObsSensorDetectAction;
+                WagoDI.OnFrontSecondObstacleSensorDetected -= FrontendObsSensorDetectAction;
             });
         }
 
 
         private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
         {
-            AGV.Sub_Status = SUB_STATUS.RUN;
+            Sub_Status = SUB_STATUS.RUN;
 
             if (taskData.Action_Type == ACTION_TYPE.None)
             {
 
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
             }
             else
             {
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_START);
+                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_START);
 
 
             }
@@ -307,13 +279,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <param name="taskData"></param>
         private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
         {
-            AGV.Sub_Status = SUB_STATUS.IDLE;
+            Sub_Status = SUB_STATUS.IDLE;
             //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
             await Task.Delay(500);
             try
             {
-                bool isActionFinish = AGV.Navigation.Data.lastVisitedNode.data == taskData.Destination;
-                if (AGV.Main_Status != MAIN_STATUS.IDLE)
+                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
+                if (Main_Status != MAIN_STATUS.IDLE)
                 {
                     throw new Exception("ACTION FINISH Feedback But AGV MAIN STATUS is not IDLE");
                 }
@@ -322,13 +294,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 {
                     if (!taskData.IsAfterLoadingAction)
                     {
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
                         var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
 
                         if (!check_result_after_Task.confirm)
                         {
                             AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
-                            AGV.Sub_Status = SUB_STATUS.DOWN;
+                            Sub_Status = SUB_STATUS.DOWN;
                             return;
                         }
                     }
@@ -340,32 +312,32 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                             if (!result.eqready_off)
                             {
                                 AlarmManager.AddAlarm(result.alarmCode);
-                                AGV.Sub_Status = SUB_STATUS.DOWN;
+                                Sub_Status = SUB_STATUS.DOWN;
                             }
                             else
                             {
                                 LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
                             }
                         }
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
 
                     }
                 }
                 else
-                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
             }
             catch (Exception ex)
             {
                 LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
             }
             await Task.Delay(500);
-            AGV.DirectionLighter.CloseAll();
+            DirectionLighter.CloseAll();
         }
         private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
         {
             await Task.Delay(200);
             LOG.INFO($"Task Feedback when Action done but need to expand path");
-            await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+            await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
 
         }
 
@@ -379,7 +351,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             Task wait_eq_UL_req_ON = new Task(() =>
             {
-                while (action == ACTION_TYPE.Load ? !AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : !AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                while (action == ACTION_TYPE.Load ? !WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : !WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -388,7 +360,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_ready = new Task(() =>
             {
-                while (!AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                while (!WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -396,12 +368,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             });
 
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, true);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, true);
 
             if (Hs_Method == HS_METHOD.EMULATION)
             {
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
                 return (true, AlarmCodes.None);
             }
 
@@ -417,12 +389,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             }
 
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
             try
             {
                 wait_eq_ready.Start();
                 wait_eq_ready.Wait(waitEQSignalCST.Token);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
                 return (true, AlarmCodes.None);
             }
             catch (OperationCanceledException ex)
@@ -442,7 +414,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             Task wait_eq_UL_req_OFF = new Task(() =>
             {
-                while (action == ACTION_TYPE.Load ? AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                while (action == ACTION_TYPE.Load ? WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -451,7 +423,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_ready_off = new Task(() =>
             {
-                while (AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                while (WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -459,8 +431,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             });
 
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, true);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, true);
 
 
             waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -477,9 +449,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 wait_eq_ready_off.Start();
                 wait_eq_ready_off.Wait(waitEQSignalCST.Token);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, false);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, false);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, false);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, false);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, false);
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, false);
 
                 LOG.Critical("[EQ Handshake] EQ READY OFF=>Handshake Done");
                 return (true, AlarmCodes.None);
@@ -500,16 +472,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
 
-            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right,200);
-            AGV.DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
+            DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right,200);
+            DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
 
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
-            AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, true);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
+            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, true);
 
             Task wait_eq_busy_ON = new Task(() =>
             {
-                while (!AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY))
+                while (!WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -518,7 +490,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_busy_OFF = new Task(() =>
             {
-                while (Hs_Method != HS_METHOD.EMULATION ? AGV.WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY) : (action == ACTION_TYPE.Load ? AGV.HasAnyCargoOnAGV() : !AGV.HasAnyCargoOnAGV()))
+                while (Hs_Method != HS_METHOD.EMULATION ? WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY) : (action == ACTION_TYPE.Load ? HasAnyCargoOnAGV() : !HasAnyCargoOnAGV()))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -545,8 +517,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 wait_eq_busy_OFF.Start();
                 wait_eq_busy_OFF.Wait(waitEQSignalCST.Token);
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, false); //AGV BUSY 開始退出
-                AGV.WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true); //AGV BUSY 開始退出
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, false); //AGV BUSY 開始退出
+                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true); //AGV BUSY 開始退出
                 return (true, AlarmCodes.None);
             }
             catch (OperationCanceledException)
@@ -562,10 +534,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         #endregion
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
-            AGV.Sub_Status = SUB_STATUS.IDLE;
-            AGV.AGV_Reset_Flag = true;
+            Sub_Status = SUB_STATUS.IDLE;
+            AGV_Reset_Flag = true;
             Task.Factory.StartNew(() => AGVC.AbortTask(mode));
-            AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(AGV.BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+            AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
 
             return true;
         }

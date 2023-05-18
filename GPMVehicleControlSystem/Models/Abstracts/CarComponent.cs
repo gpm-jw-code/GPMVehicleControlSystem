@@ -16,7 +16,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstrac
             WARNING,
             ABNORMAL
         }
-        private Message _StateData;
+        private Message _StateData; 
         public abstract COMPOENT_NAME component_name { get; }
 
         public object Data { get; }

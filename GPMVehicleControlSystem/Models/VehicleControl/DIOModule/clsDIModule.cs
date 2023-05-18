@@ -152,8 +152,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
             {
                 var client = new TcpClient(IP, Port);
                 master = ModbusIpMaster.CreateIp(client);
-                master.Transport.ReadTimeout = 1000;
-                master.Transport.WriteTimeout = 1000;
+                master.Transport.ReadTimeout = 5000;
+                master.Transport.WriteTimeout = 5000;
+                master.Transport.Retries = 10;
                 Console.WriteLine("Wago DI/O Module Modbus TCP Connected!");
                 return true;
             }
