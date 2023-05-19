@@ -74,10 +74,8 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
                     goal.taskID = Task_Name;
                     goal.finalGoalID = (ushort)finalTag;
                     goal.mobilityModes = (ushort)mobility_mode;
-                    goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path()
-                    {
+                    goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path();
 
-                    };
                     var poses = _ExecutingTrajecory.Select(point => new PoseStamped()
                     {
                         header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header
@@ -127,6 +125,11 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
 
             }
         }
+
+        /// <summary>
+        /// 是否為切片任務(軌跡最後一點TAG不為目標點TAG)
+        /// </summary>
+        internal bool IsTaskSegmented => ExecutingTrajecory.Length == 0 ? false : ExecutingTrajecory.Last().Point_ID != Destination;
 
         internal clsTaskDownloadData TurnToBackTaskData()
         {

@@ -117,7 +117,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         /// </summary>
         /// <value></value>
         public bool IsAGVExecutingTask => _currentTaskCmdActionStatus == ActionStatus.ACTIVE | _currentTaskCmdActionStatus == ActionStatus.SUCCEEDED;
-
+        public bool TaskIsSegment => RunningTaskData.IsTaskSegmented;
         private bool EmergencyStopFlag = false;
         public CarController()
         {

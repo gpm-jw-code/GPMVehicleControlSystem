@@ -204,6 +204,69 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 車頭二次檢Sensor檢察功能
         /// </summary>
+        /// <summary>
+        /// 移動任務結束後的處理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="taskData"></param>
+        private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
+        {
+            Sub_Status = SUB_STATUS.IDLE;
+            //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
+            await Task.Delay(500);
+            try
+            {
+                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
+                if (Main_Status != MAIN_STATUS.IDLE)
+                {
+                    throw new Exception("ACTION FINISH Feedback But AGV MAIN STATUS is not IDLE");
+                }
+
+                if (taskData.Action_Type != ACTION_TYPE.None)
+                {
+                    if (!taskData.IsAfterLoadingAction)
+                    {
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                        var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
+
+                        if (!check_result_after_Task.confirm)
+                        {
+                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
+                            Sub_Status = SUB_STATUS.DOWN;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        if (taskData.Station_Type == STATION_TYPE.EQ)
+                        {
+                            (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
+                            if (!result.eqready_off)
+                            {
+                                AlarmManager.AddAlarm(result.alarmCode);
+                                Sub_Status = SUB_STATUS.DOWN;
+                            }
+                            else
+                            {
+                                LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
+                            }
+                        }
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+
+                    }
+                }
+                else
+                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+            }
+            catch (Exception ex)
+            {
+                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
+            }
+            await Task.Delay(500);
+            DirectionLighter.CloseAll();
+        }
+
+
         private void StartFrontendObstcleDetection(string action = "")
         {
             int DetectionTime = AppSettingsHelper.GetValue<int>("VCS:LOAD_OBS_DETECTION:Duration");
@@ -272,68 +335,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        /// <summary>
-        /// 移動任務結束後的處理
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="taskData"></param>
-        private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
-        {
-            Sub_Status = SUB_STATUS.IDLE;
-            //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
-            await Task.Delay(500);
-            try
-            {
-                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
-                if (Main_Status != MAIN_STATUS.IDLE)
-                {
-                    throw new Exception("ACTION FINISH Feedback But AGV MAIN STATUS is not IDLE");
-                }
-
-                if (taskData.Action_Type != ACTION_TYPE.None)
-                {
-                    if (!taskData.IsAfterLoadingAction)
-                    {
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
-                        var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
-
-                        if (!check_result_after_Task.confirm)
-                        {
-                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
-                            Sub_Status = SUB_STATUS.DOWN;
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        if (taskData.Station_Type == STATION_TYPE.EQ)
-                        {
-                            (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
-                            if (!result.eqready_off)
-                            {
-                                AlarmManager.AddAlarm(result.alarmCode);
-                                Sub_Status = SUB_STATUS.DOWN;
-                            }
-                            else
-                            {
-                                LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
-                            }
-                        }
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
-                    }
-                }
-                else
-                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-            }
-            catch (Exception ex)
-            {
-                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
-            }
-            await Task.Delay(500);
-            DirectionLighter.CloseAll();
-        }
-        private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
+           private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
         {
             await Task.Delay(200);
             LOG.INFO($"Task Feedback when Action done but need to expand path");
