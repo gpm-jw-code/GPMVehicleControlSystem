@@ -1,13 +1,14 @@
-using GPMVehicleControlSystem.Models.Database;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.Tools.Database;
 using GPMVehicleControlSystem.Models;
-using GPMVehicleControlSystem.Models.Alarm;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.Emulators;
+using GPMVehicleControlSystem.Tools;
 using Microsoft.AspNetCore.Http.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
-AlarmManager.LoadAlarmList();
+AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));
 
 //StaEmuManager.Start();
 

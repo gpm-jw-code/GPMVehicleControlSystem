@@ -1,4 +1,4 @@
-﻿using GPMVehicleControlSystem.Models.User;
+﻿using AGVSystemCommonNet6.User;
 
 namespace GPMVehicleControlSystem.ViewModels
 {

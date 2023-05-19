@@ -1,6 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -19,11 +19,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (_brState.state == -1)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.Barcode_Module_Error);
+                AddAlarm(AlarmCodes.Barcode_Module_Error);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.Barcode_Module_Error);
+                RemoveAlarm(AlarmCodes.Barcode_Module_Error);
             }
 
             return _state;

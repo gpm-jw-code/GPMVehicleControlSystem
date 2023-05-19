@@ -1,6 +1,6 @@
-﻿using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
-using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDOModule;
+﻿using AGVSystemCommonNet6.Abstracts;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {

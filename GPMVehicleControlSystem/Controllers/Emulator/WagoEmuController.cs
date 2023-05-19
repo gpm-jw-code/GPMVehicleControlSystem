@@ -1,7 +1,7 @@
 ﻿using GPMVehicleControlSystem.Models.Emulators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDIModule;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDIModule;
 
 namespace GPMVehicleControlSystem.Controllers.Emulator
 {

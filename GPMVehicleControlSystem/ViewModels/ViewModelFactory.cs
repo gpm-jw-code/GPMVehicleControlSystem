@@ -1,9 +1,10 @@
 ﻿using static GPMVehicleControlSystem.ViewModels.ForkTestVM;
-using GPMRosMessageNet.Messages;
 using GPMVehicleControlSystem.Models.VehicleControl;
 using GPMVehicleControlSystem.Models;
-using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDOModule;
-using GPMVehicleControlSystem.Models.Alarm;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.Abstracts;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
 namespace GPMVehicleControlSystem.ViewModels
 {
@@ -39,9 +40,10 @@ namespace GPMVehicleControlSystem.ViewModels
                         BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
                         ChargeCurrent = AgvEntity.Battery.Data.chargeCurrent,
                         IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
-                        IsError = AgvEntity.Battery.State == Models.VehicleControl.VehicleComponent.Abstracts.CarComponent.STATE.ABNORMAL
+                        IsError = AgvEntity.Battery.State ==CarComponent.STATE.ABNORMAL
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
+                    Angle = AgvEntity.Navigation.Angle,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
                     AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),

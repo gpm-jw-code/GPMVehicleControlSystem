@@ -1,4 +1,4 @@
-﻿namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
+﻿namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
     public class clsIOSignal
     {
@@ -9,8 +9,6 @@
         }
         public event EventHandler OnSignalON;
         public event EventHandler OnSignalOFF;
-
-
 
         public string Name { get; }
         public string Address { get; }

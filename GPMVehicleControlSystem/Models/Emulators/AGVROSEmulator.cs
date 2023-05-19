@@ -2,8 +2,8 @@
 using RosSharp.RosBridgeClient;
 using RosSharp.RosBridgeClient.Protocols;
 using RosSharp.RosBridgeClient.MessageTypes.Std;
-using GPMRosMessageNet.Messages;
-using GPMRosMessageNet.Messages.SickMsg;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.Emulators
 {

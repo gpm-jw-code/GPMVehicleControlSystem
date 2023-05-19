@@ -1,5 +1,7 @@
-﻿using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
-using GPMVehicleControlSystem.Models.Alarm;
+﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.Log;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
 using System.Diagnostics;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
@@ -17,7 +19,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             Task wait_eq_UL_req_ON = new Task(() =>
             {
-                while (action == ACTION_TYPE.Load ? !WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : !WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                while (action == ACTION_TYPE.Load ? !WagoDI.GetState(clsDIModule.DI_ITEM.EQ_L_REQ) : !WagoDI.GetState(clsDIModule.DI_ITEM.EQ_U_REQ))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -26,7 +28,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_ready = new Task(() =>
             {
-                while (!WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                while (!WagoDI.GetState(clsDIModule.DI_ITEM.EQ_READY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -34,12 +36,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             });
 
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, true);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_VALID, true);
 
             if (Hs_Method == HS_METHOD.EMULATION)
             {
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, true);
                 return (true, AlarmCodes.None);
             }
 
@@ -55,12 +57,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             }
 
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, true);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_TR_REQ, true);
             try
             {
                 wait_eq_ready.Start();
                 wait_eq_ready.Wait(waitEQSignalCST.Token);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, true);
                 return (true, AlarmCodes.None);
             }
             catch (OperationCanceledException ex)
@@ -80,7 +82,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             Task wait_eq_UL_req_OFF = new Task(() =>
             {
-                while (action == ACTION_TYPE.Load ? WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_L_REQ) : WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_U_REQ))
+                while (action == ACTION_TYPE.Load ? WagoDI.GetState(clsDIModule.DI_ITEM.EQ_L_REQ) : WagoDI.GetState(clsDIModule.DI_ITEM.EQ_U_REQ))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -89,7 +91,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_ready_off = new Task(() =>
             {
-                while (WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_READY))
+                while (WagoDI.GetState(clsDIModule.DI_ITEM.EQ_READY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -97,8 +99,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             });
 
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, true);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, false);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_COMPT, true);
 
 
             waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -115,9 +117,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 wait_eq_ready_off.Start();
                 wait_eq_ready_off.Wait(waitEQSignalCST.Token);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_COMPT, false);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_TR_REQ, false);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_VALID, false);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_COMPT, false);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_TR_REQ, false);
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_VALID, false);
 
                 LOG.Critical("[EQ Handshake] EQ READY OFF=>Handshake Done");
                 return (true, AlarmCodes.None);
@@ -138,16 +140,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
 
-            DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Right, 200);
-            DirectionLighter.Flash(DIOModule.clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
+            DirectionLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Right, 200);
+            DirectionLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
 
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, false);
-            WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, true);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, false);
+            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_AGV_READY, true);
 
             Task wait_eq_busy_ON = new Task(() =>
             {
-                while (!WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY))
+                while (!WagoDI.GetState(clsDIModule.DI_ITEM.EQ_BUSY))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -156,7 +158,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
             Task wait_eq_busy_OFF = new Task(() =>
             {
-                while (Hs_Method != HS_METHOD.EMULATION ? WagoDI.GetState(DIOModule.clsDIModule.DI_ITEM.EQ_BUSY) : (action == ACTION_TYPE.Load ? HasAnyCargoOnAGV() : !HasAnyCargoOnAGV()))
+                while (Hs_Method != HS_METHOD.EMULATION ? WagoDI.GetState(clsDIModule.DI_ITEM.EQ_BUSY) : (action == ACTION_TYPE.Load ? HasAnyCargoOnAGV() : !HasAnyCargoOnAGV()))
                 {
                     if (waitEQSignalCST.IsCancellationRequested)
                         return;
@@ -183,8 +185,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 wait_eq_busy_OFF.Start();
                 wait_eq_busy_OFF.Wait(waitEQSignalCST.Token);
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_AGV_READY, false); //AGV BUSY 開始退出
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.AGV_BUSY, true); //AGV BUSY 開始退出
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_AGV_READY, false); //AGV BUSY 開始退出
+                WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, true); //AGV BUSY 開始退出
                 return (true, AlarmCodes.None);
             }
             catch (OperationCanceledException)

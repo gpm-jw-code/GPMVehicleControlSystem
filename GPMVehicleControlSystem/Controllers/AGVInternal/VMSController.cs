@@ -4,15 +4,14 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using System.Text;
 using GPMVehicleControlSystem.Models;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using GPMVehicleControlSystem.Models.VehicleControl;
 using GPMVehicleControlSystem.Models.Buzzer;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
+using static AGVSystemCommonNet6.clsEnums;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
-
-
 
     [Route("api/[controller]")]
     [ApiController]

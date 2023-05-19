@@ -20,10 +20,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\Alarm\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Update="param\AlarmList.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

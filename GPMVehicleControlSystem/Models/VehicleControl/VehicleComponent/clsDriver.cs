@@ -1,6 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -22,11 +22,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (_driverState.state != 2 && _driverState.state != 3 && _driverState.state != 5 && _driverState.state != 7)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.Wheel_Motor_Alarm);
+                AddAlarm(AlarmCodes.Wheel_Motor_Alarm);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.Wheel_Motor_Alarm);
+                RemoveAlarm(AlarmCodes.Wheel_Motor_Alarm);
             }
 
             return _state;

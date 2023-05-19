@@ -1,8 +1,8 @@
-﻿using GPMVehicleControlSystem.Models.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
 using Modbus.Device;
 using System.Net;
 using System.Net.Sockets;
-using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDIModule;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDIModule;
 
 namespace GPMVehicleControlSystem.Models.Emulators
 {

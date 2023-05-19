@@ -1,10 +1,11 @@
-﻿using GPMRosMessageNet.Actions;
-using GPMRosMessageNet.Messages;
-using GPMRosMessageNet.Messages.SickMsg;
-using GPMRosMessageNet.Services;
-using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
-using GPMVehicleControlSystem.Models.GPMRosMessageNet.Actions;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.AGVSystemCommonNet6.GPMRosMessageNet.Actions;
+using AGVSystemCommonNet6.GPMRosMessageNet.Actions;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
+using AGVSystemCommonNet6.GPMRosMessageNet.Services;
+using AGVSystemCommonNet6.Log;
 using Newtonsoft.Json;
 using RosSharp.RosBridgeClient;
 using RosSharp.RosBridgeClient.Actionlib;
@@ -166,18 +167,62 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             rosSocket.Close();
             rosSocket = null;
         }
-
-        internal void FarAreaLaserTriggerHandler(object? sender, EventArgs e)
+        private bool IsFrontArea1LaserRecovery = false;
+        private bool IsBackArea1LaserRecovery = false;
+        internal void FarArea1LaserTriggerHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"遠處雷射觸發,減速停止請求. ");
+            IsFrontArea1LaserRecovery = false;
+            Console.Error.WriteLine($"雷射 AREA1  觸發,減速請求. ");
             CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE, "");
         }
-
-        internal void FarAreaLaserRecoveryHandler(object? sender, EventArgs e)
+        internal void FarArea2LaserTriggerHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"遠處雷射解除,速度恢復請求.");
+            Console.Error.WriteLine($"雷射 AREA2  觸發,減速停止請求. ");
+            CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
+        }
+
+        internal void FrontFarArea1LaserRecoveryHandler(object? sender, EventArgs e)
+        {
+            IsFrontArea1LaserRecovery = true;
+            Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
             CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
         }
+
+
+        internal void BackFarArea1LaserRecoveryHandler(object? sender, EventArgs e)
+        {
+            IsBackArea1LaserRecovery = true;
+            Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
+            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+        }
+
+
+        internal void FrontFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
+        {
+            Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
+            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
+            //{
+            //    Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
+            //    CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            //}
+            //else
+            //    LOG.TRACE("一段未解除，無速度恢復請求");
+        }
+
+        internal void BackFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
+        {
+            Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
+            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
+            //{
+            //    Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
+            //    CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            //}
+            //else
+            //    LOG.TRACE("一段未解除，無速度恢復請求");
+        }
+
         internal void EMOHandler(object? sender, EventArgs e)
         {
             Console.Error.WriteLine($"EMO 觸發,緊急停止.");
@@ -255,6 +300,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 OnTaskActionFinishButNeedToExpandPath?.Invoke(this, this.RunningTaskData);
             }
         }
+
 
         private void DisposeTaskCommandActionClient()
         {

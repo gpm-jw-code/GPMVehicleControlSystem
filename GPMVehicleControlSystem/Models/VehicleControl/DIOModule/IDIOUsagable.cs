@@ -1,6 +1,6 @@
-﻿using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
+﻿
 
-namespace GPMVehicleControlSystem.Models.Abstracts
+namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
     public interface IDIOUsagable
     {

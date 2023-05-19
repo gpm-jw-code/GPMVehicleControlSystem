@@ -1,10 +1,11 @@
 ﻿using RosSharp.RosBridgeClient.MessageTypes.Geometry;
 using RosSharp.RosBridgeClient.MessageTypes.Std;
 using AGV_VMS.ViewModels;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
-using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.Alarm;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using static AGVSystemCommonNet6.clsEnums;
 
 namespace GPMVehicleControlSystem.ViewModels
 {
@@ -25,6 +26,7 @@ namespace GPMVehicleControlSystem.ViewModels
         public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM();
         public double Mileage { get; set; }
         public Pose Pose { get; set; } = new Pose();
+        public double Angle { get; set; } = -1;
         public string AGV_Direct { get; set; }
         public BarcodeReaderState BCR_State_MoveBase { get; set; } = new BarcodeReaderState();
         public DriverState ZAxisDriverState { get; set; } = new DriverState();

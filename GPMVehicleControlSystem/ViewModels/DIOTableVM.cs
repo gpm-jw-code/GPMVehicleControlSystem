@@ -1,4 +1,4 @@
-﻿using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
+﻿using GPMVehicleControlSystem.VehicleControl.DIOModule;
 
 namespace GPMVehicleControlSystem.ViewModels
 {

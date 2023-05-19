@@ -1,6 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -15,11 +15,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (_imu_state.state != 0)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.IMU_Module_Error);
+                AddAlarm(AlarmCodes.IMU_Module_Error);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.IMU_Module_Error);
+                RemoveAlarm(AlarmCodes.IMU_Module_Error);
             }
             return _state;
         }

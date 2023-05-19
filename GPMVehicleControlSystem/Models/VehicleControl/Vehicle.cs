@@ -1,14 +1,18 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
-using GPMVehicleControlSystem.Models.Alarm;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.AGVDispatch;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
-using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
 using GPMVehicleControlSystem.Tools;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
 using RosSharp.RosBridgeClient.MessageTypes.Geometry;
 using System.Threading.Tasks;
+using static AGVSystemCommonNet6.Abstracts.CarComponent;
+using static AGVSystemCommonNet6.clsEnums;
 using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
@@ -19,7 +23,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public clsDirectionLighter DirectionLighter { get; set; }
         public clsStatusLighter StatusLighter { get; set; }
 
-        public AGVDispatch.clsAGVSConnection AGVS;
+        public AGVSystemCommonNet6.AGVDispatch.clsAGVSConnection AGVS;
 
         public clsDOModule WagoDO;
         public clsDIModule WagoDI;
@@ -165,7 +169,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDO = new clsDOModule(Wago_IP, Wago_Port);
             WagoDI = new clsDIModule(Wago_IP, Wago_Port);
             AGVC = new CarController(RosBridge_IP, RosBridge_Port);
-            AGVS = new AGVDispatch.clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
+            AGVS = new clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
 
             DirectionLighter = new clsDirectionLighter(WagoDO);
             StatusLighter = new clsStatusLighter(WagoDO);
@@ -194,7 +198,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDIConnTask.Start();
             EventsRegist();
             Laser.Mode = LASER_MODE.Bypass;
-            AGVDispatch.AGVSMessageFactory.Setup(SID, CarName);
+            AGVSMessageFactory.Setup(SID, CarName);
 
             //Pilot = new AGVPILOT(this);
 
@@ -209,7 +213,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
         private void EventsRegist() //TODO EventRegist
         {
-            AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
+            AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
             AGVS.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
             AGVC.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
 
@@ -218,15 +222,31 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnResetButtonPressing += () => ResetAlarmsAsync();
             WagoDI.OnResetButtonPressed += WagoDO.ResetMotor;
             WagoDI.OnResetButtonPressed += WagoDI_OnResetButtonPressed;
-            WagoDI.OnFrontFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
-            WagoDI.OnBackFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
-            WagoDI.OnFrontFarAreaLaserRecovery += AGVC.FarAreaLaserRecoveryHandler;
+            WagoDI.OnFrontArea1LaserTrigger += AGVC.FarArea1LaserTriggerHandler;
+            WagoDI.OnBackArea1LaserTrigger += AGVC.FarArea1LaserTriggerHandler;
+            WagoDI.OnFrontArea2LaserTrigger += AGVC.FarArea2LaserTriggerHandler;
+            WagoDI.OnBackArea2LaserTrigger += AGVC.FarArea2LaserTriggerHandler;
 
-            WagoDI.OnFrontFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
-            WagoDI.OnBackFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
 
-            WagoDI.OnFrontFarAreaLaserRecovery += WagoDI_OnFarAreaLaserRecovery;
-            WagoDI.OnBackFarAreaLaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+
+            WagoDI.OnFrontArea1LaserRecovery += AGVC.FrontFarArea1LaserRecoveryHandler;
+            WagoDI.OnFrontArea2LaserRecovery += AGVC.FrontFarArea2LaserRecoveryHandler;
+            WagoDI.OnBackArea1LaserRecovery += AGVC.BackFarArea1LaserRecoveryHandler;
+            WagoDI.OnBackArea2LaserRecovery += AGVC.BackFarArea2LaserRecoveryHandler;
+
+            WagoDI.OnFrontArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+            WagoDI.OnBackArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+            WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+            WagoDI.OnBackArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+
+
+
+            WagoDI.OnFrontArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+            WagoDI.OnBackArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+            WagoDI.OnFrontArea2LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+            WagoDI.OnBackArea2LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+
+
 
             WagoDI.OnFrontNearAreaLaserTrigger += WagoDI_OnNearAreaLaserTrigger;
             WagoDI.OnBackNearAreaLaserTrigger += WagoDI_OnNearAreaLaserTrigger;
@@ -246,8 +266,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGVS.OnTaskDownload += AGVSTaskDownloadConfirm;
             AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
             AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
+            Navigation.OnTagReach += OnTagReachHandler;
+
 
         }
+
         internal async Task<bool> Initialize()
         {
             BuzzerPlayer.BuzzerStop();
@@ -284,7 +307,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             var x = Navigation.Data.robotPose.pose.position.x;
             var y = Navigation.Data.robotPose.pose.position.y;
             var theta = BarcodeReader.Data.theta;
-            return new(tag,x, y, theta);
+            return new(tag, x, y, theta);
         }
 
         private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
@@ -300,17 +323,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             else if (Main_Status == MAIN_STATUS.DOWN)
                 Sub_Status = SUB_STATUS.DOWN;
 
-            bool frontLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_4);
-            bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
-            if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
-                AGVC.FarAreaLaserRecoveryHandler(sender, e);
+            //bool frontLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_4);
+            //bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
+            //if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
+            //    AGVC.FarAreaLaserRecoveryHandler(sender, e);
+        
         }
 
         private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
         {
-            if (Operation_Mode == OPERATOR_MODE.AUTO)
+            if (Operation_Mode == OPERATOR_MODE.AUTO && RunningTaskData.Action_Type == ACTION_TYPE.None)
                 Sub_Status = SUB_STATUS.WARNING;
         }
+
 
         private void WagoDI_OnNearAreaLaserRecovery(object? sender, EventArgs e)
         {
@@ -368,7 +393,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal async Task ResetAlarmsAsync()
         {
-            if (WheelDrivers.Any(dr => dr.State != VehicleComponent.Abstracts.CarComponent.STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
+            if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
                 await WagoDO.ResetMotor();
             AlarmManager.ClearAlarm();
             BuzzerPlayer.BuzzerStop();
@@ -418,12 +443,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             try
             {
+                double batteryLevel = Battery.State != CarComponent.STATE.NORMAL ? 69 : Battery.Data.batteryLevel;
                 return new RunningStatus
                 {
 
                     Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
                     AGV_Status = Main_Status,
-                    Electric_Volume = new double[2] { Battery.Data.batteryLevel, Battery.Data.batteryLevel },
+                    Electric_Volume = new double[2] { batteryLevel, batteryLevel },
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
                     Corrdination = new RunningStatus.clsCorrdination()
                     {
@@ -438,24 +464,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             catch (Exception ex)
             {
-                LOG.ERROR("GenRunningStateReportData ", ex);
+                //LOG.ERROR("GenRunningStateReportData ", ex);
                 return new RunningStatus();
             }
         }
 
-        double CalculateTheta(RosSharp.RosBridgeClient.MessageTypes.Geometry.Quaternion orientation)
-        {
-            double yaw;
-            double x = orientation.x;
-            double y = orientation.y;
-            double z = orientation.z;
-            double w = orientation.w;
-            // 計算角度
-            double siny_cosp = 2.0 * (w * z + x * y);
-            double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
-            yaw = Math.Atan2(siny_cosp, cosy_cosp);
-            return yaw * 180.0 / Math.PI;
-        }
+
 
         private void CarController_OnModuleInformationUpdated(object? sender, ModuleInformation _ModuleInformation)
         {

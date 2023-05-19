@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using Microsoft.Extensions.Configuration;
+using System.Text.RegularExpressions;
 
 namespace GPMVehicleControlSystem.Tools
 {

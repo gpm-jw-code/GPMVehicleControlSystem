@@ -1,9 +1,9 @@
-﻿using GPMVehicleControlSystem.Models.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
 using GPMVehicleControlSystem.Tools;
 using Modbus.Device;
 using System.Net.Sockets;
 
-namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
+namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
     public class clsDIModule : Connection
     {
@@ -60,29 +60,54 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         /// <summary>
         /// 前方遠處雷射觸發
         /// </summary>
-        public event EventHandler OnFrontFarAreaLaserTrigger;
+        public event EventHandler OnFrontArea1LaserTrigger;
+        /// <summary>
+        /// 後方遠處雷射觸發
+        /// </summary>
+        public event EventHandler OnBackArea1LaserTrigger;
+
+
+        /// <summary>
+        /// 前方遠處雷射觸發恢復
+        /// </summary>
+        public event EventHandler OnFrontArea1LaserRecovery;
+        /// <summary>
+        /// 後方遠處雷射觸發恢復
+        /// </summary>
+        public event EventHandler OnBackArea1LaserRecovery;
+
+
+
+
+        /// <summary>
+        /// 前方遠處雷射觸發
+        /// </summary>
+        public event EventHandler OnFrontArea2LaserTrigger;
+        /// <summary>
+        /// 後方遠處雷射觸發
+        /// </summary>
+        public event EventHandler OnBackArea2LaserTrigger;
+
+
+        /// <summary>
+        /// 前方遠處雷射觸發恢復
+        /// </summary>
+        public event EventHandler OnFrontArea2LaserRecovery;
+        /// <summary>
+        /// 後方遠處雷射觸發恢復
+        /// </summary>
+        public event EventHandler OnBackArea2LaserRecovery;
+
 
         /// <summary>
         /// 前方近處雷射觸發
         /// </summary>
         public event EventHandler OnFrontNearAreaLaserTrigger;
         /// <summary>
-        /// 後方遠處雷射觸發
-        /// </summary>
-        public event EventHandler OnBackFarAreaLaserTrigger;
-        /// <summary>
         /// 後方近處雷射觸發
         /// </summary>
         public event EventHandler OnBackNearAreaLaserTrigger;
 
-        /// <summary>
-        /// 前方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnFrontFarAreaLaserRecovery;
-        /// <summary>
-        /// 後方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnBackFarAreaLaserRecovery;
 
 
 
@@ -94,14 +119,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         /// 後方遠處雷射觸發恢復
         /// </summary>
         public event EventHandler OnBackNearAreaLaserRecovery;
-        public Action OnFrontSecondObstacleSensorDetected { get; internal set; }
-        public Action OnResetButtonPressing { get; internal set; }
+        public event EventHandler OnFrontSecondObstacleSensorDetected;
+        public Action OnResetButtonPressing { get; set; }
 
         public Action OnHS_EQ_READY { get; internal set; }
 
         Dictionary<DI_ITEM, int> INPUT_INDEXS = new Dictionary<DI_ITEM, int>();
 
-        internal List<clsIOSignal> VCSInputs = new List<clsIOSignal>();
+        public List<clsIOSignal> VCSInputs = new List<clsIOSignal>();
         public ushort Start { get; set; }
         public ushort Size { get; set; }
 
@@ -189,24 +214,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
             VCSInputs[INPUT_INDEXS[DI_ITEM.EMO]].OnSignalOFF += (s, e) => OnEMO?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressed?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnFrontFarAreaLaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnFrontFarAreaLaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnFrontFarAreaLaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnFrontFarAreaLaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnFrontArea1LaserTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnFrontArea2LaserTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnBackArea1LaserTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnBackArea2LaserTrigger?.Invoke(s, e);
 
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnFrontArea1LaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnFrontArea2LaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnBackArea1LaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnBackArea2LaserRecovery?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnBackFarAreaLaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnBackFarAreaLaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnBackFarAreaLaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnBackFarAreaLaserRecovery?.Invoke(s, e);
-
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnFrontNearAreaLaserTrigger?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnFrontNearAreaLaserRecovery?.Invoke(s, e);
-
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnBackNearAreaLaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnFrontNearAreaLaserTrigger?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnBackNearAreaLaserTrigger?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Obstacle_Sensor]].OnSignalOFF += (s, e) => OnFrontSecondObstacleSensorDetected();
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Obstacle_Sensor]].OnSignalOFF += (s, e) => OnFrontSecondObstacleSensorDetected?.Invoke(s, e);
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressing();
 
@@ -225,7 +248,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
                 while (true)
                 {
 
-                    Thread.Sleep(10);
+                    Thread.Sleep(1);
 
                     if (!IsConnected())
                     {

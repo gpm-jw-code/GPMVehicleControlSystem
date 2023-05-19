@@ -1,9 +1,12 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
-using GPMVehicleControlSystem.Models.Alarm;
+﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Tools;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
 using System.Diagnostics;
+using static AGVSystemCommonNet6.clsEnums;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
 using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
@@ -77,30 +80,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         LOG.Critical($"無法發送任務給車控執行");
                         Sub_Status = SUB_STATUS.DOWN;
                     }
-                    Navigation.OnTagReach += OnTagReachHandler;
                 }
             });
         }
 
-        private void OnTagReachHandler(object? sender, int currentTag)
-        {
-            var TagPoint = RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
-            if (TagPoint == null)
-            {
-                LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
-                return;
-            }
-            PathInfo? pathInfoRos = RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
-            if (pathInfoRos == null)
-            {
-                AGVC.AbortTask();
-                AlarmManager.AddAlarm(AlarmCodes.Motion_control_Tracking_Tag_Not_On_Tag_Or_Tap, true);
-                Sub_Status = SUB_STATUS.DOWN;
-                return;
-            }
-            Laser.AgvsLsrSetting = TagPoint.Laser == 0 ? AGVS_LASER_SETTING_ORDER.BYPASS : AGVS_LASER_SETTING_ORDER.NORMAL;
-            LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
-        }
 
         /// <summary>
         /// 開始移動任務前要做的事
@@ -117,13 +100,25 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 DirectionLighter.Backward();
 
 
+            //Laser模式變更
+
+            if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)
+            {
+                Laser.Mode = LASER_MODE.Loading;
+
+            }
+            else
+                Laser.Mode = LASER_MODE.Move;
+
+
+
             if (action == ACTION_TYPE.Charge)
             {
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, true);
+                WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, true);
             }
             else if (action == ACTION_TYPE.Discharge)
             {
-                WagoDO.SetState(DIOModule.clsDOModule.DO_ITEM.Recharge_Circuit, false);
+                WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);
             }
             else if (action == ACTION_TYPE.Load)
             {
@@ -183,7 +178,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             if (action == ACTION_TYPE.Load | action == ACTION_TYPE.Unload)
             {
-
 
                 if (taskDownloadData.Station_Type == STATION_TYPE.EQ)
                 {
@@ -246,7 +240,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
                 if (taskData.Action_Type != ACTION_TYPE.None)
                 {
-                    if (!taskData.IsAfterLoadingAction)
+                    if (taskData.IsTaskSegmented)
                     {
                         await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
                         var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
@@ -255,8 +249,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         {
                             AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
                             Sub_Status = SUB_STATUS.DOWN;
-                            Navigation.OnTagReach -= OnTagReachHandler;
-
                             return;
                         }
                     }
@@ -276,13 +268,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                             }
                         }
                         await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
                     }
                 }
                 else
                     await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
-                Navigation.OnTagReach -= OnTagReachHandler;
 
             }
             catch (Exception ex)
@@ -294,6 +283,30 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
+        private void OnTagReachHandler(object? sender, int currentTag)
+        {
+            if (Operation_Mode == OPERATOR_MODE.MANUAL)
+            {
+                return;
+            }
+
+            var TagPoint = RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
+            if (TagPoint == null)
+            {
+                LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
+                return;
+            }
+            PathInfo? pathInfoRos = RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
+            if (pathInfoRos == null)
+            {
+                AGVC.AbortTask();
+                AlarmManager.AddAlarm(AlarmCodes.Motion_control_Tracking_Tag_Not_On_Tag_Or_Tap, true);
+                Sub_Status = SUB_STATUS.DOWN;
+                return;
+            }
+            Laser.AgvsLsrSetting = TagPoint.Laser == 0 ? AGVS_LASER_SETTING_ORDER.BYPASS : AGVS_LASER_SETTING_ORDER.NORMAL;
+            LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
+        }
         /// <summary>
         /// 車頭二次檢Sensor檢察功能
         /// </summary>
@@ -304,7 +317,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CancellationTokenSource cancelDetectCTS = new CancellationTokenSource(TimeSpan.FromSeconds(DetectionTime));
             Stopwatch stopwatch = Stopwatch.StartNew();
             bool detected = false;
-            void FrontendObsSensorDetectAction()
+
+            void FrontendObsSensorDetectAction(object sender, EventArgs e)
             {
                 detected = true;
                 if (!cancelDetectCTS.IsCancellationRequested)

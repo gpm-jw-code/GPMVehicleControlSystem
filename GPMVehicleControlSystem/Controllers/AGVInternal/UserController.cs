@@ -1,5 +1,5 @@
-﻿using GPMVehicleControlSystem.Models.Database;
-using GPMVehicleControlSystem.Models.User;
+﻿using AGVSystemCommonNet6.Tools.Database;
+using AGVSystemCommonNet6.User;
 using GPMVehicleControlSystem.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

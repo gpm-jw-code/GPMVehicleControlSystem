@@ -1,6 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -15,11 +15,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (Data.state != 1)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.Read_Cst_ID_Fail);
+                AddAlarm(AlarmCodes.Read_Cst_ID_Fail);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.Read_Cst_ID_Fail);
+                RemoveAlarm(AlarmCodes.Read_Cst_ID_Fail);
             }
 
             return _state;

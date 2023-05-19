@@ -1,4 +1,5 @@
-﻿using GPMVehicleControlSystem.Models;
+﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
+using GPMVehicleControlSystem.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,17 +13,17 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
         public async Task<IActionResult> TaskDownload()
         {
             string task_name = $"Local_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}";
-            StaStored.CurrentVechicle.AGVS.OnTaskDownload.Invoke(new Models.AGVDispatch.Messages.clsTaskDownloadData
+            StaStored.CurrentVechicle.AGVS.OnTaskDownload.Invoke(new clsTaskDownloadData
             {
                 Task_Name = task_name,
                 Task_Simplex = task_name + "_1",
                 Task_Sequence = 1,
                 Destination = 7,
-                Action_Type = Models.AGVDispatch.Messages.ACTION_TYPE.None,
-                Station_Type = Models.AGVDispatch.Messages.STATION_TYPE.Normal,
-                Trajectory = new Models.AGVDispatch.Messages.clsMapPoint[]
+                Action_Type = ACTION_TYPE.None,
+                Station_Type =STATION_TYPE.Normal,
+                Trajectory = new clsMapPoint[]
                     {
-                         new Models.AGVDispatch.Messages.clsMapPoint
+                         new clsMapPoint
                          {
                               Point_ID =5,
                                X = -2.09,
@@ -30,7 +31,7 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
                                  Theta = 0,
                                   Speed = 1,
                          },
-                          new Models.AGVDispatch.Messages.clsMapPoint
+                          new clsMapPoint
                          {
                               Point_ID =7,
                                X = -2.04,

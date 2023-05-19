@@ -1,4 +1,5 @@
-﻿using GPMVehicleControlSystem.ViewModels;
+﻿using AGVSystemCommonNet6.Log;
+using GPMVehicleControlSystem.ViewModels;
 using Newtonsoft.Json;
 using System.Text;
 using System.Threading;

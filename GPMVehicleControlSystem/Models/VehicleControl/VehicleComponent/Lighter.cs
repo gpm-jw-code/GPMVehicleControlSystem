@@ -1,8 +1,7 @@
-﻿using GPMVehicleControlSystem.Models.VehicleControl;
-using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
-using static GPMVehicleControlSystem.Models.VehicleControl.DIOModule.clsDOModule;
+﻿using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
-namespace GPMVehicleControlSystem.Models.Abstracts
+namespace AGVSystemCommonNet6.Abstracts
 {
     public abstract class Lighter
     {

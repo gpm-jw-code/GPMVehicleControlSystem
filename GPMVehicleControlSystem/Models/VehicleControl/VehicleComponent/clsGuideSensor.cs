@@ -1,5 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -14,11 +15,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (_guide_sensor.state1 != 1 | _guide_sensor.state2 != 1)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.Guide_Module_Error);
+                AddAlarm(AlarmCodes.Guide_Module_Error);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.Guide_Module_Error);
+                RemoveAlarm(AlarmCodes.Guide_Module_Error);
             }
             return _state;
         }

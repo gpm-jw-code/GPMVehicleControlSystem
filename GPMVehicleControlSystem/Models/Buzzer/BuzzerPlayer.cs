@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Media;
+using AGVSystemCommonNet6.Log;
 
 namespace GPMVehicleControlSystem.Models.Buzzer
 {
@@ -11,6 +12,8 @@ namespace GPMVehicleControlSystem.Models.Buzzer
     {
         private static string PlayListFileName = "playlist.json";
         public static clsPlayList playList { get; private set; } = new clsPlayList();
+        public static List<Process> ProcList { get; private set; } = new List<Process>();
+
         static SoundPlayer player;
         static bool IsAlarmPlaying = false;
         static bool IsActionPlaying = false;
@@ -57,19 +60,23 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                if (_ffmpegProcess != null)
+                foreach (var item in ProcList)
                 {
-                    try
+                    if (item != null)
                     {
-                        _ffmpegProcess.Kill();
-                        Console.WriteLine("music process killed");
+                        try
+                        {
+                            item.Kill();
+                            Console.WriteLine("music process killed");
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
+                    Console.WriteLine("music process killed");
                 }
-                Console.WriteLine("music process killed");
+                ProcList.Clear();
             }
             else
             {
@@ -131,7 +138,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                      UseShellExecute = false,
                  };
 
-                 _ffmpegProcess = new Process
+                 Process _ffmpegProcess = new Process
                  {
                      StartInfo = startInfo
                  };
@@ -140,6 +147,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 
                  try
                  {
+                     ProcList.Add(_ffmpegProcess);
                      _ffmpegProcess.Start();
 
                  }
@@ -156,6 +164,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                          StartNewFFmpegProcess(_ffmpegProcess, startInfo);
                      else
                      {
+                         BuzzerStop();
                          _linux_music_stopped = true;
                      }
                  });
@@ -170,11 +179,12 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             {
                 playCancelTS = new CancellationTokenSource();
                 Console.WriteLine("start new music process");
-                _ffmpegProcess = new Process
+                Process _ffmpegProcess = new Process
                 {
                     StartInfo = startInfo
                 };
                 playIngPlayingProcesses = _ffmpegProcess;
+                ProcList.Add(_ffmpegProcess);
                 _ffmpegProcess.Start();
                 Task tk = _ffmpegProcess.WaitForExitAsync(playCancelTS.Token);
                 tk.ContinueWith(_tk =>
@@ -184,11 +194,10 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                         StartNewFFmpegProcess(_ffmpegProcess, startInfo);
                     else
                     {
+                        BuzzerStop();
                         _linux_music_stopped = true;
                     }
                 });
-
-
             });
 
         }

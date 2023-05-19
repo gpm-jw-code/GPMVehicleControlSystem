@@ -1,5 +1,7 @@
-﻿using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
+﻿
+using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Log;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -13,6 +15,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             Spin = 5,
             Loading = 7,
             Special = 10,
+            Move_Short = 11,
+            Spin_Shor = 12
+
         }
 
         /// <summary>
@@ -26,7 +31,20 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public clsDOModule DOModule { get; set; }
         public clsDIModule DIModule { get; set; }
-        public AGVS_LASER_SETTING_ORDER AgvsLsrSetting { get; set; } = AGVS_LASER_SETTING_ORDER.NORMAL;
+        private AGVS_LASER_SETTING_ORDER _AgvsLsrSetting = AGVS_LASER_SETTING_ORDER.NORMAL;
+        public AGVS_LASER_SETTING_ORDER AgvsLsrSetting
+        {
+            get => _AgvsLsrSetting;
+            set
+            {
+                if (_AgvsLsrSetting != value)
+                {
+                    _AgvsLsrSetting = value;
+                    if (value == AGVS_LASER_SETTING_ORDER.BYPASS)
+                        Mode = LASER_MODE.Bypass;
+                }
+            }
+        }
         public clsLaser(clsDOModule DOModule, clsDIModule DIModule)
         {
             this.DOModule = DOModule;
@@ -79,6 +97,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             }
             else
             {
+                if (_Mode == LASER_MODE.Loading)
+                    return;
+
                 if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
                     Mode = LASER_MODE.Move;
                 else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)
@@ -93,6 +114,20 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             set
             {
                 _Mode = value;
+                if (value == LASER_MODE.Bypass)
+                {
+                    FrontLaserBypass = BackLaserBypass = RightLaserBypass = LeftLaserBypass = true;
+                }
+                else if (value == LASER_MODE.Loading)
+                {
+                    FrontLaserBypass = BackLaserBypass = false;
+                    LeftLaserBypass = RightLaserBypass = true;
+                }
+                else
+                {
+                    FrontLaserBypass = BackLaserBypass = LeftLaserBypass = RightLaserBypass = false;
+                }
+
                 ModeSwitch((int)value);
             }
         }

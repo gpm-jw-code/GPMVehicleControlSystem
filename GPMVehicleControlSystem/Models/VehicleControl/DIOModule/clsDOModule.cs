@@ -1,9 +1,7 @@
-﻿using GPMVehicleControlSystem.Models.Abstracts;
-using GPMVehicleControlSystem.Tools;
-using Modbus.Device;
+﻿using GPMVehicleControlSystem.Tools;
 using System.Net.Sockets;
 
-namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
+namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
     public class clsDOModule : clsDIModule
     {
@@ -63,8 +61,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         }
         Dictionary<DO_ITEM, int> OUTPUT_INDEXS = new Dictionary<DO_ITEM, int>();
 
-        internal List<clsIOSignal> VCSOutputs = new List<clsIOSignal>();
-        internal ManualResetEvent PauseSignal = new ManualResetEvent(true);
+        public List<clsIOSignal> VCSOutputs = new List<clsIOSignal>();
+        public ManualResetEvent PauseSignal = new ManualResetEvent(true);
         public clsDOModule(string IP, int Port) : base(IP, Port)
         {
         }
@@ -74,7 +72,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         protected override void RegistSignalEvents()
         {
         }
-        public override void ReadIOSettingsFromIniFile()
+        public override void ReadIOSettingsFromIniFile( )
         {
             IniHelper iniHelper = new IniHelper(Path.Combine(Environment.CurrentDirectory, "param/IO_Wago.ini"));
 
@@ -87,7 +85,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
                     var Address = $"Y{i.ToString("X4")}";
                     var RigisterName = iniHelper.GetValue("OUTPUT", Address);
                     var reg = new clsIOSignal(RigisterName, Address);
-                    
+
                     reg.State = false;
                     if (RigisterName != "")
                     {
@@ -108,11 +106,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
             }
         }
 
-        internal async void ResetMotor(object? sender, EventArgs e)
+        public async void ResetMotor(object? sender, EventArgs e)
         {
             await ResetMotor();
         }
-        internal async Task ResetMotor()
+        public async Task ResetMotor()
         {
             Console.WriteLine("Reset Motor Process Start");
             SetState(DO_ITEM.Horizon_Motor_Stop, true);
@@ -144,13 +142,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.DIOModule
         {
             return VCSOutputs.FirstOrDefault(k => k.Name == signal + "").State;
         }
-        internal void ResetHandshakeSignals()
+        public void ResetHandshakeSignals()
         {
-            SetState( DO_ITEM.AGV_COMPT,false);
-            SetState( DO_ITEM.AGV_BUSY,false);
-            SetState( DO_ITEM.AGV_AGV_READY,false);
-            SetState( DO_ITEM.AGV_TR_REQ,false);
-            SetState( DO_ITEM.AGV_VALID,false);
+            SetState(DO_ITEM.AGV_COMPT, false);
+            SetState(DO_ITEM.AGV_BUSY, false);
+            SetState(DO_ITEM.AGV_AGV_READY, false);
+            SetState(DO_ITEM.AGV_TR_REQ, false);
+            SetState(DO_ITEM.AGV_VALID, false);
         }
         public override async void StartAsync()
         {

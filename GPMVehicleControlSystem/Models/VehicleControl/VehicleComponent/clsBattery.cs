@@ -1,8 +1,10 @@
-﻿using GPMRosMessageNet.Messages;
+﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
-    public class clsBattery : Abstracts.CarComponent
+    public class clsBattery : CarComponent
     {
         public bool IsCharging => Data.dischargeCurrent == 0 && Data.chargeCurrent != 0;
 
@@ -23,45 +25,45 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (Data.batteryLevel == 0 | Data.state != 1)
             {
                 _state = STATE.ABNORMAL;
-                AddAlarm(Alarm.AlarmCodes.Cant_Check_Battery);
+                AddAlarm(AlarmCodes.Cant_Check_Battery);
             }
             else
             {
-                RemoveAlarm(Alarm.AlarmCodes.Cant_Check_Battery);
+                RemoveAlarm(AlarmCodes.Cant_Check_Battery);
 
                 if (IsCharging)
                 {
                     if (Data.chargeCurrent < ChargingCheckSpec.MinCurrentAllow)
                     {
                         _state = STATE.WARNING;
-                        AddAlarm(Alarm.AlarmCodes.Under_Current_Charge);
+                        AddAlarm(AlarmCodes.Under_Current_Charge);
                     }
                     else
-                        RemoveAlarm(Alarm.AlarmCodes.Under_Current_Charge);
+                        RemoveAlarm(AlarmCodes.Under_Current_Charge);
                     if (Data.chargeCurrent > ChargingCheckSpec.MaxCurrentAllow)
                     {
                         _state = STATE.WARNING;
-                        AddAlarm(Alarm.AlarmCodes.Over_Current_Charge);
+                        AddAlarm(AlarmCodes.Over_Current_Charge);
                     }
                     else
-                        RemoveAlarm(Alarm.AlarmCodes.Over_Current_Charge);
+                        RemoveAlarm(AlarmCodes.Over_Current_Charge);
                 }
                 else
                 {
                     if (Data.dischargeCurrent < DischargeCheckSpec.MinCurrentAllow)
                     {
-                        AddAlarm(Alarm.AlarmCodes.Under_Current_Discharge);
+                        AddAlarm(AlarmCodes.Under_Current_Discharge);
                         _state = STATE.WARNING;
                     }
                     else
-                        RemoveAlarm(Alarm.AlarmCodes.Under_Current_Discharge);
+                        RemoveAlarm(AlarmCodes.Under_Current_Discharge);
                     if (Data.dischargeCurrent > DischargeCheckSpec.MaxCurrentAllow)
                     {
-                        AddAlarm(Alarm.AlarmCodes.Over_Current_Discharge);
+                        AddAlarm(AlarmCodes.Over_Current_Discharge);
                         _state = STATE.WARNING;
                     }
                     else
-                        RemoveAlarm(Alarm.AlarmCodes.Over_Current_Discharge);
+                        RemoveAlarm(AlarmCodes.Over_Current_Discharge);
                 }
             }
             return _state;

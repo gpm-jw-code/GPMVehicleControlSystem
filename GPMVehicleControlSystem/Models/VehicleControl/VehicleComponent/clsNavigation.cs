@@ -1,5 +1,6 @@
-﻿using GPMRosMessageNet.Messages;
-using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.Abstracts;
+﻿using AGVSystemCommonNet6;
+using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -45,6 +46,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 }
             }
         }
+
+        public double Angle => Data.robotPose.pose.orientation.ToTheta();
 
         private AGV_DIRECTION ConvertToDirection(ushort direction)
         {
