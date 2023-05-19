@@ -51,81 +51,94 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
         internal string OriTaskDataJson;
         internal bool IsAfterLoadingAction = false;
 
+        /// <summary>
+        /// 送給車控CommandActionClient的 TaskCommandGoal
+        /// </summary>
         internal TaskCommandGoal RosTaskCommandGoal
         {
             get
             {
-                try
-                {
-                    (int tag, double locx, double locy, double theta) currentPos = OnCurrentPoseReq();
-
-                    LOG.INFO($"[RosTaskCommandGoal] Gen RosTaskCommandGoal,Current Pose=>Tag:{currentPos.tag}," +
-                        $"X:{currentPos.locx},Y:{currentPos.locy},Theta:{currentPos.theta}");
-
-                    clsMapPoint[] _ExecutingTrajecory = new clsMapPoint[0];
-                    _ExecutingTrajecory = ExecutingTrajecory;
-                    if (ExecutingTrajecory.Length == 0)
-                    {
-                        throw new Exception("一般移動任務但是路徑長度為0");
-                    }
-                    int finalTag = Destination; //需要預先下發目標點(注意!並不是Trajection的最後一點,是整段導航任務的最後一點==>Trajection的最後一點如果跟Destination不同,表示AGVS在AGV行進途中會下發新的路徑過來)
-                    GUIDE_TYPE mobility_mode = Action_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : Action_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
-                    TaskCommandGoal goal = new TaskCommandGoal();
-                    goal.taskID = Task_Name;
-                    goal.finalGoalID = (ushort)finalTag;
-                    goal.mobilityModes = (ushort)mobility_mode;
-                    goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path();
-
-                    var poses = _ExecutingTrajecory.Select(point => new PoseStamped()
-                    {
-                        header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header
-                        {
-                            seq = (uint)point.Point_ID,
-                            frame_id = "map",
-                            stamp = DateTime.Now.ToStdTime(),
-                        },
-                        pose = new Pose()
-                        {
-                            position = new Point(point.X, point.Y, 0),
-                            orientation = point.Theta.ToQuaternion()
-                        }
-                    }).ToArray();
-
-                    var pathInfo = _ExecutingTrajecory.Select(point => new PathInfo()
-                    {
-                        tagid = (ushort)point.Point_ID,
-                        laserMode = (ushort)point.Laser,
-                        direction = (ushort)point.Control_Mode.Spin,
-                        map = point.Map_Name,
-                        changeMap = 0,
-                        speed = point.Speed,
-                        ultrasonicDistance = point.UltrasonicDistance
-                    }).ToArray();
-
-
-                    if (IsAfterLoadingAction) //Loading 結束
-                    {
-                        poses = poses.Reverse().ToArray();
-                        pathInfo = pathInfo.Reverse().ToArray();
-                        goal.finalGoalID = (ushort)Homing_Trajectory.First().Point_ID;
-                        goal.mobilityModes = (ushort)GUIDE_TYPE.Color_Tap_Backward;
-
-                    }
-
-                    goal.planPath.poses = poses;
-                    goal.pathInfo = pathInfo;
-                    return goal;
-                }
-                catch (Exception ec)
-                {
-                    LOG.ERROR("RosTaskCommandGoal_取得ROS任務Goal物件時發生錯誤", ec);
-                    return new TaskCommandGoal();
-
-                }
-
+                return TaskDataToRosCommandGoal(this);
             }
         }
 
+        /// <summary>
+        /// 把派車任務DTO轉成送給車控CommandActionClient的 TaskCommandGoal
+        /// </summary>
+        /// <param name="taskData"></param>
+        /// <returns></returns>
+        internal static TaskCommandGoal TaskDataToRosCommandGoal(clsTaskDownloadData taskData)
+        {
+            try
+            {
+                (int tag, double locx, double locy, double theta) currentPos = OnCurrentPoseReq();
+
+                LOG.INFO($"[RosTaskCommandGoal] Gen RosTaskCommandGoal,Current Pose=>Tag:{currentPos.tag}," +
+                    $"X:{currentPos.locx},Y:{currentPos.locy},Theta:{currentPos.theta}");
+
+                clsMapPoint[] _ExecutingTrajecory = new clsMapPoint[0];
+                _ExecutingTrajecory = taskData.ExecutingTrajecory;
+                if (taskData.ExecutingTrajecory.Length == 0)
+                {
+                    throw new Exception("一般移動任務但是路徑長度為0");
+                }
+                int finalTag = taskData.Destination; //需要預先下發目標點(注意!並不是Trajection的最後一點,是整段導航任務的最後一點==>Trajection的最後一點如果跟Destination不同,表示AGVS在AGV行進途中會下發新的路徑過來)
+
+                GUIDE_TYPE mobility_mode = taskData.Action_Type == ACTION_TYPE.None ? GUIDE_TYPE.SLAM : taskData.Action_Type == ACTION_TYPE.Discharge ? GUIDE_TYPE.Color_Tap_Backward : GUIDE_TYPE.Color_Tap_Forward;
+                TaskCommandGoal goal = new TaskCommandGoal();
+                goal.taskID = taskData.Task_Name;
+                goal.finalGoalID = (ushort)finalTag;
+                goal.mobilityModes = (ushort)mobility_mode;
+                goal.planPath = new RosSharp.RosBridgeClient.MessageTypes.Nav.Path();
+
+                var poses = _ExecutingTrajecory.Select(point => new PoseStamped()
+                {
+                    header = new RosSharp.RosBridgeClient.MessageTypes.Std.Header
+                    {
+                        seq = (uint)point.Point_ID,
+                        frame_id = "map",
+                        stamp = DateTime.Now.ToStdTime(),
+                    },
+                    pose = new Pose()
+                    {
+                        position = new Point(point.X, point.Y, 0),
+                        orientation = point.Theta.ToQuaternion()
+                    }
+                }).ToArray();
+
+                var pathInfo = _ExecutingTrajecory.Select(point => new PathInfo()
+                {
+                    tagid = (ushort)point.Point_ID,
+                    laserMode = (ushort)point.Laser,
+                    direction = (ushort)point.Control_Mode.Spin,
+                    map = point.Map_Name,
+                    changeMap = 0,
+                    speed = point.Speed,
+                    ultrasonicDistance = point.UltrasonicDistance
+                }).ToArray();
+
+
+                if (taskData.IsAfterLoadingAction) //Loading 結束
+                {
+                    poses = poses.Reverse().ToArray();
+                    pathInfo = pathInfo.Reverse().ToArray();
+                    goal.finalGoalID = (ushort)taskData.Homing_Trajectory.First().Point_ID;
+                    goal.mobilityModes = (ushort)GUIDE_TYPE.Color_Tap_Backward;
+
+                }
+
+                goal.planPath.poses = poses;
+                goal.pathInfo = pathInfo;
+                return goal;
+            }
+            catch (Exception ec)
+            {
+                LOG.ERROR("RosTaskCommandGoal_取得ROS任務Goal物件時發生錯誤", ec);
+                return new TaskCommandGoal();
+
+            }
+
+        }
         /// <summary>
         /// 是否為切片任務(軌跡最後一點TAG不為目標點TAG)
         /// </summary>
@@ -138,20 +151,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
             taskData.Destination = Homing_Trajectory.First().Point_ID;
             return taskData;
         }
-        double CalculateTheta(RosSharp.RosBridgeClient.MessageTypes.Geometry.Quaternion orientation)
-        {
-            double yaw;
-            double x = orientation.x;
-            double y = orientation.y;
-            double z = orientation.z;
-            double w = orientation.w;
-            // 計算角度
-            double siny_cosp = 2.0 * (w * z + x * y);
-            double cosy_cosp = 1.0 - 2.0 * (y * y + z * z);
-            yaw = Math.Atan2(siny_cosp, cosy_cosp);
-            return yaw * 180.0 / Math.PI;
-        }
-
+     
     }
 
 

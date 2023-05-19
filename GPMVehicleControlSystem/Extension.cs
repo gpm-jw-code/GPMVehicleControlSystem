@@ -20,6 +20,12 @@ namespace GPMVehicleControlSystem
         {
             return _time.ToString("yyyyMMdd HH:mm:ss");
         }
+
+        /// <summary>
+        /// 將角度值轉換為 Quaternion(四位元)
+        /// </summary>
+        /// <param name="Theta"></param>
+        /// <returns></returns>
         public static Quaternion ToQuaternion(this double Theta)
         {
             double yaw_radians = (float)Theta * Math.PI / 180.0;
