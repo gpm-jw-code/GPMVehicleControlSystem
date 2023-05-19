@@ -15,9 +15,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             Special = 10,
         }
 
+        /// <summary>
+        /// AGVS站點雷射預設定植
+        /// </summary>
+        public enum AGVS_LASER_SETTING_ORDER
+        {
+            BYPASS,
+            NORMAL,
+        }
+
         public clsDOModule DOModule { get; set; }
         public clsDIModule DIModule { get; set; }
-
+        public AGVS_LASER_SETTING_ORDER AgvsLsrSetting { get; set; } = AGVS_LASER_SETTING_ORDER.NORMAL;
         public clsLaser(clsDOModule DOModule, clsDIModule DIModule)
         {
             this.DOModule = DOModule;
@@ -63,10 +72,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         internal void LaserChangeByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION direction)
         {
-            if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
-                Mode = LASER_MODE.Move;
-            else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)
-                Mode = LASER_MODE.Spin;
+            if (AgvsLsrSetting == AGVS_LASER_SETTING_ORDER.BYPASS)
+            {
+                Mode = LASER_MODE.Bypass;
+            }
+            else
+            {
+                if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
+                    Mode = LASER_MODE.Move;
+                else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)
+                    Mode = LASER_MODE.Spin;
+            }
         }
 
         private LASER_MODE _Mode = LASER_MODE.Bypass;

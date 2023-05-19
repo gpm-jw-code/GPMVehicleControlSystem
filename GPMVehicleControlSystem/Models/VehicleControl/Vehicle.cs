@@ -207,7 +207,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
 
         }
-        private void EventsRegist()
+        private void EventsRegist() //TODO EventRegist
         {
             AGVDispatch.AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
             AGVS.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
