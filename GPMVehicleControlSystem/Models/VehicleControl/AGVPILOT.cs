@@ -1,9 +1,11 @@
-﻿using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
+﻿using GPMRosMessageNet.Messages;
+using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using GPMVehicleControlSystem.Models.Alarm;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Tools;
 using System.Diagnostics;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
+using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
@@ -16,6 +18,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             E84, MODBUS, EMULATION
         }
+        public clsTaskDownloadData RunningTaskData => AGVC.RunningTaskData;
 
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
 
@@ -55,6 +58,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     Sub_Status = SUB_STATUS.DOWN;
                     return;
                 }
+
                 if (AGVC.IsAGVExecutingTask)
                 {
                     LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
@@ -73,8 +77,29 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         LOG.Critical($"無法發送任務給車控執行");
                         Sub_Status = SUB_STATUS.DOWN;
                     }
+                    Navigation.OnTagReach += OnTagReachHandler;
                 }
             });
+        }
+
+        private void OnTagReachHandler(object? sender, int currentTag)
+        {
+            var TagPoint = RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
+            if (TagPoint == null)
+            {
+                LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
+                return;
+            }
+            PathInfo? pathInfoRos = RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
+            if (pathInfoRos == null)
+            {
+                AGVC.AbortTask();
+                AlarmManager.AddAlarm(AlarmCodes.Motion_control_Tracking_Tag_Not_On_Tag_Or_Tap, true);
+                Sub_Status = SUB_STATUS.DOWN;
+                return;
+            }
+            Laser.AgvsLsrSetting = TagPoint.Laser == 0 ? AGVS_LASER_SETTING_ORDER.BYPASS : AGVS_LASER_SETTING_ORDER.NORMAL;
+            LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
         }
 
         /// <summary>
@@ -202,9 +227,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         }
         /// <summary>
-        /// 車頭二次檢Sensor檢察功能
-        /// </summary>
-        /// <summary>
         /// 移動任務結束後的處理
         /// </summary>
         /// <param name="sender"></param>
@@ -233,6 +255,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         {
                             AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
                             Sub_Status = SUB_STATUS.DOWN;
+                            Navigation.OnTagReach -= OnTagReachHandler;
+
                             return;
                         }
                     }
@@ -257,6 +281,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
                 else
                     await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+
+                Navigation.OnTagReach -= OnTagReachHandler;
+
             }
             catch (Exception ex)
             {
@@ -267,6 +294,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
+        /// <summary>
+        /// 車頭二次檢Sensor檢察功能
+        /// </summary>
         private void StartFrontendObstcleDetection(string action = "")
         {
             int DetectionTime = AppSettingsHelper.GetValue<int>("VCS:LOAD_OBS_DETECTION:Duration");
@@ -335,7 +365,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-           private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
+        private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
         {
             await Task.Delay(200);
             LOG.INFO($"Task Feedback when Action done but need to expand path");

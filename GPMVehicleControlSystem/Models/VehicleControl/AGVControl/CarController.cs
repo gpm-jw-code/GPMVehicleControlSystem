@@ -235,6 +235,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             }
             DisposeTaskCommandActionClient();
         }
+
         internal bool NavPathExpandedFlag { get; private set; } = false;
         private void OnTaskCommandActionDone(ActionStatus Status)
         {

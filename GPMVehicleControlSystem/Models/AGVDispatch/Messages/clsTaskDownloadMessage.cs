@@ -134,8 +134,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
             catch (Exception ec)
             {
                 LOG.ERROR("RosTaskCommandGoal_取得ROS任務Goal物件時發生錯誤", ec);
-                return new TaskCommandGoal();
-
+                return null;
             }
 
         }
@@ -151,7 +150,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Messages
             taskData.Destination = Homing_Trajectory.First().Point_ID;
             return taskData;
         }
-     
+
     }
 
 

@@ -75,6 +75,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (AgvsLsrSetting == AGVS_LASER_SETTING_ORDER.BYPASS)
             {
                 Mode = LASER_MODE.Bypass;
+                LOG.INFO($"雷射設定組 = {LASER_MODE.Bypass} (因派車系統點位雷射設定為 0)");
             }
             else
             {

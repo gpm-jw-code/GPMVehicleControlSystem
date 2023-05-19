@@ -14,8 +14,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         public new NavigationState Data => StateData == null ? new NavigationState() : (NavigationState)StateData;
 
         public event EventHandler<AGV_DIRECTION> OnDirectionChanged;
-        private AGV_DIRECTION _previousDirection = AGV_DIRECTION.STOP;
+        public event EventHandler<int> OnTagReach;
 
+        private int _previousTag = 0;
+        private AGV_DIRECTION _previousDirection = AGV_DIRECTION.STOP;
         public AGV_DIRECTION Direction
         {
             get => _previousDirection;
@@ -25,6 +27,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 {
                     OnDirectionChanged?.Invoke(this, value);
                     _previousDirection = value;
+                }
+            }
+        }
+        public int LastVisitedTag
+        {
+            get => _previousTag;
+            set
+            {
+                if (value != _previousTag)
+                {
+                    if (value != 0)
+                    {
+                        OnTagReach?.Invoke(this, value);
+                    }
+                    _previousTag = value;
                 }
             }
         }
@@ -43,6 +60,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         public override STATE CheckStateDataContent()
         {
             Direction = ConvertToDirection(Data.robotDirect);
+            LastVisitedTag = Data.lastVisitedNode.data;
             if (Data.errorCode != 0)
             {
                 return STATE.ABNORMAL;
