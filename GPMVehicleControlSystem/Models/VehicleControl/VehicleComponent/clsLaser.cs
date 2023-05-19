@@ -120,5 +120,24 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             get => DOModule.GetState(clsDOModule.DO_ITEM.Left_LsrBypass);
             set => DOModule.SetState(clsDOModule.DO_ITEM.Left_LsrBypass, value);
         }
+
+        /// <summary>
+        /// 前後左右雷射Bypass全部關閉
+        /// </summary>
+        /// <exception cref="NotImplementedException"></exception>
+        internal void AllLaserActive()
+        {
+            FrontLaserBypass = BackLaserBypass = RightLaserBypass = LeftLaserBypass = false;
+        }
+
+
+        /// <summary>
+        /// 前後左右雷射Bypass全部開啟
+        /// </summary>
+        /// <exception cref="NotImplementedException"></exception>
+        internal void AllLaserDisable()
+        {
+            FrontLaserBypass = BackLaserBypass = RightLaserBypass = LeftLaserBypass = true;
+        }
     }
 }

@@ -505,10 +505,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             Console.WriteLine("Try Reset Alarms");
         }
-
+        /// <summary>
+        /// Auto/Manual 模式切換
+        /// </summary>
+        /// <param name="mode"></param>
+        /// <returns></returns>
         internal async Task<bool> Auto_Mode_Siwtch(OPERATOR_MODE mode)
         {
             Operation_Mode = mode;
+            if (mode == OPERATOR_MODE.AUTO)
+            {
+                Laser.AllLaserActive();
+            }
+            else
+            {
+                Laser.AllLaserDisable();
+            }
             return true;
         }
         private bool OnlineModeChangingFlag = false;
