@@ -304,7 +304,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 Sub_Status = SUB_STATUS.DOWN;
                 return;
             }
-            Laser.AgvsLsrSetting = TagPoint.Laser == 0 ? AGVS_LASER_SETTING_ORDER.BYPASS : AGVS_LASER_SETTING_ORDER.NORMAL;
+            Laser.AgvsLsrSetting = TagPoint.Laser;
             LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
         }
         /// <summary>

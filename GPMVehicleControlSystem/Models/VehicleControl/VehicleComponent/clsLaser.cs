@@ -31,8 +31,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public clsDOModule DOModule { get; set; }
         public clsDIModule DIModule { get; set; }
-        private AGVS_LASER_SETTING_ORDER _AgvsLsrSetting = AGVS_LASER_SETTING_ORDER.NORMAL;
-        public AGVS_LASER_SETTING_ORDER AgvsLsrSetting
+        private int _AgvsLsrSetting = 0;
+        public int AgvsLsrSetting
         {
             get => _AgvsLsrSetting;
             set
@@ -40,8 +40,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 if (_AgvsLsrSetting != value)
                 {
                     _AgvsLsrSetting = value;
-                    if (value == AGVS_LASER_SETTING_ORDER.BYPASS)
-                        Mode = LASER_MODE.Bypass;
+                    Console.WriteLine($"變更雷射預設組[AGVS 設定]");
                 }
             }
         }
@@ -90,10 +89,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         internal void LaserChangeByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION direction)
         {
-            if (AgvsLsrSetting == AGVS_LASER_SETTING_ORDER.BYPASS)
+            if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
             {
-                Mode = LASER_MODE.Bypass;
-                LOG.INFO($"雷射設定組 = {LASER_MODE.Bypass} (因派車系統點位雷射設定為 0)");
+                ModeSwitch(AgvsLsrSetting);
+                LOG.INFO($"雷射設定組 = {AgvsLsrSetting}");
             }
             else
             {
