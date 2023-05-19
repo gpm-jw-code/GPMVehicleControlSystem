@@ -49,10 +49,10 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             IsMovingPlaying = true;
             Play(playList.Moving);
         }
-
+        private static bool _linux_music_stopped = false;
         internal static async Task BuzzerStop()
         {
-
+            _linux_music_stopped = false;
             playCancelTS.Cancel();
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
             if (Environment.OSVersion.Platform == PlatformID.Unix)
@@ -84,10 +84,12 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
 
             await Task.Delay(100);
+            _linux_music_stopped = true;
         }
 
-        private static void Play(string filePath)
+        private static async void Play(string filePath)
         {
+         
             if (!File.Exists(filePath))
             {
                 LOG.ERROR($"Can't play {filePath}, File not exist");
@@ -95,6 +97,15 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
             try
             {
+                CancellationTokenSource cst = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                while (!_linux_music_stopped)
+                {
+                    if (cst.IsCancellationRequested)
+                        break;
+                    await Task.Delay(1);
+                }
+
+
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
                     PlayInLinux(filePath);

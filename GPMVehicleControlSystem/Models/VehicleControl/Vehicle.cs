@@ -221,7 +221,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnFrontFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
             WagoDI.OnBackFarAreaLaserTrigger += AGVC.FarAreaLaserTriggerHandler;
             WagoDI.OnFrontFarAreaLaserRecovery += AGVC.FarAreaLaserRecoveryHandler;
-            WagoDI.OnBackFarAreaLaserRecovery += AGVC.FarAreaLaserRecoveryHandler;
 
             WagoDI.OnFrontFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnBackFarAreaLaserTrigger += WagoDI_OnFarAreaLaserTrigger;
@@ -281,7 +280,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
         private (int tag, double locx, double locy, double theta) CurrentPoseReqCallback()
         {
-            return new(Navigation.Data.lastVisitedNode.data, BarcodeReader.Data.xValue, BarcodeReader.Data.yValue, BarcodeReader.Data.theta);
+            var tag = Navigation.Data.lastVisitedNode.data;
+            var x = Navigation.Data.robotPose.pose.position.x;
+            var y = Navigation.Data.robotPose.pose.position.y;
+            var theta = BarcodeReader.Data.theta;
+            return new(tag,x, y, theta);
         }
 
         private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
@@ -289,6 +292,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             if (Operation_Mode != OPERATOR_MODE.AUTO)
                 return;
+
             if (Main_Status == MAIN_STATUS.RUN)
                 Sub_Status = SUB_STATUS.RUN;
             else if (Main_Status == MAIN_STATUS.IDLE)
@@ -296,6 +300,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             else if (Main_Status == MAIN_STATUS.DOWN)
                 Sub_Status = SUB_STATUS.DOWN;
 
+            bool frontLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_4);
+            bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
+            if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
+                AGVC.FarAreaLaserRecoveryHandler(sender, e);
         }
 
         private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
@@ -461,15 +469,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             for (int i = 0; i < _ModuleInformation.Wheel_Driver.driversState.Length; i++)
                 WheelDrivers[i].StateData = _ModuleInformation.Wheel_Driver.driversState[i];
 
+            //Task.Factory.StartNew(async() =>
+            //{
+            //    await Task.Delay(1000);
 
-            foreach (var item in CarComponents.Select(comp => comp.ErrorCodes).ToList())
-            {
-                foreach (var alarm in item.Keys)
-                {
-                    AlarmManager.AddAlarm(alarm);
-                }
-            }
+            //    foreach (var item in CarComponents.Select(comp => comp.ErrorCodes).ToList())
+            //    {
+            //        foreach (var alarm in item.Keys)
+            //        {
+            //            AlarmManager.AddWarning(alarm);
+            //        }
+            //    }
 
+            //});
             if (Battery.IsCharging)
             {
                 Sub_Status = SUB_STATUS.Charging;

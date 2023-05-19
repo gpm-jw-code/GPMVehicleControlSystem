@@ -8,7 +8,8 @@ using Microsoft.AspNetCore.Http.Json;
 var builder = WebApplication.CreateBuilder(args);
 
 AlarmManager.LoadAlarmList();
-StaEmuManager.Start();
+
+//StaEmuManager.Start();
 
 BuzzerPlayer.Initialize();
 DBhelper.Initialize();

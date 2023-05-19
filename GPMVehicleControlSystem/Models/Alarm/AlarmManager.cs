@@ -68,11 +68,19 @@ namespace GPMVehicleControlSystem.Models.Alarm
             clsAlarmCode warning_save = warning.Clone();
             warning_save.Time = DateTime.Now;
             warning_save.ELevel = clsAlarmCode.LEVEL.Warning;
-
-
-            if (CurrentAlarms.TryAdd(warning_save.Time, warning_save))
+            var existAlar = (CurrentAlarms.FirstOrDefault(al => al.Value.EAlarmCode == Alarm_code));
+            if (existAlar.Value != null)
             {
-                DBhelper.InsertAlarm(warning_save);
+                CurrentAlarms.TryRemove(existAlar.Key,out _);
+                CurrentAlarms.TryAdd(warning_save.Time, warning_save);
+            }
+            else
+            {
+
+                if (CurrentAlarms.TryAdd(warning_save.Time, warning_save))
+                {
+                    DBhelper.InsertAlarm(warning_save);
+                }
             }
         }
         public static void AddAlarm(AlarmCodes Alarm_code, bool buzzer_alarm = true)
