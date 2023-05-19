@@ -52,44 +52,35 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         private static bool _linux_music_stopped = false;
         internal static async Task BuzzerStop()
         {
-            _linux_music_stopped = false;
             playCancelTS.Cancel();
+            _linux_music_stopped = false;
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
             if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
-                if (IsAlarmPlaying | IsActionPlaying | IsMovingPlaying)
+                if (_ffmpegProcess != null)
                 {
-                    ProcessStartInfo startInfo = new ProcessStartInfo()
+                    try
                     {
-                        FileName = "pkill",
-                        Arguments = "ffmpeg",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                    };
-
-                    Process killProcess = new Process
+                        _ffmpegProcess.Kill();
+                        Console.WriteLine("music process killed");
+                    }
+                    catch (Exception ex)
                     {
-                        StartInfo = startInfo
-                    };
-                    killProcess.Start();
-                    killProcess.WaitForExit();
-                    Console.WriteLine("music process killed");
+                        Console.WriteLine(ex.Message);
+                    }
                 }
+                Console.WriteLine("music process killed");
             }
             else
             {
                 player?.Stop();
             }
-
-            await Task.Delay(100);
-            _linux_music_stopped = true;
+            await Task.Delay(12);
         }
 
         private static async void Play(string filePath)
         {
-         
+
             if (!File.Exists(filePath))
             {
                 LOG.ERROR($"Can't play {filePath}, File not exist");
@@ -97,14 +88,14 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
             try
             {
-                CancellationTokenSource cst = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                playCancelTS = new CancellationTokenSource();
+                CancellationTokenSource cst = new CancellationTokenSource(TimeSpan.FromSeconds(.4));
                 while (!_linux_music_stopped)
                 {
                     if (cst.IsCancellationRequested)
                         break;
                     await Task.Delay(1);
                 }
-
 
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
@@ -126,59 +117,77 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             // 播放
             player.PlayLooping();
         }
-
+        static Process _ffmpegProcess;
         private static void PlayInLinux(string filePath)
         {
-            Task.Factory.StartNew(() =>
-            {
-                string ffmpegPath = "/usr/bin/ffmpeg";
-                ProcessStartInfo startInfo = new ProcessStartInfo()
-                {
-                    FileName = ffmpegPath,
-                    Arguments = $"-i {filePath} -f alsa default",
-                    RedirectStandardError = true,
-                    UseShellExecute = false
-                };
+            Task.Run(() =>
+             {
+                 string ffmpegPath = "/usr/bin/ffmpeg";
+                 ProcessStartInfo startInfo = new ProcessStartInfo()
+                 {
+                     FileName = ffmpegPath,
+                     Arguments = $"-i {filePath} -f alsa default -loglevel quiet",
+                     RedirectStandardOutput = false,
+                     UseShellExecute = false,
+                 };
 
-                Process _ffmpegProcess = new Process
-                {
-                    StartInfo = startInfo
-                };
+                 _ffmpegProcess = new Process
+                 {
+                     StartInfo = startInfo
+                 };
 
-                playIngPlayingProcesses = _ffmpegProcess;
+                 playIngPlayingProcesses = _ffmpegProcess;
 
-                try
-                {
-                    _ffmpegProcess.Start();
+                 try
+                 {
+                     _ffmpegProcess.Start();
 
-                }
-                catch (System.Exception ex)
-                {
-                    LOG.ERROR($"Couldn't play music by ffmepg...Error Message:{ex.Message}", ex);
-                    return;
-                }
-                _ffmpegProcess.WaitForExit();
-                Console.WriteLine("music process exit");
-                if (!playCancelTS.IsCancellationRequested)
-                    StartNewFFmpegProcess(_ffmpegProcess, startInfo);
-            });
+                 }
+                 catch (System.Exception ex)
+                 {
+                     LOG.ERROR($"Couldn't play music by ffmepg...Error Message:{ex.Message}", ex);
+                     return;
+                 }
+                 Task tk = _ffmpegProcess.WaitForExitAsync(playCancelTS.Token);
+                 tk.ContinueWith(_tk =>
+                 {
+                     Console.WriteLine("music process exit");
+                     if (!playCancelTS.IsCancellationRequested)
+                         StartNewFFmpegProcess(_ffmpegProcess, startInfo);
+                     else
+                     {
+                         _linux_music_stopped = true;
+                     }
+                 });
+
+             });
 
         }
 
         private static void StartNewFFmpegProcess(Process ffmpegProcess, ProcessStartInfo startInfo)
         {
-            Task.Factory.StartNew(() =>
+            Task.Run(() =>
             {
+                playCancelTS = new CancellationTokenSource();
                 Console.WriteLine("start new music process");
-                Process _ffmpegProcess = new Process
+                _ffmpegProcess = new Process
                 {
                     StartInfo = startInfo
                 };
                 playIngPlayingProcesses = _ffmpegProcess;
                 _ffmpegProcess.Start();
-                _ffmpegProcess.WaitForExit();
-                if (!playCancelTS.IsCancellationRequested)
-                    StartNewFFmpegProcess(_ffmpegProcess, startInfo);
+                Task tk = _ffmpegProcess.WaitForExitAsync(playCancelTS.Token);
+                tk.ContinueWith(_tk =>
+                {
+                    Console.WriteLine("music process exit");
+                    if (!playCancelTS.IsCancellationRequested)
+                        StartNewFFmpegProcess(_ffmpegProcess, startInfo);
+                    else
+                    {
+                        _linux_music_stopped = true;
+                    }
+                });
+
 
             });
 
