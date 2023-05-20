@@ -5,6 +5,7 @@ using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.Abstracts;
 using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
+using AGVSystemCommonNet6;
 
 namespace GPMVehicleControlSystem.ViewModels
 {
@@ -40,7 +41,7 @@ namespace GPMVehicleControlSystem.ViewModels
                         BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
                         ChargeCurrent = AgvEntity.Battery.Data.chargeCurrent,
                         IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
-                        IsError = AgvEntity.Battery.State ==CarComponent.STATE.ABNORMAL
+                        IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
                     Angle = AgvEntity.Navigation.Angle,
@@ -58,7 +59,8 @@ namespace GPMVehicleControlSystem.ViewModels
                     NavInfo = new NavStateVM
                     {
                         Destination = AgvEntity.AGVC.RunningTaskData.Destination + "",
-                        Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit
+                        Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit,
+                        PathPlan = AgvEntity.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },
                     Current_LASER_MODE = AgvEntity.Laser.Mode.ToString(),
                     LightsStates = new AGV_VMS.ViewModels.LightsStatesVM

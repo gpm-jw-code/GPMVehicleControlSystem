@@ -1,6 +1,5 @@
 ﻿using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
-using AGVSystemCommonNet6.AGVSystemCommonNet6.GPMRosMessageNet.Actions;
 using AGVSystemCommonNet6.GPMRosMessageNet.Actions;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
@@ -152,12 +151,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback));
             rosSocket.Subscribe<LocalizationControllerResultMessage0502>("localizationcontroller/out/localizationcontroller_result_message_0502", SickStateCallback, 100);
             rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_done_action", CSTReaderDoneActionHandle);
-            
+
             ManualController = new MoveControl(rosSocket);
             return true;
         }
 
-       
+
         private void Protocol_OnClosed(object? sender, EventArgs e)
         {
             rosSocket.protocol.OnClosed -= Protocol_OnClosed;
@@ -291,7 +290,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             LOG.INFO($"AGVC Action Done. Status={Status}_Current Tag={CurrentTag},Destination={RunningTaskData.Destination}, NavPath Expaned Flag={!isReachFinalTag}");
             if (isReachFinalTag)
             {
-                if (Status == ActionStatus.SUCCEEDED)
+                if (Status == ActionStatus.SUCCEEDED | Status == ActionStatus.PENDING)
                     OnTaskActionFinishAndSuccess?.Invoke(this, this.RunningTaskData);
                 else
                     OnTaskActionFinishCauseAbort?.Invoke(this, this.RunningTaskData);

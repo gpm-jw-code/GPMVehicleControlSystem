@@ -5,6 +5,9 @@ using RosSharp.RosBridgeClient.MessageTypes.Std;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.GPMRosMessageNet.Services;
+using RosSharp.RosBridgeClient.Actionlib;
+using AGVSystemCommonNet6.GPMRosMessageNet.Actions;
+using AGVSystemCommonNet6;
 
 namespace GPMVehicleControlSystem.Models.Emulators
 {
@@ -12,6 +15,7 @@ namespace GPMVehicleControlSystem.Models.Emulators
     public class AGVROSEmulator
     {
         RosSocket? rosSocket;
+        TaskCommandActionServer actionServer;
         private ModuleInformation module_info = new ModuleInformation()
         {
             IMU = new GpmImuMsg
@@ -26,6 +30,14 @@ namespace GPMVehicleControlSystem.Models.Emulators
             CSTReader = new CSTReaderState
             {
                 state = 1
+            },
+            nav_state = new NavigationState
+            {
+                lastVisitedNode = new RosSharp.RosBridgeClient.MessageTypes.Std.Int32(31)
+            },
+            reader = new BarcodeReaderState
+            {
+                tagID = 31
             }
         };
         private LocalizationControllerResultMessage0502 localizeResult = new LocalizationControllerResultMessage0502();
@@ -40,11 +52,45 @@ namespace GPMVehicleControlSystem.Models.Emulators
             rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", CstReaderServiceCallack);
             rosSocket.Advertise<LocalizationControllerResultMessage0502>("SICK_Emu", "localizationcontroller/out/localizationcontroller_result_message_0502");
 
+            actionServer = new TaskCommandActionServer("/barcodemovebase", rosSocket);
+            actionServer.Initialize();
+            actionServer.OnNAVGoalReceived += NavGaolHandle;
             _ = PublishModuleInformation(rosSocket);
             // _ = PublishLocalizeResult(rosSocket);
 
         }
 
+        private void NavGaolHandle(TaskCommandGoal obj)
+        {
+            Console.WriteLine($"[ROS 車控模擬器] New Task , Task Name = {obj.taskID}, Tags Path = { string.Join("->", obj.planPath.poses.Select(p => p.header.seq)) }");
+            actionServer.AcceptedInvoke();
+
+            //模擬走型
+            Task.Run(() =>
+            {
+                foreach (RosSharp.RosBridgeClient.MessageTypes.Geometry.PoseStamped? item in obj.planPath.poses)
+                {
+                    uint tag = item.header.seq;
+                    double tag_pose_x = item.pose.position.x;
+                    double tag_pose_y = item.pose.position.y;
+                    double tag_theta = item.pose.orientation.ToTheta();
+
+                    module_info.nav_state.lastVisitedNode.data = (int)tag;
+                    module_info.nav_state.robotPose.pose.position.x = tag_pose_x;
+                    module_info.nav_state.robotPose.pose.position.y = tag_pose_y;
+                    module_info.nav_state.robotPose.pose.orientation = tag_theta.ToQuaternion();
+
+                    module_info.reader.tagID = tag;
+
+                    module_info.reader.xValue = tag_pose_x;
+                    module_info.reader.yValue = tag_pose_y;
+                    module_info.reader.theta = tag_theta;
+                    Thread.Sleep(1500);
+                }
+                actionServer.SucceedInvoke();
+            });
+
+        }
 
         private async Task PublishLocalizeResult(RosSocket rosSocket)
         {

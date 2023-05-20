@@ -13,26 +13,31 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
 
         public static string GetMapUrl = "http://192.168.0.1:6600/map/get";
         [HttpGet("GetMapFromServer")]
-        public async Task<IActionResult> GetMapFromServer()
+        public async Task<IActionResult> GetMap()
         {
             try
             {
-                Map? map = null;
-                using (HttpClient client = new HttpClient())
-                {
-                    var response = await client.GetAsync(GetMapUrl);
-                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                    {
-                        var jsonStr = await response.Content.ReadAsStringAsync();
-                        map = JsonConvert.DeserializeObject<Map>(jsonStr);
-                    }
-                }
-                return Ok(map);
+                return Ok(await GetMapFromServer());
             }
             catch (Exception ex)
             {
-                throw ex;
+                return Ok(MapManager.LoadMapFromFile(Path.Combine(Environment.CurrentDirectory, "param/Map_UMTC_3F_Yellow.json")));
             }
+        }
+
+        public static async Task<Map> GetMapFromServer()
+        {
+            Map? map = null;
+            using (HttpClient client = new HttpClient())
+            {
+                var response = await client.GetAsync(GetMapUrl);
+                if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                {
+                    var jsonStr = await response.Content.ReadAsStringAsync();
+                    map = JsonConvert.DeserializeObject<Map>(jsonStr);
+                }
+            }
+            return (map);
         }
 
     }

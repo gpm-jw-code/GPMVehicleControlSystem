@@ -278,6 +278,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             BuzzerPlayer.BuzzerStop();
             WagoDO.ResetHandshakeSignals();
+
+            if (!WagoDI.GetState(clsDIModule.DI_ITEM.EMO))
+            {
+                AlarmManager.AddAlarm(AlarmCodes.EMO_Button);
+                BuzzerPlayer.BuzzerAlarm();
+                return false;
+            }
+
             if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
             {
                 AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);
@@ -330,7 +338,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
             //if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
             //    AGVC.FarAreaLaserRecoveryHandler(sender, e);
-        
+
         }
 
         private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
