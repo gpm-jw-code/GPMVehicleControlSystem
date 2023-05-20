@@ -15,7 +15,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
     /// <summary>
     /// 使用ＲＯＳ與車控端通訊
     /// </summary>
-    public class CarController : Connection
+    public partial class CarController : Connection
     {
         public enum LOCALIZE_STATE : byte
         {
@@ -146,15 +146,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                     Thread.Sleep(5000);
                 }
             }
+
             rosSocket.protocol.OnClosed += Protocol_OnClosed;
             LOG.INFO($"ROS Connected ! ws://{IP}:{Port}");
             rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback));
             rosSocket.Subscribe<LocalizationControllerResultMessage0502>("localizationcontroller/out/localizationcontroller_result_message_0502", SickStateCallback, 100);
-
+            rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_done_action", CSTReaderDoneActionHandle);
+            
             ManualController = new MoveControl(rosSocket);
             return true;
         }
 
+       
         private void Protocol_OnClosed(object? sender, EventArgs e)
         {
             rosSocket.protocol.OnClosed -= Protocol_OnClosed;

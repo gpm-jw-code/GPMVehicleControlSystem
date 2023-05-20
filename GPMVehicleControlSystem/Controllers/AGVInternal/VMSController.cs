@@ -52,7 +52,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
             try
             {
-                if(agv.BarcodeReader.CurrentTag ==0)
+                if (agv.BarcodeReader.CurrentTag == 0)
                 {
                     return Ok(new
                     {
@@ -180,5 +180,20 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             agv.Laser.ModeSwitch(mode);
             return Ok();
         }
+
+
+
+        [HttpGet("TriggerCSTReader")]
+        public async Task<IActionResult> TriggerCSTReader()
+        {
+            (bool request_success, bool action_done) ret = await agv.AGVC.TriggerCSTReader();
+            if (ret.action_done)
+            {
+                Console.WriteLine(agv.CSTReader.Data.data);
+            }
+            return Ok();
+        }
+
+
     }
 }

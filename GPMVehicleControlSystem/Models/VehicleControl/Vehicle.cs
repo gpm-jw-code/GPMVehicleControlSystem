@@ -17,6 +17,9 @@ using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsL
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
+    /// <summary>
+    /// 車子
+    /// </summary>
     public partial class Vehicle
     {
 
@@ -455,7 +458,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         X = Navigation.Data.robotPose.pose.position.x,
                         Y = Navigation.Data.robotPose.pose.position.y,
-                        Theta = BarcodeReader.Data.Theta_Int
+                        Theta = BarcodeReader.Data.theta
                     },
                     CSTID = new string[] { CSTReader.Data.data },
                     Odometry = Odometry,

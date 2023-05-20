@@ -12,9 +12,6 @@ using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsL
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
-    /// <summary>
-    /// AGV駕駛員,可以控制車子(包含元件跟車控)以及跟AGVS溝通
-    /// </summary>
     public partial class Vehicle
     {
         public enum HS_METHOD
@@ -62,6 +59,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     return;
                 }
 
+
+
                 if (AGVC.IsAGVExecutingTask)
                 {
                     LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
@@ -85,6 +84,28 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
+        /// <summary>
+        /// 當車子開始執行任務的時候
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="taskData"></param>
+        private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
+        {
+            Sub_Status = SUB_STATUS.RUN;
+
+            if (taskData.Action_Type == ACTION_TYPE.None)
+            {
+
+                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+            }
+            else
+            {
+                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_START);
+
+
+            }
+
+        }
         /// <summary>
         /// 開始移動任務前要做的事
         /// </summary>
@@ -167,12 +188,74 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return (true, AlarmCodes.None);
 
         }
+        /// <summary>
+        /// 移動任務結束後的處理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="taskData"></param>
+        private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
+        {
+            Sub_Status = SUB_STATUS.IDLE;
+            //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
+            await Task.Delay(500);
+            try
+            {
+                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
+                if (Main_Status != MAIN_STATUS.IDLE)
+                {
+                    throw new Exception("ACTION FINISH Feedback But AGV MAIN STATUS is not IDLE");
+                }
+                if (taskData.Action_Type != ACTION_TYPE.None)
+                {
+                    if (taskData.IsTaskSegmented)
+                    {
+                        //侵入Port後
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                        var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
+
+                        if (!check_result_after_Task.confirm)
+                        {
+                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
+                            Sub_Status = SUB_STATUS.DOWN;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        /// 退出Port後
+                        if (taskData.Station_Type == STATION_TYPE.EQ)
+                        {
+                            (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
+                            if (!result.eqready_off)
+                            {
+                                AlarmManager.AddAlarm(result.alarmCode);
+                                Sub_Status = SUB_STATUS.DOWN;
+                            }
+                            else
+                            {
+                                LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
+                            }
+                        }
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                    }
+                }
+                else
+                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+
+            }
+            catch (Exception ex)
+            {
+                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
+            }
+            await Task.Delay(500);
+            DirectionLighter.CloseAll();
+        }
 
         /// <summary>
         /// 移動任務結束後
         /// </summary>
         /// <param name="taskDownloadData"></param>
-        private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteActionAfterMoving(clsTaskDownloadData taskDownloadData)
+        private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteWorksWhenReachPort(clsTaskDownloadData taskDownloadData)
         {
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
@@ -220,68 +303,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return (true, AlarmCodes.None);
 
         }
-        /// <summary>
-        /// 移動任務結束後的處理
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="taskData"></param>
-        private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
-        {
-            Sub_Status = SUB_STATUS.IDLE;
-            //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
-            await Task.Delay(500);
-            try
-            {
-                bool isActionFinish = Navigation.Data.lastVisitedNode.data == taskData.Destination;
-                if (Main_Status != MAIN_STATUS.IDLE)
-                {
-                    throw new Exception("ACTION FINISH Feedback But AGV MAIN STATUS is not IDLE");
-                }
-
-                if (taskData.Action_Type != ACTION_TYPE.None)
-                {
-                    if (taskData.IsTaskSegmented)
-                    {
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
-                        var check_result_after_Task = await ExecuteActionAfterMoving(taskData);
-
-                        if (!check_result_after_Task.confirm)
-                        {
-                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
-                            Sub_Status = SUB_STATUS.DOWN;
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        if (taskData.Station_Type == STATION_TYPE.EQ)
-                        {
-                            (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
-                            if (!result.eqready_off)
-                            {
-                                AlarmManager.AddAlarm(result.alarmCode);
-                                Sub_Status = SUB_STATUS.DOWN;
-                            }
-                            else
-                            {
-                                LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
-                            }
-                        }
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-                    }
-                }
-                else
-                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
-            }
-            catch (Exception ex)
-            {
-                LOG.ERROR("AGVMoveTaskActionSuccessHandle", ex);
-            }
-            await Task.Delay(500);
-            DirectionLighter.CloseAll();
-        }
-
+      
 
         private void OnTagReachHandler(object? sender, int currentTag)
         {
@@ -307,6 +329,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Laser.AgvsLsrSetting = TagPoint.Laser;
             LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
         }
+       
         /// <summary>
         /// 車頭二次檢Sensor檢察功能
         /// </summary>
@@ -356,23 +379,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
-        {
-            Sub_Status = SUB_STATUS.RUN;
-
-            if (taskData.Action_Type == ACTION_TYPE.None)
-            {
-
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
-            }
-            else
-            {
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_START);
-
-
-            }
-
-        }
 
         private void CarController_OnTaskActionFinishCauseAbort(object? sender, clsTaskDownloadData e)
         {
