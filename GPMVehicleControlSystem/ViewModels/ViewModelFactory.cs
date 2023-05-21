@@ -41,7 +41,9 @@ namespace GPMVehicleControlSystem.ViewModels
                         BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
                         ChargeCurrent = AgvEntity.Battery.Data.chargeCurrent,
                         IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
-                        IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL
+                        IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL,
+                        CircuitOpened = AgvEntity.WagoDO.GetState(DO_ITEM.Recharge_Circuit)
+                        
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
                     Angle = AgvEntity.Navigation.Angle,
