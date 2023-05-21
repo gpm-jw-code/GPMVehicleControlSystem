@@ -15,7 +15,6 @@ namespace GPMVehicleControlSystem.Models.Emulators
     public class AGVROSEmulator
     {
         RosSocket? rosSocket;
-        TaskCommandActionServer actionServer;
         private ModuleInformation module_info = new ModuleInformation()
         {
             IMU = new GpmImuMsg
@@ -52,19 +51,26 @@ namespace GPMVehicleControlSystem.Models.Emulators
             rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", CstReaderServiceCallack);
             rosSocket.Advertise<LocalizationControllerResultMessage0502>("SICK_Emu", "localizationcontroller/out/localizationcontroller_result_message_0502");
 
-            actionServer = new TaskCommandActionServer("/barcodemovebase", rosSocket);
-            actionServer.Initialize();
-            actionServer.OnNAVGoalReceived += NavGaolHandle;
-            _ = PublishModuleInformation(rosSocket);
+            InitNewTaskCommandActionServer();
             // _ = PublishLocalizeResult(rosSocket);
 
         }
 
-        private void NavGaolHandle(TaskCommandGoal obj)
+        private void InitNewTaskCommandActionServer()
         {
+            TaskCommandActionServer actionServer = new TaskCommandActionServer("/barcodemovebase", rosSocket);
+            actionServer.Initialize();
+            actionServer.OnNAVGoalReceived += NavGaolHandle;
+            _ = PublishModuleInformation(rosSocket);
+        }
+
+        private void NavGaolHandle(object sender, TaskCommandGoal obj)
+        {
+            TaskCommandActionServer actionServer = (TaskCommandActionServer)sender;
             Console.WriteLine($"[ROS 車控模擬器] New Task , Task Name = {obj.taskID}, Tags Path = { string.Join("->", obj.planPath.poses.Select(p => p.header.seq)) }");
             actionServer.AcceptedInvoke();
 
+            actionServer.OnNAVGoalReceived -= NavGaolHandle;
             //模擬走型
             Task.Run(() =>
             {
@@ -88,6 +94,8 @@ namespace GPMVehicleControlSystem.Models.Emulators
                     Thread.Sleep(1500);
                 }
                 actionServer.SucceedInvoke();
+                actionServer.Terminate();
+                InitNewTaskCommandActionServer();
             });
 
         }

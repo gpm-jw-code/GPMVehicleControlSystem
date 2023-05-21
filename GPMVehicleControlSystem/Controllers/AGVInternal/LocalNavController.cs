@@ -14,8 +14,9 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         private Vehicle agv => StaStored.CurrentVechicle;
 
         [HttpGet("Action")]
-        public async Task<IActionResult> Action(string action, string? from, string? to = "", string? cst_id = "")
+        public async Task<IActionResult> Action(ACTION_TYPE action, string? from, string? to = "", string? cst_id = "")
         {
+
 
             if (agv.Sub_Status != AGVSystemCommonNet6.clsEnums.SUB_STATUS.IDLE)
             {
@@ -42,7 +43,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             int totag = int.Parse(to);
             int currentTag = agv.Navigation.LastVisitedTag;
 
-            if (action != "carry")
+            if (action != ACTION_TYPE.Carry)
                 fromtag = currentTag;
             else
                 fromtag = int.Parse(from);
@@ -69,20 +70,30 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             }
 
             clsTaskDownloadData taskDataDto = null;
-            if (action == "move")
-            {
-                taskDataDto = CreateMoveActionTaskJob(map, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
-            }
+            taskDataDto = CreateMoveActionTaskJob(map, action, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
 
 
-            if (action != null)
+            clsTaskDownloadData[]? taskLinkList = CreateActionLinksTaskJobs(map, action, fromtag, totag);
+
+            if (taskLinkList.Length >= 1)
             {
-                agv.ExecuteAGVSTask(this, taskDataDto);
+                _ = Task.Run(() =>
+                  {
+                      foreach (clsTaskDownloadData? _taskDataDto in taskLinkList)
+                      {
+                          while (agv.Sub_Status != AGVSystemCommonNet6.clsEnums.SUB_STATUS.IDLE)
+                          {
+                              Thread.Sleep(1000);
+                          }
+                          agv.ExecuteAGVSTask(this, _taskDataDto);
+                      }
+
+                  });
                 return Ok(new TaskActionResult
                 {
                     accpet = true,
                     error_message = "",
-                    path = taskDataDto.ExecutingTrajecory
+                    path = taskLinkList.First().ExecutingTrajecory
                 });
             }
             else
@@ -90,19 +101,22 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 return Ok(new TaskActionResult
                 {
                     accpet = false,
-                    error_message = ""
+                    error_message = "Oppppps!",
                 });
             }
 
+
         }
 
-        private clsTaskDownloadData CreateMoveActionTaskJob(Map mapData, string TaskName, int fromTag, int toTag, int Task_Sequence)
+
+
+        private clsTaskDownloadData CreateMoveActionTaskJob(Map mapData, ACTION_TYPE actionType, string TaskName, int fromTag, int toTag, int Task_Sequence)
         {
-            var pathFinder = new AGVSystemCommonNet6.MAP.PathFinder();
+            var pathFinder = new PathFinder();
             var pathPlanDto = pathFinder.FindShortestPathByTagNumber(mapData.Points, fromTag, toTag);
             clsTaskDownloadData actionData = new clsTaskDownloadData()
             {
-                Action_Type = ACTION_TYPE.None,
+                Action_Type = actionType,
                 Destination = toTag,
                 Task_Name = TaskName,
                 Station_Type = STATION_TYPE.Normal,
@@ -113,7 +127,67 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             return actionData;
         }
 
+        private clsTaskDownloadData[] CreateActionLinksTaskJobs(Map mapData, ACTION_TYPE actionType, int fromTag, int toTag)
+        {
+            string Task_Name = $"UI_{DateTime.Now.ToString("yyyyMMddHHmmssff")}";
+            int seq = 1;
+            PathFinder pathFinder = new PathFinder();
+            int normal_move_start_tag;
+            int normal_move_final_tag;
+            List<clsTaskDownloadData> taskList = new List<clsTaskDownloadData>();
 
+            MapStation? currentStation = mapData.Points.First(i => i.Value.TagNumber == agv.Navigation.LastVisitedTag).Value;
+            MapStation? destineStation = mapData.Points.First(i => i.Value.TagNumber == toTag).Value;
+            MapStation secondaryLocStation = mapData.Points[int.Parse(destineStation.Target.First().Key)];
+
+            if (currentStation.StationType == STATION_TYPE.Charge | currentStation.StationType == STATION_TYPE.Charge_Buffer | currentStation.StationType == STATION_TYPE.Charge_STK)
+            {
+                //Discharge
+            }
+
+
+            normal_move_start_tag = fromTag;
+
+            if (actionType == ACTION_TYPE.None)
+                normal_move_final_tag = toTag;
+            else
+            {
+                normal_move_final_tag = secondaryLocStation.TagNumber;
+            }
+
+            //add normal 
+            PathFinder.clsPathInfo? planPath = pathFinder.FindShortestPath(mapData.Points, currentStation, actionType == ACTION_TYPE.None ? destineStation : secondaryLocStation);
+            clsTaskDownloadData normal_move_task = new clsTaskDownloadData
+            {
+                Task_Name = Task_Name,
+                Task_Simplex = $"{Task_Name}-{seq}",
+                Task_Sequence = seq,
+                Action_Type = ACTION_TYPE.None,
+                Destination = normal_move_final_tag,
+                Station_Type = STATION_TYPE.Normal,
+                Trajectory = pathFinder.GetTrajectory(mapData.Name, planPath.stations)
+            };
+            taskList.Add(normal_move_task);
+            seq += 1;
+
+            if (actionType != ACTION_TYPE.None)
+            {
+                clsTaskDownloadData homing_move_task = new clsTaskDownloadData
+                {
+                    Task_Name = Task_Name,
+                    Task_Simplex = $"{Task_Name}-{seq}",
+                    Task_Sequence = seq,
+                    Action_Type = actionType,
+                    Destination = destineStation.TagNumber,
+                    Station_Type = STATION_TYPE.Normal,
+                    Homing_Trajectory = pathFinder.GetTrajectory(mapData.Name, new List<MapStation> { secondaryLocStation, destineStation })
+                };
+                taskList.Add(homing_move_task);
+            }
+
+
+            return taskList.ToArray();
+        }
 
         public class TaskActionResult
         {
