@@ -48,7 +48,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             else
                 fromtag = int.Parse(from);
 
-            Map? map = MapManager.LoadMapFromFile(Path.Combine(Environment.CurrentDirectory, "param/Map_UMTC_3F_Yellow.json"));
+            Map? map = await MapController.GetMapFromServer();
             var fromStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == fromtag);
             var toStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == totag);
 

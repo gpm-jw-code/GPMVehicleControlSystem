@@ -175,8 +175,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         internal void ApplyAGVSLaserSetting()
         {
-            if (_mode_int != AgvsLsrSetting)
-                ModeSwitch(AgvsLsrSetting);
+            LOG.TRACE($"雷射組數切換為AGVS Setting={AgvsLsrSetting}");
+            ModeSwitch(AgvsLsrSetting);
         }
     }
 }

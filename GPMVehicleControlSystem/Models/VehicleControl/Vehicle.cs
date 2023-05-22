@@ -270,7 +270,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
             AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
             Navigation.OnTagReach += OnTagReachHandler;
-            Navigation.OnTagLeave += OnTagLeaveHandler;
+            BarcodeReader.OnTagLeave += OnTagLeaveHandler;
 
         }
 

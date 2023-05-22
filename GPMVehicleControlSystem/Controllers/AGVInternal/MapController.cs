@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using AGVSystemCommonNet6.MAP;
+using System.Net.NetworkInformation;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
@@ -10,13 +11,22 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
     [ApiController]
     public class MapController : ControllerBase
     {
+        public static string Host = "192.168.0.1";
+        public static string GetMapUrl => $"http://{Host}:6600/map/get";
 
-        public static string GetMapUrl = "http://192.168.0.1:6600/map/get";
         [HttpGet("GetMapFromServer")]
         public async Task<IActionResult> GetMap()
         {
             try
             {
+                //先 ping 看看
+                Ping ping = new Ping();
+                PingReply? reply = ping.Send(Host, 1000);
+                if (reply.Status != IPStatus.Success)
+                {
+                    return Ok(MapManager.LoadMapFromFile(Path.Combine(Environment.CurrentDirectory, "param/Map_UMTC_3F_Yellow.json")));
+                }
+
                 return Ok(await GetMapFromServer());
             }
             catch (Exception ex)
@@ -27,6 +37,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
 
         public static async Task<Map> GetMapFromServer()
         {
+
             Map? map = null;
             using (HttpClient client = new HttpClient())
             {
