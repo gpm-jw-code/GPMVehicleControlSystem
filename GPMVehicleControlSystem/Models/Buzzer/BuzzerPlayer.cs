@@ -67,14 +67,12 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                         try
                         {
                             item.Kill();
-                            Console.WriteLine("music process killed");
                         }
                         catch (Exception ex)
                         {
                             Console.WriteLine(ex.Message);
                         }
                     }
-                    Console.WriteLine("music process killed");
                 }
                 ProcList.Clear();
             }

@@ -135,7 +135,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         Task.Factory.StartNew(async () =>
                         {
                             await Task.Delay(200);
-                            LOG.WARN($"Sub Status is RUN, AGVC ActionStatus = {AGVC.currentTaskCmdActionStatus}");
                             if (AGVC.IsAGVExecutingTask)
                             {
                                 if (AGVC.RunningTaskData.Action_Type == ACTION_TYPE.None)
@@ -238,6 +237,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnFrontArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnBackArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
+            WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnNearAreaLaserTrigger;
+            WagoDI.OnBackArea2LaserTrigger += WagoDI_OnNearAreaLaserTrigger;
+
             WagoDI.OnBackArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
 
 
@@ -404,6 +406,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
                 await WagoDO.ResetMotor();
+            AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
+            AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
             AlarmManager.ClearAlarm();
             BuzzerPlayer.BuzzerStop();
             return;
@@ -448,25 +452,36 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        private RunningStatus GenRunningStateReportData()
+        private RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
         {
+            RunningStatus.clsCorrdination clsCorrdination = new RunningStatus.clsCorrdination();
+            MAIN_STATUS _Main_Status = Main_Status;
+            if (getLastPtPoseOfTrajectory)
+            {
+                var lastPt = RunningTaskData.ExecutingTrajecory.Last();
+                clsCorrdination.X = lastPt.X;
+                clsCorrdination.Y = lastPt.Y;
+                clsCorrdination.Theta = lastPt.Theta;
+                _Main_Status = MAIN_STATUS.IDLE;
+            }
+            else
+            {
+                clsCorrdination.X = Math.Round(Navigation.Data.robotPose.pose.position.x, 3);
+                clsCorrdination.Y = Math.Round(Navigation.Data.robotPose.pose.position.y, 3);
+                clsCorrdination.Theta = Math.Round(BarcodeReader.Data.theta, 3);
+            }
+
             try
             {
                 double batteryLevel = Battery.State != CarComponent.STATE.NORMAL ? 69 : Battery.Data.batteryLevel;
                 return new RunningStatus
                 {
-
                     Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
-                    AGV_Status = Main_Status,
+                    AGV_Status = _Main_Status,
                     Electric_Volume = new double[2] { batteryLevel, batteryLevel },
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
-                    Corrdination = new RunningStatus.clsCorrdination()
-                    {
-                        X = Navigation.Data.robotPose.pose.position.x,
-                        Y = Navigation.Data.robotPose.pose.position.y,
-                        Theta = BarcodeReader.Data.theta
-                    },
-                    CSTID = new string[] { CSTReader.Data.data },
+                    Corrdination = clsCorrdination,
+                    CSTID = CSTReader.Data.data.ToLower() == "error" ? new string[0] : new string[] { CSTReader.Data.data },
                     Odometry = Odometry,
                     AGV_Reset_Flag = AGV_Reset_Flag
                 };
@@ -507,6 +522,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //});
             if (Battery.IsCharging)
             {
+                if (Battery.Data.batteryLevel >= 99)
+                    WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);//充滿電切斷充電迴路
                 Sub_Status = SUB_STATUS.Charging;
             }
             else

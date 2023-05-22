@@ -289,8 +289,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         private void CycleStop()
         {
+            CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE);
+            while (module_info.reader.tagID == 0)
+            {
+                Thread.Sleep(1);
+            }
             AbortTask();
-
         }
 
         internal void AbortTask()
@@ -309,7 +313,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private void OnTaskCommandActionDone(ActionStatus Status)
         {
             bool isReachFinalTag = CurrentTag == RunningTaskData.Destination;
-            LOG.INFO($"AGVC Action Done. Status={Status}_Current Tag={CurrentTag},Destination={RunningTaskData.Destination}, NavPath Expaned Flag={!isReachFinalTag}");
             if (isReachFinalTag)
             {
                 if (Status == ActionStatus.SUCCEEDED | Status == ActionStatus.PENDING)
@@ -355,7 +358,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             ComplexRobotControlCmdRequest req = new ComplexRobotControlCmdRequest()
             {
-                taskID = task_id,
+                taskID = task_id == null ? "" : task_id,
                 reqsrv = (byte)cmd
             };
             ComplexRobotControlCmdResponse? res = rosSocket?.CallServiceAndWait<ComplexRobotControlCmdRequest, ComplexRobotControlCmdResponse>("/complex_robot_control_cmd", req);

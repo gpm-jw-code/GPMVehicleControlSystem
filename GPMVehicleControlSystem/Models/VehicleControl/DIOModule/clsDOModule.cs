@@ -62,7 +62,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         Dictionary<DO_ITEM, int> OUTPUT_INDEXS = new Dictionary<DO_ITEM, int>();
 
         public List<clsIOSignal> VCSOutputs = new List<clsIOSignal>();
-        public ManualResetEvent PauseSignal = new ManualResetEvent(true);
         public clsDOModule(string IP, int Port) : base(IP, Port)
         {
         }

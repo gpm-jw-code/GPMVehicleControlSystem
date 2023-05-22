@@ -32,7 +32,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             AGV_Reset_Flag = false;
 
-            if (Sub_Status != SUB_STATUS.IDLE) //TODO More Status Confirm when recieve AGVS Task
+            if (Main_Status == MAIN_STATUS.DOWN) //TODO More Status Confirm when recieve AGVS Task
                 return false;
 
             return true;
@@ -50,7 +50,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             Task.Run(async () =>
             {
-                await Task.Delay(100);
                 var check_result_before_Task = await ExecuteActionBeforeMoving(taskDownloadData);
 
                 if (!check_result_before_Task.confirm)
@@ -60,8 +59,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     return;
                 }
 
-
-
+                await Task.Delay(1000);
                 if (AGVC.IsAGVExecutingTask)
                 {
                     LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
@@ -112,6 +110,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// </summary>
         private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteActionBeforeMoving(clsTaskDownloadData taskDownloadData)
         {
+
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
             if (action != ACTION_TYPE.None && action != ACTION_TYPE.Discharge && action != ACTION_TYPE.Escape)
@@ -197,6 +196,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <param name="taskData"></param>
         private async void AGVMoveTaskActionSuccessHandle(object? sender, clsTaskDownloadData taskData)
         {
+            if (AGV_Reset_Flag)
+                return;
+
             Sub_Status = SUB_STATUS.IDLE;
             //AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
             await Task.Delay(500);
@@ -408,11 +410,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
-            Sub_Status = SUB_STATUS.IDLE;
+            AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task);
             AGV_Reset_Flag = true;
-            Task.Factory.StartNew(() => AGVC.AbortTask(mode));
-            AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
-
+            Task.Factory.StartNew(async () =>
+            {
+                AGVC.AbortTask(mode);
+                await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+            });
+            Sub_Status = SUB_STATUS.ALARM;
             return true;
         }
 

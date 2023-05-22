@@ -58,7 +58,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 mode_bools[i] = ((mode_int >> i) & 1) != 1;
             }
             DOModule.PauseSignal.Reset();
-            Thread.Sleep(400);
+            DIModule.PauseSignal.Reset();
+            Thread.Sleep(500);
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_1, mode_bools[0]);
             DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_1, !mode_bools[0]);
 
@@ -84,6 +85,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_4, !mode_bools[3]);
             _mode_int = mode_int;
             DOModule.PauseSignal.Set();
+            DIModule.PauseSignal.Set();
             LOG.TRACE($"Laser Mode Chaged To : {mode_int}({_Mode})");
         }
 

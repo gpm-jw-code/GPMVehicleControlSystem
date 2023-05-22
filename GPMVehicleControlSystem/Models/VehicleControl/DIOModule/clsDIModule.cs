@@ -45,7 +45,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         }
         protected ModbusIpMaster? master;
 
-
+        public ManualResetEvent PauseSignal = new ManualResetEvent(true);
 
 
 
@@ -258,6 +258,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
                     try
                     {
+                        PauseSignal.WaitOne();
                         bool[]? input = master?.ReadInputs(1, Start, Size);
                         if (input == null)
                             continue;
