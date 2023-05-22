@@ -31,7 +31,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public clsDOModule DOModule { get; set; }
         public clsDIModule DIModule { get; set; }
-        private int _AgvsLsrSetting = 0;
+        private int _AgvsLsrSetting = 1;
         public int AgvsLsrSetting
         {
             get => _AgvsLsrSetting;
@@ -82,8 +82,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_4, mode_bools[3]);
             DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_4, !mode_bools[3]);
+            _mode_int = mode_int;
             DOModule.PauseSignal.Set();
-
             LOG.TRACE($"Laser Mode Chaged To : {mode_int}({_Mode})");
         }
 
@@ -94,11 +94,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 ModeSwitch(AgvsLsrSetting);
                 LOG.INFO($"雷射設定組 = {AgvsLsrSetting}");
             }
-            else
+            else // 左.右轉
             {
-                if (_Mode == LASER_MODE.Loading)
-                    return;
-
                 if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
                     Mode = LASER_MODE.Move;
                 else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)
@@ -107,6 +104,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
 
         private LASER_MODE _Mode = LASER_MODE.Bypass;
+        private int _mode_int;
+
         public LASER_MODE Mode
         {
             get => _Mode;
@@ -172,6 +171,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         internal void AllLaserDisable()
         {
             FrontLaserBypass = BackLaserBypass = RightLaserBypass = LeftLaserBypass = true;
+        }
+
+        internal void ApplyAGVSLaserSetting()
+        {
+            if (_mode_int != AgvsLsrSetting)
+                ModeSwitch(AgvsLsrSetting);
         }
     }
 }

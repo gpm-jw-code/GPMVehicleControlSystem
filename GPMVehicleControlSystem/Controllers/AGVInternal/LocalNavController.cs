@@ -17,6 +17,14 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> Action(ACTION_TYPE action, string? from, string? to = "", string? cst_id = "")
         {
 
+            if (agv.Remote_Mode == REMOTE_MODE.ONLINE)
+            {
+                return Ok(new
+                {
+                    accpet = false,
+                    error_message = $"AGV於 OFFLine 模式方可執行任務"
+                });
+            }
 
             if (agv.Sub_Status != AGVSystemCommonNet6.clsEnums.SUB_STATUS.IDLE)
             {
@@ -24,14 +32,6 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 {
                     accpet = false,
                     error_message = $"AGV當前狀態無法執行任務({agv.Sub_Status})"
-                });
-            }
-            if (agv.Remote_Mode == REMOTE_MODE.ONLINE)
-            {
-                return Ok(new
-                {
-                    accpet = false,
-                    error_message = $"AGV於 OFFLine 模式方可執行任務"
                 });
             }
 

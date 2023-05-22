@@ -24,7 +24,7 @@ namespace GPMVehicleControlSystem.Models.Emulators
             Battery = new BatteryState
             {
                 state = 1,
-                batteryLevel = 24,
+                batteryLevel = 90,
             },
             CSTReader = new CSTReaderState
             {

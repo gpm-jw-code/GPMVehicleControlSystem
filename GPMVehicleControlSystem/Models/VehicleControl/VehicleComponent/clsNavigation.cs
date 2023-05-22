@@ -16,6 +16,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public event EventHandler<AGV_DIRECTION> OnDirectionChanged;
         public event EventHandler<int> OnTagReach;
+        public event EventHandler<int> OnTagLeave;
 
         private int _previousTag = 0;
         private AGV_DIRECTION _previousDirection = AGV_DIRECTION.STOP;
@@ -39,9 +40,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 if (value != _previousTag)
                 {
                     if (value != 0)
-                    {
                         OnTagReach?.Invoke(this, value);
-                    }
+                    else
+                        OnTagLeave?.Invoke(this, value);
                     _previousTag = value;
                 }
             }

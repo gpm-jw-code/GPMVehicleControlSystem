@@ -303,14 +303,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return (true, AlarmCodes.None);
 
         }
-      
 
+        private void OnTagLeaveHandler(object? sender, int leaveTag)
+        {
+            if (Operation_Mode == OPERATOR_MODE.MANUAL)
+                return;
+
+            Laser.ApplyAGVSLaserSetting();
+
+        }
         private void OnTagReachHandler(object? sender, int currentTag)
         {
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
-            {
                 return;
-            }
 
             var TagPoint = RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
             if (TagPoint == null)
@@ -327,9 +332,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 return;
             }
             Laser.AgvsLsrSetting = TagPoint.Laser;
+
             LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
         }
-       
+
         /// <summary>
         /// 車頭二次檢Sensor檢察功能
         /// </summary>
