@@ -171,6 +171,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         }
         private bool IsFrontArea1LaserRecovery = false;
         private bool IsBackArea1LaserRecovery = false;
+
+        private bool IsFrontArea2LaserRecovery = false;
+        private bool IsBackArea2LaserRecovery = false;
         internal void FarArea1LaserTriggerHandler(object? sender, EventArgs e)
         {
             IsFrontArea1LaserRecovery = false;
@@ -186,22 +189,39 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal void FrontFarArea1LaserRecoveryHandler(object? sender, EventArgs e)
         {
             IsFrontArea1LaserRecovery = true;
-            Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
-            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            if (IsBackArea1LaserRecovery)
+            {
+                Console.Error.WriteLine($"FarArea 1&2 雷射解除,速度恢復請求.");
+                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            }
+            else
+            {
+                Console.Error.WriteLine($"FrontFarArea 1 雷射解除但 BackFarArea 1 未解除");
+            }
         }
 
 
         internal void BackFarArea1LaserRecoveryHandler(object? sender, EventArgs e)
         {
             IsBackArea1LaserRecovery = true;
-            Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
-            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            if (IsFrontArea1LaserRecovery)
+            {
+                Console.Error.WriteLine($"FarArea 1&2 雷射解除,速度恢復請求.");
+                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            }
+            else
+            {
+                Console.Error.WriteLine($"BackFarArea 1 雷射解除但 FrontFarArea 1 未解除");
+            }
         }
 
 
         internal void FrontFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
+            IsFrontArea2LaserRecovery = true;
+
+
+            Console.WriteLine($"FrontFarArea 2 雷射解除,速度恢復請求.");
             CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
@@ -214,7 +234,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         internal void BackFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
         {
-            Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
+            IsBackArea2LaserRecovery = true;
+            Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
             CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
@@ -229,6 +250,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             Console.Error.WriteLine($"EMO 觸發,緊急停止.");
             AbortTask();
+            ManualController.Stop();
             _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             //CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
         }

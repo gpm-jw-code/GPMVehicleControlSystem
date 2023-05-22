@@ -4,6 +4,7 @@ using AGVSystemCommonNet6.MAP;
 using GPMVehicleControlSystem.Models;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
 using GPMVehicleControlSystem.Models.VehicleControl;
+using AGVSystemCommonNet6.Log;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
@@ -77,15 +78,19 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
 
             if (taskLinkList.Length >= 1)
             {
-                _ = Task.Run(() =>
+                _ = Task.Run(async () =>
                   {
                       foreach (clsTaskDownloadData? _taskDataDto in taskLinkList)
                       {
-                          while (agv.Sub_Status != AGVSystemCommonNet6.clsEnums.SUB_STATUS.IDLE)
+                          agv.ExecuteAGVSTask(this, _taskDataDto);
+                          await Task.Delay(1000);
+                          while (agv.Navigation.LastVisitedTag != _taskDataDto.Destination | agv.CurrentTaskRunStatus != TASK_RUN_STATUS.ACTION_FINISH)
                           {
                               Thread.Sleep(1000);
                           }
-                          agv.ExecuteAGVSTask(this, _taskDataDto);
+                          LOG.TRACE("Local WebUI Task Allocator : Next Task Will Start..");
+                          await Task.Delay(1000);
+
                       }
 
                   });
@@ -107,7 +112,6 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
 
 
         }
-
 
 
         private clsTaskDownloadData CreateMoveActionTaskJob(Map mapData, ACTION_TYPE actionType, string TaskName, int fromTag, int toTag, int Task_Sequence)

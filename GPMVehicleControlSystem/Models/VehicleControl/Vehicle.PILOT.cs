@@ -14,6 +14,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 {
     public partial class Vehicle
     {
+        public TASK_RUN_STATUS CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;
         public enum HS_METHOD
         {
             E84, MODBUS, EMULATION
@@ -126,11 +127,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)
             {
                 Laser.Mode = LASER_MODE.Loading;
-
             }
             else
-                Laser.Mode = LASER_MODE.Move;
-
+            {
+                Laser.Mode = LASER_MODE.Bypass;
+                AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
+            }
 
 
             if (action == ACTION_TYPE.Charge)
@@ -207,10 +209,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
                 if (taskData.Action_Type != ACTION_TYPE.None)
                 {
+                    CurrentTaskRunStatus = TASK_RUN_STATUS.NAVIGATING;
                     if (taskData.IsTaskSegmented)
                     {
                         //侵入Port後
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), CurrentTaskRunStatus);
                         var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
 
                         if (!check_result_after_Task.confirm)
@@ -240,7 +243,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                 }
                 else
-                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                {
+                    CurrentTaskRunStatus = TASK_RUN_STATUS.ACTION_FINISH;
+                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), CurrentTaskRunStatus);
+                }
 
             }
             catch (Exception ex)
@@ -309,7 +315,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
                 return;
 
-            Laser.ApplyAGVSLaserSetting();
+            if (RunningTaskData.Action_Type == ACTION_TYPE.None)
+                Laser.ApplyAGVSLaserSetting();
 
         }
         private void OnTagReachHandler(object? sender, int currentTag)

@@ -34,7 +34,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", new CSTReaderCommandRequest() { command = "read", model = "FORK" });
 
-            if (response == null | !response.confirm)
+            if (response == null )
+            {
+                LOG.TRACE("Trigger CST Reader fail. CSTReader no reply");
+                return (false, false);
+            }
+            if (!response.confirm)
             {
                 LOG.TRACE("Trigger CST Reader fail. Confirm=False");
                 return (false, false);
