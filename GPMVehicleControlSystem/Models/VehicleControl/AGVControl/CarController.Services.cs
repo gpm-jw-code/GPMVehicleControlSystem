@@ -32,7 +32,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         /// <returns></returns>
         public async Task<(bool request_success, bool action_done)> TriggerCSTReader()
         {
-            CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", new CSTReaderCommandRequest() { command = "read", model = "FORK" });
+            CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action",
+                new CSTReaderCommandRequest() { command = "read_try", model = "FORK" });
 
             if (response == null )
             {
@@ -48,7 +49,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             {
                 LOG.TRACE("Trigger CST Reader Success. Wait CST Reader Action Done.");
                 CSTActionDone = false;
-                CancellationTokenSource waitCstActionDoneCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                CancellationTokenSource waitCstActionDoneCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
                 Task TK = new Task(async () =>
                 {
