@@ -3,6 +3,7 @@ using AGVSystemCommonNet6.AGVDispatch;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
@@ -46,7 +47,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
              new clsDriver{ location = clsDriver.DRIVER_LOCATION.LEFT},
              new clsDriver{ location = clsDriver.DRIVER_LOCATION.RIGHT},
         };
-
+        public clsSick SickData = new clsSick();
         public clsCSTReader CSTReader = new clsCSTReader();
         /// <summary>
         /// 里程數
@@ -218,7 +219,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGVSMessageFactory.OnVCSRunningDataRequest += GenRunningStateReportData;
             AGVS.OnRemoteModeChanged = AGVSRemoteModeChangeReq;
             AGVC.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
-
+            AGVC.OnSickDataUpdated += CarController_OnSickDataUpdated;
             WagoDI.OnEMO += WagoDI_OnEMO;
             WagoDI.OnEMO += AGVC.EMOHandler;
             WagoDI.OnResetButtonPressing += () => ResetAlarmsAsync();
@@ -272,6 +273,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Navigation.OnTagReach += OnTagReachHandler;
             BarcodeReader.OnTagLeave += OnTagLeaveHandler;
 
+        }
+
+        private void CarController_OnSickDataUpdated(object? sender, LocalizationControllerResultMessage0502 e)
+        {
+            SickData.StateData = e;
         }
 
         internal async Task<bool> Initialize()

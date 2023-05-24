@@ -118,9 +118,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 DirectionLighter.Forward();
             }
             else
-                DirectionLighter.Backward();
-
-
+            {
+                if (taskDownloadData.IsAfterLoadingAction)
+                    DirectionLighter.Backward();
+                else
+                    DirectionLighter.Forward();
+            }
             //Laser模式變更
 
             if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)

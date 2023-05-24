@@ -21,10 +21,13 @@
                 {
                     //Console.WriteLine($"{this.ToJson()}");
                     _State = value;
-                    if (_State)
-                        OnSignalON?.Invoke(this, EventArgs.Empty);
-                    else
-                        OnSignalOFF?.Invoke(this, EventArgs.Empty);
+                    Task.Factory.StartNew(() =>
+                    {
+                        if (_State)
+                            OnSignalON?.Invoke(this, EventArgs.Empty);
+                        else
+                            OnSignalOFF?.Invoke(this, EventArgs.Empty);
+                    });
                 }
             }
         }

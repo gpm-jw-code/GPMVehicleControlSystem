@@ -43,14 +43,14 @@ namespace GPMVehicleControlSystem.ViewModels
                         IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
                         IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL,
                         CircuitOpened = AgvEntity.WagoDO.GetState(DO_ITEM.Recharge_Circuit)
-                        
+
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
                     Angle = AgvEntity.Navigation.Angle,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
                     AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),
-                    //MapComparsionRate = AgvEntity.SickData.MapScore,
+                    MapComparsionRate = AgvEntity.SickData.MapSocre,
                     //ZAxisDriverState = AgvEntity.ModuleInformation.Action_Driver,
                     //ZAxisActionName = AgvEntity.currentVerticalAction,
                     AGV_Direct = AgvEntity.Navigation.Direction.ToString().ToUpper(),

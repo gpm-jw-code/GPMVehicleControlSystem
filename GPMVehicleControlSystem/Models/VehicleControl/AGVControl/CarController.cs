@@ -66,6 +66,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private LocalizationControllerResultMessage0502 LocalizationControllerResult = new LocalizationControllerResultMessage0502();
 
         public event EventHandler<ModuleInformation> OnModuleInformationUpdated;
+        public event EventHandler<LocalizationControllerResultMessage0502> OnSickDataUpdated;
 
         /// <summary>
         /// 機器人任務結束且是成功完成的狀態
@@ -221,8 +222,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             IsFrontArea2LaserRecovery = true;
 
 
-            Console.WriteLine($"FrontFarArea 2 雷射解除,速度恢復請求.");
-            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+                Console.WriteLine($"FrontFarArea 2 雷射解除,速度恢復請求.");
+                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
             //    Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
@@ -235,8 +236,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal void BackFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
         {
             IsBackArea2LaserRecovery = true;
-            Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
-            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+
+            
+                Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
+                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
             //    Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
@@ -343,11 +346,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private void SickStateCallback(LocalizationControllerResultMessage0502 _LocalizationControllerResult)
         {
             LocalizationControllerResult = _LocalizationControllerResult;
+            OnSickDataUpdated?.Invoke(this, _LocalizationControllerResult);
         }
 
         private void ModuleInformationCallback(ModuleInformation _ModuleInformation)
         {
             module_info = _ModuleInformation;
+            if (module_info.AlarmCode.Length > 0)
+            {
+
+            }
         }
 
         internal void CarSpeedControl(ROBOT_CONTROL_CMD cmd)

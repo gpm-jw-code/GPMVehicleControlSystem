@@ -90,6 +90,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 catch (OperationCanceledException)
                 {
                     LOG.WARN("Trigger CST Reader Timeout");
+                    AbortCSTReader();
                     return (true, false);
                 }
 
