@@ -483,7 +483,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             try
             {
-                double batteryLevel = Battery.State != CarComponent.STATE.NORMAL ? 69 : Battery.Data.batteryLevel;
+                double batteryLevel = Battery.Data.batteryLevel;
                 return new RunningStatus
                 {
                     Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
@@ -613,7 +613,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             string currentCSTID = CSTReader.Data.data;
             string toRemoveCSTID = currentCSTID.ToLower() == "error" ? "" : currentCSTID;
 
-            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID);
+            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID, RunningTaskData.Task_Name);
             //清帳
             if (retCode == RETURN_CODE.OK)
                 CSTReader.ValidCSTID = "";
