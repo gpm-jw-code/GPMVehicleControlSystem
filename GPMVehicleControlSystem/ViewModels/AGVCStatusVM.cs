@@ -35,7 +35,10 @@ namespace GPMVehicleControlSystem.ViewModels
         /// 地圖比對率
         /// </summary>
         public double MapComparsionRate { get; set; }
-
+        /// <summary>
+        /// SICK 定位狀態
+        /// </summary>
+        public int LocStatus { get; set; }
         public bool ForkCSTExist { get; set; }
         public bool ForkFrontEndSensorTrigger { get; set; }
         public clsAlarmCode[] AlarmCodes { get; set; } = new clsAlarmCode[0];
