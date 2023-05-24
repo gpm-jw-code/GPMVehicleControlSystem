@@ -24,6 +24,7 @@ namespace GPMVehicleControlSystem.ViewModels
 
                 AGVCStatusVM data_view_model = new AGVCStatusVM()
                 {
+                    APPVersion = StaStored.APPVersion,
                     Agv_Type = AgvEntity.AgvType,
                     Simulation = AgvEntity.SimulationMode,
                     AutoMode = AgvEntity.Operation_Mode,

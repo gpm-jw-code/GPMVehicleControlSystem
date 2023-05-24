@@ -11,6 +11,7 @@ namespace GPMVehicleControlSystem.ViewModels
 {
     public class AGVCStatusVM
     {
+        public string APPVersion { get; set; } = "1.0.0";
         public bool Simulation { get; set; }
         public AGV_TYPE Agv_Type { get; set; }
         public string MainState { get; set; } = "";

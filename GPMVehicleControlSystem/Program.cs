@@ -4,8 +4,11 @@ using GPMVehicleControlSystem.Models;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.Emulators;
 using GPMVehicleControlSystem.Tools;
+using GPMVehicleControlSystem.ViewModels;
 using Microsoft.AspNetCore.Http.Json;
+using System.Reflection;
 
+StaStored.APPVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 var builder = WebApplication.CreateBuilder(args);
 
 AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));

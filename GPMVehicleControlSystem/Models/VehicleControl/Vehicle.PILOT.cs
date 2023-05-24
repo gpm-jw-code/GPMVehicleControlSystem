@@ -94,14 +94,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             if (taskData.Action_Type == ACTION_TYPE.None)
             {
-
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+                await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
             }
             else
             {
-                await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_START);
-
-
+                await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_START);
             }
 
         }
@@ -218,7 +215,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     if (taskData.IsTaskSegmented)
                     {
                         //侵入Port後
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), CurrentTaskRunStatus);
+
+                        await FeedbackTaskStatus(CurrentTaskRunStatus);
                         var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
 
                         if (!check_result_after_Task.confirm)
@@ -244,13 +242,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                                 LOG.Critical("[EQ Handshake] HADNSHAKE NORMAL Done,AGV Next TASK Will START");
                             }
                         }
-                        await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                        await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
+
                     }
                 }
                 else
                 {
-                    CurrentTaskRunStatus = TASK_RUN_STATUS.ACTION_FINISH;
-                    await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), CurrentTaskRunStatus);
+                    await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
                 }
 
             }
@@ -377,7 +375,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         throw ex;
                     }
                     Sub_Status = SUB_STATUS.DOWN;
-                    AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                    FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
                     Online_Mode_Switch(REMOTE_MODE.OFFLINE);
                 }
             }
@@ -407,7 +405,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             await Task.Delay(200);
             LOG.INFO($"Task Feedback when Action done but need to expand path");
-            await AGVS.TryTaskFeedBackAsync(taskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.NAVIGATING);
+
+            await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
 
         }
 
@@ -418,12 +417,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task.Factory.StartNew(async () =>
             {
                 AGVC.AbortTask(mode);
-                await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+                await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
             Sub_Status = SUB_STATUS.ALARM;
             return true;
         }
 
-
+        private async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
+        {
+            if (Remote_Mode == REMOTE_MODE.OFFLINE)
+                return;
+            await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), status);
+        }
     }
 }

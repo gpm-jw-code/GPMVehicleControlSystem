@@ -15,7 +15,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
 
-                await WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETVMSStates);
+                 WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETVMSStates);
             }
             else
             {
@@ -27,7 +27,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
-                await WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETConnectionStates);
+                 WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETConnectionStates);
             }
             else
             {
@@ -42,7 +42,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
 
-                await WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETAGVCModuleInformation);
+                 WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETAGVCModuleInformation);
             }
             else
             {
@@ -56,7 +56,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
 
-                await WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETDIOTable);
+                 WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETDIOTable);
             }
             else
             {
@@ -71,7 +71,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             if (HttpContext.WebSockets.IsWebSocketRequest)
             {
 
-                await WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETAGVSMSGIODATA);
+                 WebsocketAgent.ClientRequest(HttpContext, WebsocketAgent.WEBSOCKET_CLIENT_ACTION.GETAGVSMSGIODATA);
             }
             else
             {
