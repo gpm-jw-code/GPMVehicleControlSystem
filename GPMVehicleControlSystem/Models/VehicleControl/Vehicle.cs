@@ -596,5 +596,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             return !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_2);
         }
+
+
+        /// <summary>
+        /// 移除卡夾 
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        internal async Task<RETURN_CODE> RemoveCstData()
+        {
+            //向AGVS請求移除卡匣
+            string currentCSTID = CSTReader.Data.data;
+            string toRemoveCSTID = currentCSTID.ToLower() == "error" ? "" : currentCSTID;
+            return await AGVS.TryRemoveCSTData(toRemoveCSTID);
+        }
+
+
     }
 }

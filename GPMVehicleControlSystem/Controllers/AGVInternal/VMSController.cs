@@ -148,8 +148,8 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> RemoveCassette()
         {
             await Task.Delay(1);
-            // var retcode = await agv.AGVSConnection.CarrierRemovedRequestAsync("", new string[] { agv.CSTReader.Data.data });
-            return Ok(true);
+            var retcode = await agv.RemoveCstData();
+            return Ok(retcode == RETURN_CODE.OK);
         }
 
 
