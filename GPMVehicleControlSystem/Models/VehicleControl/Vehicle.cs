@@ -417,7 +417,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
                 await WagoDO.ResetMotor();
             AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
-            AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), TASK_RUN_STATUS.ACTION_FINISH);
+            FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             AlarmManager.ClearAlarm();
             BuzzerPlayer.BuzzerStop();
             return;

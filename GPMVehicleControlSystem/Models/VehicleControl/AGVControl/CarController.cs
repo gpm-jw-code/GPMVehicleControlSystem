@@ -437,19 +437,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         }
 
-        internal int GetCurrentTagIndexOfTrajectory(int currentTag)
-        {
-            try
-            {
-                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == currentTag));
-
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
-
-        }
-
+        
     }
 }

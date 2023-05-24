@@ -98,6 +98,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             }
             else // 左.右轉
             {
+                if (AgvsLsrSetting == 0)
+                {
+                    Mode = LASER_MODE.Bypass;
+                    return;
+                }
+
+
                 if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
                     Mode = LASER_MODE.Move;
                 else if (direction == clsNavigation.AGV_DIRECTION.LEFT | direction == clsNavigation.AGV_DIRECTION.RIGHT)

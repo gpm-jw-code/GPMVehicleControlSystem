@@ -111,16 +111,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
             if (action != ACTION_TYPE.None && action != ACTION_TYPE.Discharge && action != ACTION_TYPE.Escape)
-            {
                 DirectionLighter.Forward();
-            }
+            else if (action == ACTION_TYPE.Discharge | taskDownloadData.IsAfterLoadingAction)
+                DirectionLighter.Backward();
             else
-            {
-                if (taskDownloadData.IsAfterLoadingAction)
-                    DirectionLighter.Backward();
-                else
-                    DirectionLighter.Forward();
-            }
+                DirectionLighter.Forward();
             //Laser模式變更
 
             if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)
@@ -427,7 +422,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (Remote_Mode == REMOTE_MODE.OFFLINE)
                 return;
-            await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, AGVC.GetCurrentTagIndexOfTrajectory(BarcodeReader.CurrentTag), status);
+            await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
         }
+        internal int GetCurrentTagIndexOfTrajectory()
+        {
+            try
+            {
+                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == BarcodeReader.CurrentTag));
+
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+
+        }
+
     }
 }
