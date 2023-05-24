@@ -443,6 +443,5 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         }
 
-
     }
 }

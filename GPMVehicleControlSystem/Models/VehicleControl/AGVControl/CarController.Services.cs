@@ -27,6 +27,25 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         }
 
         /// <summary>
+        /// 中止 Reader 拍照
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public async Task<(bool request_success, bool action_done)> AbortCSTReader()
+        {
+            CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action",
+              new CSTReaderCommandRequest() { command = "stop", model = "FORK" });
+            if (response == null)
+            {
+                LOG.TRACE("Stop CST Reader fail. CSTReader no reply");
+                return (false, false);
+            }
+            else
+            {
+                return (true, true);
+            }
+        }
+        /// <summary>
         /// 請求CST拍照
         /// </summary>
         /// <returns></returns>
@@ -35,7 +54,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action",
                 new CSTReaderCommandRequest() { command = "read_try", model = "FORK" });
 
-            if (response == null )
+            if (response == null)
             {
                 LOG.TRACE("Trigger CST Reader fail. CSTReader no reply");
                 return (false, false);

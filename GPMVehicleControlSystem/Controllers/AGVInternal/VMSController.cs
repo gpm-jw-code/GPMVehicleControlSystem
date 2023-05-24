@@ -187,13 +187,24 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> TriggerCSTReader()
         {
             (bool request_success, bool action_done) ret = await agv.AGVC.TriggerCSTReader();
+            string barcode = "ERROR";
             if (ret.action_done)
             {
-                Console.WriteLine(agv.CSTReader.Data.data);
+                barcode = agv.CSTReader.Data.data;
             }
-            return Ok();
+            return Ok(new { barcode });
         }
 
+
+        [HttpGet("StopCSTReader")]
+        public async Task<IActionResult> StopCSTReader()
+        {
+            _ = Task.Factory.StartNew(async () =>
+            {
+                (bool request_success, bool action_done) ret = await agv.AGVC.AbortCSTReader();
+            });
+            return Ok();
+        }
 
     }
 }
