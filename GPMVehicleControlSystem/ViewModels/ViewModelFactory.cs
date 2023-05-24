@@ -46,18 +46,15 @@ namespace GPMVehicleControlSystem.ViewModels
 
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
-                    Angle = AgvEntity.Navigation.Angle,
+                    Angle = AgvEntity.SickData.HeadingAngle,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
                     AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),
                     MapComparsionRate = AgvEntity.SickData.MapSocre,
-                    //ZAxisDriverState = AgvEntity.ModuleInformation.Action_Driver,
-                    //ZAxisActionName = AgvEntity.currentVerticalAction,
+                    LocStatus = AgvEntity.SickData.Data.loc_status,
                     AGV_Direct = AgvEntity.Navigation.Direction.ToString().ToUpper(),
                     DriversStates = driverStates.ToArray(),
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
-                    //UltrSensorState = AgvEntity.ModuleInformation.UltrasonicSensor,
-                    //IsAGVPoseError = ((clsAGVPoseMonitor)ComponentMonitorManager.agvPoseMonitor).IsPoseError,
                     NavInfo = new NavStateVM
                     {
                         Destination = AgvEntity.AGVC.RunningTaskData.Destination + "",
