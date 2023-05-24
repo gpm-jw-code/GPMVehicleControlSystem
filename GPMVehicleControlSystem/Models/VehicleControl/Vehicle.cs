@@ -273,6 +273,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Navigation.OnTagReach += OnTagReachHandler;
             BarcodeReader.OnTagLeave += OnTagLeaveHandler;
 
+
+            AGVC.OnCSTReaderActionDone += CSTReader.UpdateCSTIDDataHandler;
+
+
         }
 
         private void CarController_OnSickDataUpdated(object? sender, LocalizationControllerResultMessage0502 e)
@@ -487,7 +491,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     Electric_Volume = new double[2] { batteryLevel, batteryLevel },
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
                     Corrdination = clsCorrdination,
-                    CSTID = CSTReader.Data.data.ToLower() == "error" ? new string[0] : new string[] { CSTReader.Data.data },
+                    CSTID = new string[] { CSTReader.ValidCSTID },
                     Odometry = Odometry,
                     AGV_Reset_Flag = AGV_Reset_Flag
                 };
@@ -610,6 +614,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             string toRemoveCSTID = currentCSTID.ToLower() == "error" ? "" : currentCSTID;
 
             var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID);
+            //清帳
+            if (retCode == RETURN_CODE.OK)
+                CSTReader.ValidCSTID = "";
 
             return retCode;
         }
