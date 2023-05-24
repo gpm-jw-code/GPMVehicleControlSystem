@@ -5,8 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using Newtonsoft.Json;
+using AGVSystemCommonNet6.AGVDispatch;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
 
 namespace GPMVehicleControlSystem.Models.AGVDispatch.Tests
 {
