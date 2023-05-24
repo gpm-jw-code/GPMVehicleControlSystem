@@ -35,7 +35,7 @@ namespace GPMVehicleControlSystem.ViewModels
                     MainState = AgvEntity.Main_Status.ToString(),
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
-                    CST_Data = AgvEntity.CSTReader.Data?.data,
+                    CST_Data = AgvEntity.CSTReader.ValidCSTID,
                     BatteryStatus = new BatteryStateVM
                     {
                         BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
