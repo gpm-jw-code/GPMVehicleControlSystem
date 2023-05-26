@@ -21,34 +21,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             ACTION_TYPE action = taskDownloadData.Action_Type;
 
-            if (action != ACTION_TYPE.None && action != ACTION_TYPE.Discharge && action != ACTION_TYPE.Escape)
-                DirectionLighter.Forward();
-            else if (action == ACTION_TYPE.Discharge | taskDownloadData.IsAfterLoadingAction)
-                DirectionLighter.Backward();
-            else
-                DirectionLighter.Forward();
+            DirectionLighterSwitchBeforMove(taskDownloadData, action);
             //Laser模式變更
+            LaserSettingBeforeMove(action);
 
-            if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)
-            {
-                Laser.Mode = LASER_MODE.Loading;
-            }
-            else
-            {
-                Laser.Mode = LASER_MODE.Bypass;
-                AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
-            }
+            ChargeCircularSwitchBeforeMove(action);
 
-
-            if (action == ACTION_TYPE.Charge)
-            {
-                WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, true);
-            }
-            else if (action == ACTION_TYPE.Discharge)
-            {
-                WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);
-            }
-            else if (action == ACTION_TYPE.Load | action == ACTION_TYPE.Unload)
+            if (action == ACTION_TYPE.Load | action == ACTION_TYPE.Unload)
             {
                 StartFrontendObstcleDetection(action);
                 //EQ LDULD需要交握
@@ -77,6 +56,36 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             return (true, AlarmCodes.None);
 
+        }
+
+        private void ChargeCircularSwitchBeforeMove(ACTION_TYPE action)
+        {
+            if (action != ACTION_TYPE.Charge && action != ACTION_TYPE.Discharge)
+                return;
+            WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, action == ACTION_TYPE.Charge);
+        }
+
+        private void DirectionLighterSwitchBeforMove(clsTaskDownloadData taskDownloadData, ACTION_TYPE action)
+        {
+            if (action != ACTION_TYPE.None && action != ACTION_TYPE.Discharge && action != ACTION_TYPE.Escape)
+                DirectionLighter.Forward();
+            else if (action == ACTION_TYPE.Discharge | taskDownloadData.IsAfterLoadingAction)
+                DirectionLighter.Backward();
+            else
+                DirectionLighter.Forward();
+        }
+
+        private void LaserSettingBeforeMove(ACTION_TYPE action)
+        {
+            if (action == ACTION_TYPE.Charge | action == ACTION_TYPE.Unload | action == ACTION_TYPE.Load | action == ACTION_TYPE.Discharge)
+            {
+                Laser.Mode = LASER_MODE.Loading;
+            }
+            else
+            {
+                Laser.Mode = LASER_MODE.Bypass;
+                AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
+            }
         }
 
         /// <summary>
