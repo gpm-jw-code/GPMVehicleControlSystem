@@ -31,23 +31,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 if (taskData.Action_Type != ACTION_TYPE.None)
                 {
                     CurrentTaskRunStatus = TASK_RUN_STATUS.NAVIGATING;
-                    if (taskData.IsTaskSegmented)
-                    {
-                        //侵入Port後
-                        await FeedbackTaskStatus(CurrentTaskRunStatus);
-                        var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
 
-                        if (!check_result_after_Task.confirm)
-                        {
-                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
-                            Sub_Status = SUB_STATUS.DOWN;
-                            return;
-                        }
-                    }
-                    else
-                    {
-                        /// 退出Port後
-                        if (taskData.Station_Type == STATION_TYPE.EQ)
+
+                    if (taskData.IsAfterLoadingAction | taskData.Action_Type == ACTION_TYPE.Discharge)
+                    {   /// 退出Port後
+                        if (taskData.IsNeedHandshake)
                         {
                             (bool eqready_off, AlarmCodes alarmCode) result = await WaitEQReadyOFF(taskData.Action_Type);
                             if (!result.eqready_off)
@@ -62,6 +50,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         }
                         await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
 
+                    }
+                    else
+                    {
+                        //侵入Port後
+                        await FeedbackTaskStatus(CurrentTaskRunStatus);
+                        var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
+
+                        if (!check_result_after_Task.confirm)
+                        {
+                            AlarmManager.AddAlarm(check_result_after_Task.alarm_code);
+                            Sub_Status = SUB_STATUS.DOWN;
+                            return;
+                        }
                     }
                 }
                 else
@@ -89,7 +90,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (action == ACTION_TYPE.Load | action == ACTION_TYPE.Unload)
             {
 
-                if (taskDownloadData.Station_Type == STATION_TYPE.EQ)
+                if (taskDownloadData.IsNeedHandshake)
                 {
                     //交握
                     var eqBusy_OFF_HS_Result = await WaitEQBusyOFF(action);

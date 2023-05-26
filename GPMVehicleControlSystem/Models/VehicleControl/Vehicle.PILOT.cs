@@ -40,6 +40,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <param name="taskDownloadData"></param>
         internal void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
         {
+            CurrentTaskRunStatus = TASK_RUN_STATUS.WAIT;
             LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
 
             Task.Run(async () =>
@@ -61,17 +62,24 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
                 else
                 {
+                    int task_download_to_agvc_retry = 1;
+                    while (!await AGVC.AGVSTaskDownloadHandler(taskDownloadData))
+                    {
+                        AlarmManager.AddWarning(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
+                        task_download_to_agvc_retry += 1;
+                        LOG.Critical($"嘗試發送任務給車控執行...({task_download_to_agvc_retry})");
 
-                    bool agv_running = await AGVC.AGVSTaskDownloadHandler(taskDownloadData);
-                    if (agv_running)
-                    {
-                        Sub_Status = SUB_STATUS.RUN;
+                        if (task_download_to_agvc_retry > 5| Sub_Status == SUB_STATUS.DOWN)
+                        {
+                            Sub_Status = SUB_STATUS.DOWN;
+                            AlarmManager.AddAlarm(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
+                            return;
+                        }
+                        await Task.Delay(1000);
+
                     }
-                    else
-                    {
-                        LOG.Critical($"無法發送任務給車控執行");
-                        Sub_Status = SUB_STATUS.DOWN;
-                    }
+                    AlarmManager.ClearAlarm(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
+                    Sub_Status = SUB_STATUS.RUN;
                 }
             });
         }
@@ -131,7 +139,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
         }
 
-       
+
 
         private void CarController_OnTaskActionFinishCauseAbort(object? sender, clsTaskDownloadData e)
         {
@@ -162,10 +170,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {
+            CurrentTaskRunStatus = status;
             await Task.Delay(1);
             if (Remote_Mode == REMOTE_MODE.OFFLINE)
                 return;
             await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
+
+            if (status == TASK_RUN_STATUS.ACTION_FINISH)
+                CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;
         }
         internal int GetCurrentTagIndexOfTrajectory()
         {

@@ -31,7 +31,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 StartFrontendObstcleDetection(action);
                 //EQ LDULD需要交握
-                if (taskDownloadData.Station_Type == STATION_TYPE.EQ)
+                if (taskDownloadData.IsNeedHandshake) //TODO which station type need handshake
                 {
                     ///開始與設備交握準備侵入前，檢查在席Sensor
                     (bool confirm, AlarmCodes alarmCode) cst_check_result = CstExistCheckBeforeHSStartInFrontOfEQ(action);
