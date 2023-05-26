@@ -182,6 +182,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 await Task.Delay(1).ContinueWith(t =>
                 AGVC.Connect());
+                BuzzerPlayer.rossocket = AGVC.rosSocket;
+                BuzzerPlayer.BuzzerAlarm();
             });
 
             Task WagoDOConnTask = new Task(() =>

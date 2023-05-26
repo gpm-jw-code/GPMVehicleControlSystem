@@ -1,4 +1,5 @@
 ﻿
+using AGVSystemCommonNet6;
 using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
@@ -152,17 +153,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public void ModeSwitch(int mode_int)
         {
-            bool[] mode_bools = new bool[4];
-            for (int i = 0; i < 4; i++)
-            {
-                mode_bools[i] = ((mode_int >> i) & 1) != 1;
-            }
+            if (_mode_int == mode_int)
+                return;
 
-            bool IN_1 = mode_bools[0];
-            bool IN_2 = mode_bools[1];
-            bool IN_3 = mode_bools[2];
-            bool IN_4 = mode_bools[3];
-
+            bool[] lsSet= mode_int.To4Booleans();
+            bool IN_1 = lsSet[0];
+            bool IN_2 = lsSet[1];
+            bool IN_3 = lsSet[2];
+            bool IN_4 = lsSet[3];
             DOModule.PauseSignal.Reset();
             DIModule.PauseSignal.Reset();
             Thread.Sleep(500);
@@ -194,6 +192,5 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             DIModule.PauseSignal.Set();
             LOG.TRACE($"Laser Mode Chaged To : {mode_int}({Mode})");
         }
-
     }
 }

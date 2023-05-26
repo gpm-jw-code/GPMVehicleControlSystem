@@ -56,7 +56,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             STOP_RIGHTNOW = 101
 
         }
-        RosSocket? rosSocket;
+        public RosSocket? rosSocket;
 
         /// <summary>
         /// 地圖比對率
@@ -222,8 +222,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             IsFrontArea2LaserRecovery = true;
 
 
-                Console.WriteLine($"FrontFarArea 2 雷射解除,速度恢復請求.");
-                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+            Console.WriteLine($"FrontFarArea 2 雷射解除,速度恢復請求.");
+            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
             //    Console.Error.WriteLine($"FrontFarArea1 雷射解除,速度恢復請求.");
@@ -237,9 +237,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             IsBackArea2LaserRecovery = true;
 
-            
-                Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
-                CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
+
+            Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
+            CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
             //{
             //    Console.Error.WriteLine($"BackFarArea1 雷射解除,速度恢復請求.");
@@ -437,6 +437,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         }
 
-        
+
     }
 }
