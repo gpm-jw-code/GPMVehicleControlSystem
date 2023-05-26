@@ -39,7 +39,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         //public AGVPILOT Pilot { get; set; }
         public clsNavigation Navigation = new clsNavigation();
-        public clsBattery Battery = new clsBattery();
+
+        public Dictionary<ushort, clsBattery> Batteries = new Dictionary<ushort, clsBattery>();
+
         public clsIMU IMU = new clsIMU();
         public clsGuideSensor GuideSensor = new clsGuideSensor();
         public clsBarcodeReader BarcodeReader = new clsBarcodeReader();
@@ -60,8 +62,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 var ls = new List<CarComponent>()
                 {
-                    Navigation,Battery,IMU,GuideSensor, BarcodeReader,CSTReader,
+                    Navigation,IMU,GuideSensor, BarcodeReader,CSTReader,
                 };
+                ls.AddRange(Batteries.Values.ToArray());
                 ls.AddRange(WheelDrivers);
                 return ls;
             }
@@ -154,7 +157,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public Vehicle()
         {
-
             IsSystemInitialized = false;
             string AGVS_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:IP");
             int AGVS_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Port");
@@ -407,8 +409,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
             Task.Factory.StartNew(async () =>
             {
-                await Task.Delay(100);
                 Sub_Status = SUB_STATUS.DOWN;
+                await Task.Delay(100);
+                Sub_Status = SUB_STATUS.ALARM;
                 AlarmManager.AddAlarm(AlarmCodes.SoftwareEMS);
             });
 
@@ -416,12 +419,29 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal async Task ResetAlarmsAsync()
         {
-            if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
-                await WagoDO.ResetMotor();
-            AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
-            FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
-            AlarmManager.ClearAlarm();
             BuzzerPlayer.BuzzerStop();
+
+            if (AlarmManager.CurrentAlarms.Count == 0)
+                return;
+            _ = Task.Factory.StartNew(async () =>
+             {
+                 if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
+                     await WagoDO.ResetMotor();
+                 AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
+                 FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
+
+                 if (!AlarmManager.CurrentAlarms.Values.Any(alarm => alarm.ELevel == clsAlarmCode.LEVEL.Alarm))
+                 {
+                     if (CurrentTaskRunStatus == TASK_RUN_STATUS.NAVIGATING)
+                     {
+                         Sub_Status = SUB_STATUS.RUN;
+                     }
+                     else
+                         Sub_Status = SUB_STATUS.IDLE;
+                 }
+                 AlarmManager.ClearAlarm();
+             });
+
             return;
         }
 
@@ -468,7 +488,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// </summary>
         /// <param name="getLastPtPoseOfTrajectory"></param>
         /// <returns></returns>
-        private RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
+        internal RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
         {
             RunningStatus.clsCorrdination clsCorrdination = new RunningStatus.clsCorrdination();
             MAIN_STATUS _Main_Status = Main_Status;
@@ -499,12 +519,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             try
             {
-                double batteryLevel = Battery.Data.batteryLevel;
+                double[] batteryLevels = Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
                 return new RunningStatus
                 {
                     Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
                     AGV_Status = _Main_Status,
-                    Electric_Volume = new double[2] { batteryLevel, batteryLevel },
+                    Electric_Volume = batteryLevels,
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
                     Corrdination = clsCorrdination,
                     CSTID = new string[] { CSTReader.ValidCSTID },
@@ -526,7 +546,20 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             Odometry = _ModuleInformation.Mileage;
             Navigation.StateData = _ModuleInformation.nav_state;
-            Battery.StateData = _ModuleInformation.Battery;
+
+            ushort battery_id = _ModuleInformation.Battery.batteryID;
+            if (Batteries.TryGetValue(battery_id, out var battery))
+            {
+                battery.StateData = _ModuleInformation.Battery;
+            }
+            else
+            {
+                Batteries.Add(battery_id, new clsBattery()
+                {
+                    StateData = _ModuleInformation.Battery
+                });
+            }
+
             IMU.StateData = _ModuleInformation.IMU;
             GuideSensor.StateData = _ModuleInformation.GuideSensor;
             BarcodeReader.StateData = _ModuleInformation.reader;
@@ -547,9 +580,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //    }
 
             //});
-            if (Battery.IsCharging)
+            if (Batteries.Values.Any(battery => battery.IsCharging))
             {
-                if (Battery.Data.batteryLevel >= 99)
+                if (Batteries.Values.All(battery => battery.Data.batteryLevel >= 99))
                     WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);//充滿電切斷充電迴路
                 Sub_Status = SUB_STATUS.Charging;
             }

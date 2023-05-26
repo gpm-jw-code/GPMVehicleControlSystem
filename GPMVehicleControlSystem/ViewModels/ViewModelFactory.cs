@@ -37,12 +37,12 @@ namespace GPMVehicleControlSystem.ViewModels
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
                     CST_Data = AgvEntity.CSTReader.ValidCSTID,
-                    BatteryStatus = new BatteryStateVM
+                    BatteryStatus = AgvEntity.Batteries.Count==0? new BatteryStateVM():  new BatteryStateVM
                     {
-                        BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
-                        ChargeCurrent = AgvEntity.Battery.Data.chargeCurrent,
-                        IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
-                        IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL,
+                        BatteryLevel = AgvEntity.Batteries.Values.First().Data.batteryLevel,
+                        ChargeCurrent = AgvEntity.Batteries.Values.First().Data.chargeCurrent,
+                        IsCharging = AgvEntity.Batteries.Values.First().Data.chargeCurrent != 0,
+                        IsError = AgvEntity.Batteries.Values.First().State == CarComponent.STATE.ABNORMAL,
                         CircuitOpened = AgvEntity.WagoDO.GetState(DO_ITEM.Recharge_Circuit)
 
                     },

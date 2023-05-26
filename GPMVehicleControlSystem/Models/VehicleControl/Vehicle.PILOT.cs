@@ -420,6 +420,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {
+            await Task.Delay(1);
             if (Remote_Mode == REMOTE_MODE.OFFLINE)
                 return;
             await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);

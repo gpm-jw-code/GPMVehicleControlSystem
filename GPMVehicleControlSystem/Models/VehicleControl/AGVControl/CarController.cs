@@ -358,8 +358,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             }
         }
 
-        internal void CarSpeedControl(ROBOT_CONTROL_CMD cmd)
+        internal async Task CarSpeedControl(ROBOT_CONTROL_CMD cmd)
         {
+            await Task.Delay(1);
             CarSpeedControl(cmd, RunningTaskData.Task_Name);
         }
         public bool CarSpeedControl(ROBOT_CONTROL_CMD cmd, string task_id)

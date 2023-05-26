@@ -9,6 +9,7 @@ using GPMVehicleControlSystem.Models.Buzzer;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
 using static AGVSystemCommonNet6.clsEnums;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
@@ -98,7 +99,12 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> BateryState()
         {
             await Task.Delay(1);
-            return Ok(agv.Battery.Data);
+            if (agv.Batteries.Count == 0)
+                return Ok(new BatteryState
+                {
+                    batteryLevel = 0,
+                });
+            return Ok(agv.Batteries.Values.First().Data);
         }
 
         [HttpPost("EMO")]
@@ -206,5 +212,10 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             return Ok();
         }
 
+        [HttpGet("RunningStatus")]
+        public async Task<IActionResult> GetRunningStatus()
+        {
+            return Ok(agv.GenRunningStateReportData());
+        }
     }
 }

@@ -48,8 +48,14 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 fromtag = currentTag;
             else
                 fromtag = int.Parse(from);
-
-            Map? map = await MapController.GetMapFromServer();
+            Map? map = MapManager.LoadMapFromFile();
+            try
+            {
+                map = await MapController.GetMapFromServer();
+            }
+            catch (Exception)
+            {
+            }
             var fromStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == fromtag);
             var toStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == totag);
 
@@ -72,7 +78,6 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
 
             clsTaskDownloadData taskDataDto = null;
             taskDataDto = CreateMoveActionTaskJob(map, action, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
-
 
             clsTaskDownloadData[]? taskLinkList = CreateActionLinksTaskJobs(map, action, fromtag, totag);
 

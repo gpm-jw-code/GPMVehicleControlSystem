@@ -25,6 +25,7 @@ namespace GPMVehicleControlSystem.Models.Emulators
             {
                 state = 1,
                 batteryLevel = 90,
+                batteryID = 100
             },
             CSTReader = new CSTReaderState
             {
@@ -47,13 +48,16 @@ namespace GPMVehicleControlSystem.Models.Emulators
             int RosBridge_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:RosBridge:Port");
             rosSocket = new RosSocket(new WebSocketSharpProtocol($"ws://{RosBridge_IP}:{RosBridge_Port}"));
 
-            rosSocket.Advertise<ModuleInformation>("AGVC_Emu", "/module_information");
-            rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", CstReaderServiceCallack);
-            rosSocket.Advertise<LocalizationControllerResultMessage0502>("SICK_Emu", "localizationcontroller/out/localizationcontroller_result_message_0502");
-
-            InitNewTaskCommandActionServer();
-            // _ = PublishLocalizeResult(rosSocket);
-
+            Task.Factory.StartNew(async () =>
+            {
+                await Task.Delay(1000);
+                rosSocket.Advertise<ModuleInformation>("AGVC_Emu", "/module_information");
+                rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action", CstReaderServiceCallack);
+                rosSocket.Advertise<LocalizationControllerResultMessage0502>("SICK_Emu", "localizationcontroller/out/localizationcontroller_result_message_0502");
+                InitNewTaskCommandActionServer();
+                _ = PublishModuleInformation(rosSocket);
+                // _ = PublishLocalizeResult(rosSocket);
+            });
         }
 
         private void InitNewTaskCommandActionServer()
@@ -61,13 +65,12 @@ namespace GPMVehicleControlSystem.Models.Emulators
             TaskCommandActionServer actionServer = new TaskCommandActionServer("/barcodemovebase", rosSocket);
             actionServer.Initialize();
             actionServer.OnNAVGoalReceived += NavGaolHandle;
-            _ = PublishModuleInformation(rosSocket);
         }
 
         private void NavGaolHandle(object sender, TaskCommandGoal obj)
         {
             TaskCommandActionServer actionServer = (TaskCommandActionServer)sender;
-            Console.WriteLine($"[ROS 車控模擬器] New Task , Task Name = {obj.taskID}, Tags Path = { string.Join("->", obj.planPath.poses.Select(p => p.header.seq)) }");
+            Console.WriteLine($"[ROS 車控模擬器] New Task , Task Name = {obj.taskID}, Tags Path = {string.Join("->", obj.planPath.poses.Select(p => p.header.seq))}");
             actionServer.AcceptedInvoke();
 
             actionServer.OnNAVGoalReceived -= NavGaolHandle;

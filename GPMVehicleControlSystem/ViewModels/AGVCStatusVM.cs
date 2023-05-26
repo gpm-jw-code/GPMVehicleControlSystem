@@ -24,7 +24,7 @@ namespace GPMVehicleControlSystem.ViewModels
         public string AGVC_ID { get; set; } = "";
         public string CST_Data { get; set; } = "";
         public int Tag { get; set; }
-        public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM();
+        public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM(); //TODO Multi battery data should define
         public double Mileage { get; set; }
         public Pose Pose { get; set; } = new Pose();
         public double Angle { get; set; } = -1;
