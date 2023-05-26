@@ -1,21 +1,13 @@
 ﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
-using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.Log;
-using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Tools;
-using GPMVehicleControlSystem.VehicleControl.DIOModule;
-using System.Diagnostics;
 using static AGVSystemCommonNet6.clsEnums;
-using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
-using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
     public partial class Vehicle
     {
-
-
         /// <summary>
         /// 移動任務結束後的處理
         /// </summary>
@@ -42,7 +34,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     if (taskData.IsTaskSegmented)
                     {
                         //侵入Port後
-
                         await FeedbackTaskStatus(CurrentTaskRunStatus);
                         var check_result_after_Task = await ExecuteWorksWhenReachPort(taskData);
 
@@ -88,7 +79,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
         /// <summary>
-        /// 移動任務結束後
+        /// 當侵入設備或Port之後的動作
         /// </summary>
         /// <param name="taskDownloadData"></param>
         private async Task<(bool confirm, AlarmCodes alarm_code)> ExecuteWorksWhenReachPort(clsTaskDownloadData taskDownloadData)
@@ -108,26 +99,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                     else
                         LOG.Critical("[EQ Handshake] EQ BUSY OFF,AGV 開始退出EQ");
+
                     DirectionLighter.AbortFlash();
                 }
-                //TODO 在席檢查開關
-                //if (action == ACTION_TYPE.Load)
-                //{
-                //    //檢查在席全ON(車上應該要沒貨)
-                //    if (HasAnyCargoOnAGV())
-                //    {
-                //        return (false, AlarmCodes.Has_Cst_Without_Job);
-                //    }
-                //}
-
-                //if (action == ACTION_TYPE.Unload)
-                //{
-                //    //檢查在席全ON(車上應該要沒貨)
-                //    if (!HasAnyCargoOnAGV())
-                //    {
-                //        return (false, AlarmCodes.Has_Job_Without_Cst);
-                //    }
-                //}
+                ///設備動作完成後，檢查在席Sensor
+                (bool confirm, AlarmCodes alarmCode) cst_check_result = CstExistCheckAfterEQBusyOff(action);
+                if (!cst_check_result.confirm)
+                {
+                    return cst_check_result;
+                }
 
                 clsTaskDownloadData _AGVBackTaskDownloadData = taskDownloadData.TurnToBackTaskData();
                 if (!await AGVC.AGVSTaskDownloadHandler(_AGVBackTaskDownloadData))
@@ -138,6 +118,31 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             return (true, AlarmCodes.None);
 
+        }
+        /// <summary>
+        /// Load完成(放貨)=>車上應該有無貨/ Unload完成(取貨)=>車上應該有貨
+        /// </summary>
+        /// <param name="action"></param>
+        /// <returns></returns>
+        private (bool confirm, AlarmCodes alarmCode) CstExistCheckAfterEQBusyOff(ACTION_TYPE action)
+        {
+            // "CST_EXIST_DETECTION": {
+            //            "Before_In": false,
+            //            "After_EQ_Busy_Off": false
+            //}
+            if (!AppSettingsHelper.GetValue<bool>("VCS:CST_EXIST_DETECTION:After_EQ_Busy_Off"))
+                return (true, AlarmCodes.None);
+
+
+            if (action == ACTION_TYPE.Load && HasAnyCargoOnAGV())
+            {
+                return (false, AlarmCodes.Has_Cst_Without_Job);
+            }
+            else if (action == ACTION_TYPE.Unload && !HasAnyCargoOnAGV())
+            {
+                return (false, AlarmCodes.Has_Job_Without_Cst);
+            }
+            return (true, AlarmCodes.None);
         }
 
     }
