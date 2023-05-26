@@ -463,7 +463,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return true;
         }
 
-
+        /// <summary>
+        /// 當要求取得RunningStates Data的callback function
+        /// </summary>
+        /// <param name="getLastPtPoseOfTrajectory"></param>
+        /// <returns></returns>
         private RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
         {
             RunningStatus.clsCorrdination clsCorrdination = new RunningStatus.clsCorrdination();
@@ -482,6 +486,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 clsCorrdination.Y = Math.Round(Navigation.Data.robotPose.pose.position.y, 3);
                 clsCorrdination.Theta = Math.Round(BarcodeReader.Data.theta, 3);
             }
+            //gen alarm codes 
+
+            RunningStatus.clsAlarmCode[] alarm_codes = AlarmManager.CurrentAlarms.Select(alarm => new RunningStatus.clsAlarmCode
+            {
+                Alarm_ID = alarm.Value.Code,
+                Alarm_Level = (int)alarm.Value.ELevel,
+                Alarm_Description = alarm.Value.Description,
+                Alarm_Category = alarm.Value.ELevel == clsAlarmCode.LEVEL.Warning ? 0 : (int)alarm.Value.ELevel
+
+            }).ToArray();
 
             try
             {
@@ -495,7 +509,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     Corrdination = clsCorrdination,
                     CSTID = new string[] { CSTReader.ValidCSTID },
                     Odometry = Odometry,
-                    AGV_Reset_Flag = AGV_Reset_Flag
+                    AGV_Reset_Flag = AGV_Reset_Flag,
+                    Alarm_Code = alarm_codes
                 };
             }
             catch (Exception ex)
