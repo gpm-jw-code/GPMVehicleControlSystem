@@ -13,18 +13,16 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 {
     public class BuzzerPlayer
     {
-        private static string PlayListFileName = "playlist.json";
         public static clsPlayList playList { get; private set; } = new clsPlayList();
         static SoundPlayer player;
         static bool IsAlarmPlaying = false;
         static bool IsActionPlaying = false;
         static bool IsMovingPlaying = false;
         public static RosSocket rossocket;
-        static CancellationTokenSource playCancelTS = new CancellationTokenSource();
 
         public static void Initialize()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
+            if (Environment.OSVersion.Platform == PlatformID.Unix )
             {
                 playList.sounds_folder = "/home/jinwei/param/sounds";
             }
@@ -58,23 +56,18 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         private static bool _linux_music_stopped = false;
         internal static async Task BuzzerStop()
         {
-            playCancelTS.Cancel();
             _linux_music_stopped = false;
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
-            if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
-            {
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
                 PlayWithRosService("");
-            }
             else
-            {
                 player?.Stop();
-            }
+
             await Task.Delay(12);
         }
 
         private static async void Play(string filePath)
         {
-
             if (!File.Exists(filePath) && !Debugger.IsAttached)
             {
                 LOG.ERROR($"Can't play {filePath}, File not exist");
@@ -82,9 +75,8 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
             try
             {
-                if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
+                if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
-                    // PlayInLinux(filePath);
                     PlayWithRosService(filePath);
                 }
                 else
