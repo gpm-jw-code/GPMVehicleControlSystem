@@ -5,6 +5,9 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Media;
 using AGVSystemCommonNet6.Log;
+using AGVSystemCommonNet6.GPMRosMessageNet.Services;
+using RosSharp.RosBridgeClient;
+using RosSharp.RosBridgeClient.Protocols;
 
 namespace GPMVehicleControlSystem.Models.Buzzer
 {
@@ -12,19 +15,19 @@ namespace GPMVehicleControlSystem.Models.Buzzer
     {
         private static string PlayListFileName = "playlist.json";
         public static clsPlayList playList { get; private set; } = new clsPlayList();
-        public static List<Process> ProcList { get; private set; } = new List<Process>();
-
         static SoundPlayer player;
         static bool IsAlarmPlaying = false;
         static bool IsActionPlaying = false;
         static bool IsMovingPlaying = false;
-        static Process playIngPlayingProcesses;
-
+        public static RosSocket rossocket;
         static CancellationTokenSource playCancelTS = new CancellationTokenSource();
 
         public static void Initialize()
         {
-            BuzzerAlarm();
+            if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
+            {
+                playList.sounds_folder = "/home/jinwei/param/sounds";
+            }
         }
 
 
@@ -58,23 +61,9 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             playCancelTS.Cancel();
             _linux_music_stopped = false;
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
             {
-                foreach (var item in ProcList)
-                {
-                    if (item != null)
-                    {
-                        try
-                        {
-                            item.Kill();
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
-                        }
-                    }
-                }
-                ProcList.Clear();
+                PlayWithRosService("");
             }
             else
             {
@@ -86,25 +75,17 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         private static async void Play(string filePath)
         {
 
-            if (!File.Exists(filePath))
+            if (!File.Exists(filePath) && !Debugger.IsAttached)
             {
                 LOG.ERROR($"Can't play {filePath}, File not exist");
                 return;
             }
             try
             {
-                playCancelTS = new CancellationTokenSource();
-                CancellationTokenSource cst = new CancellationTokenSource(TimeSpan.FromSeconds(.4));
-                while (!_linux_music_stopped)
+                if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
                 {
-                    if (cst.IsCancellationRequested)
-                        break;
-                    await Task.Delay(1);
-                }
-
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
-                {
-                    PlayInLinux(filePath);
+                    // PlayInLinux(filePath);
+                    PlayWithRosService(filePath);
                 }
                 else
                     PlayInWindows(filePath);
@@ -114,90 +95,22 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             {
             }
         }
-
+        public static void PlayWithRosService(string filePath)
+        {
+            if (rossocket == null)
+                return;
+            PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
+            {
+                file_path = filePath
+            });
+            Console.WriteLine(response.success);
+        }
         private static void PlayInWindows(string filePath)
         {
             // 初始化 SoundPlayer 物件
             player = new SoundPlayer(filePath);
             // 播放
             player.PlayLooping();
-        }
-        static Process _ffmpegProcess;
-        private static void PlayInLinux(string filePath)
-        {
-            Task.Run(() =>
-             {
-                 string ffmpegPath = "/usr/bin/ffmpeg";
-                 ProcessStartInfo startInfo = new ProcessStartInfo()
-                 {
-                     FileName = ffmpegPath,
-                     Arguments = $"-i {filePath} -f alsa default -loglevel quiet",
-                     RedirectStandardOutput = false,
-                     UseShellExecute = false,
-                 };
-
-                 Process _ffmpegProcess = new Process
-                 {
-                     StartInfo = startInfo
-                 };
-
-                 playIngPlayingProcesses = _ffmpegProcess;
-
-                 try
-                 {
-                     ProcList.Add(_ffmpegProcess);
-                     _ffmpegProcess.Start();
-
-                 }
-                 catch (System.Exception ex)
-                 {
-                     LOG.ERROR($"Couldn't play music by ffmepg...Error Message:{ex.Message}", ex);
-                     return;
-                 }
-                 Task tk = _ffmpegProcess.WaitForExitAsync(playCancelTS.Token);
-                 tk.ContinueWith(_tk =>
-                 {
-                     Console.WriteLine("music process exit");
-                     if (!playCancelTS.IsCancellationRequested)
-                         StartNewFFmpegProcess(_ffmpegProcess, startInfo);
-                     else
-                     {
-                         BuzzerStop();
-                         _linux_music_stopped = true;
-                     }
-                 });
-
-             });
-
-        }
-
-        private static void StartNewFFmpegProcess(Process ffmpegProcess, ProcessStartInfo startInfo)
-        {
-            Task.Run(() =>
-            {
-                playCancelTS = new CancellationTokenSource();
-                Console.WriteLine("start new music process");
-                Process _ffmpegProcess = new Process
-                {
-                    StartInfo = startInfo
-                };
-                playIngPlayingProcesses = _ffmpegProcess;
-                ProcList.Add(_ffmpegProcess);
-                _ffmpegProcess.Start();
-                Task tk = _ffmpegProcess.WaitForExitAsync(playCancelTS.Token);
-                tk.ContinueWith(_tk =>
-                {
-                    Console.WriteLine("music process exit");
-                    if (!playCancelTS.IsCancellationRequested)
-                        StartNewFFmpegProcess(_ffmpegProcess, startInfo);
-                    else
-                    {
-                        BuzzerStop();
-                        _linux_music_stopped = true;
-                    }
-                });
-            });
-
         }
     }
 }
