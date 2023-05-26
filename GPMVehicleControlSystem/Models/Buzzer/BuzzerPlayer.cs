@@ -22,7 +22,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 
         public static void Initialize()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Unix )
+            if (Environment.OSVersion.Platform == PlatformID.Unix)
             {
                 playList.sounds_folder = "/home/jinwei/param/sounds";
             }
@@ -35,7 +35,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                 return;
             await BuzzerStop();
             IsAlarmPlaying = true;
-            Play(playList.Alarm);
+            Play(playList.Alarm, 5);
         }
         public static async void BuzzerAction()
         {
@@ -43,7 +43,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                 return;
             await BuzzerStop();
             IsActionPlaying = true;
-            Play(playList.Action);
+            Play(playList.Action, 25);
         }
         public static async void BuzzerMoving()
         {
@@ -51,7 +51,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                 return;
             await BuzzerStop();
             IsMovingPlaying = true;
-            Play(playList.Moving);
+            Play(playList.Moving, 25);
         }
         private static bool _linux_music_stopped = false;
         internal static async Task BuzzerStop()
@@ -66,7 +66,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             await Task.Delay(12);
         }
 
-        private static async void Play(string filePath)
+        private static async void Play(string filePath, float total_sec = 22)
         {
             if (!File.Exists(filePath) && !Debugger.IsAttached)
             {
@@ -77,7 +77,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             {
                 if (Environment.OSVersion.Platform == PlatformID.Unix)
                 {
-                    PlayWithRosService(filePath);
+                    PlayWithRosService(filePath, total_sec);
                 }
                 else
                     PlayInWindows(filePath);
@@ -87,13 +87,14 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             {
             }
         }
-        public static void PlayWithRosService(string filePath)
+        public static void PlayWithRosService(string filePath, float total_sec = 22)
         {
             if (rossocket == null)
                 return;
             PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
             {
-                file_path = filePath
+                file_path = filePath,
+                total_sec = total_sec
             });
             Console.WriteLine(response.success);
         }
