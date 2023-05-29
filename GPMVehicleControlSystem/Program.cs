@@ -10,8 +10,9 @@ using System.Reflection;
 
 StaStored.APPVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 var builder = WebApplication.CreateBuilder(args);
+
 AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));
-StaEmuManager.Start();
+//StaEmuManager.Start();
 BuzzerPlayer.Initialize();
 DBhelper.Initialize();
 

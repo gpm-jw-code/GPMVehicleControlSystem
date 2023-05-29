@@ -22,7 +22,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
 
         public static void Initialize()
         {
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
+            if (Environment.OSVersion.Platform == PlatformID.Unix|Debugger.IsAttached)
             {
                 playList.sounds_folder = "/home/jinwei/param/sounds";
             }
@@ -75,7 +75,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
             try
             {
-                if (Environment.OSVersion.Platform == PlatformID.Unix)
+                if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
                 {
                     PlayWithRosService(filePath, total_sec);
                 }
