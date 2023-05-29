@@ -34,5 +34,6 @@
 
 
         private bool _State;
+        internal ushort index;
     }
 }

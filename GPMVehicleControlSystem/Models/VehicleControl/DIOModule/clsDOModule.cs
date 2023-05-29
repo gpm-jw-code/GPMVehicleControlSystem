@@ -1,4 +1,5 @@
 ﻿using GPMVehicleControlSystem.Tools;
+using System.Linq;
 using System.Net.Sockets;
 
 namespace GPMVehicleControlSystem.VehicleControl.DIOModule
@@ -71,7 +72,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         protected override void RegistSignalEvents()
         {
         }
-        public override void ReadIOSettingsFromIniFile( )
+        public override void ReadIOSettingsFromIniFile()
         {
             IniHelper iniHelper = new IniHelper(Path.Combine(Environment.CurrentDirectory, "param/IO_Wago.ini"));
 
@@ -84,7 +85,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                     var Address = $"Y{i.ToString("X4")}";
                     var RigisterName = iniHelper.GetValue("OUTPUT", Address);
                     var reg = new clsIOSignal(RigisterName, Address);
-
+                    reg.index = i;
                     reg.State = false;
                     if (RigisterName != "")
                     {
