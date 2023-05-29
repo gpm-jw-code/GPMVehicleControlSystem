@@ -8,13 +8,10 @@
         }
         public clsPlayList()
         {
-            Alarm = Path.Combine(sounds_folder, "alarm.wav");
-            Moving = Path.Combine(sounds_folder, "move.wav");
-            Action = Path.Combine(sounds_folder, "action.wav");
         }
-        private string sounds_folder => Path.Combine( Environment.CurrentDirectory,"param/sounds");
-        public string Alarm { get; set; } = "D:\\sounds\\alarm.wav";
-        public string Moving { get; set; } = "D:\\sounds\\move.wav";
-        public string Action { get; set; } = "D:\\sounds\\action.wav";
+        public string sounds_folder = Path.Combine(Environment.CurrentDirectory, "param/sounds");
+        public string Alarm => $"{sounds_folder}/alarm.wav";
+        public string Moving => $"{sounds_folder}/move.wav";
+        public string Action => $"{sounds_folder}/action.wav";
     }
 }
