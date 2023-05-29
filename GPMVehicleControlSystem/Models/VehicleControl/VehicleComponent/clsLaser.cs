@@ -3,6 +3,7 @@ using AGVSystemCommonNet6;
 using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -80,26 +81,26 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public bool FrontLaserBypass
         {
-            get => DOModule.GetState(clsDOModule.DO_ITEM.Front_LsrBypass);
-            set => DOModule.SetState(clsDOModule.DO_ITEM.Front_LsrBypass, value);
+            get => DOModule.GetState(DO_ITEM.Front_LsrBypass);
+            set => DOModule.SetState(DO_ITEM.Front_LsrBypass, value);
         }
 
         public bool BackLaserBypass
         {
-            get => DOModule.GetState(clsDOModule.DO_ITEM.Back_LsrBypass);
-            set => DOModule.SetState(clsDOModule.DO_ITEM.Back_LsrBypass, value);
+            get => DOModule.GetState(DO_ITEM.Back_LsrBypass);
+            set => DOModule.SetState(DO_ITEM.Back_LsrBypass, value);
         }
 
         public bool RightLaserBypass
         {
-            get => DOModule.GetState(clsDOModule.DO_ITEM.Right_LsrBypass);
-            set => DOModule.SetState(clsDOModule.DO_ITEM.Right_LsrBypass, value);
+            get => DOModule.GetState(DO_ITEM.Right_LsrBypass);
+            set => DOModule.SetState(DO_ITEM.Right_LsrBypass, value);
         }
 
         public bool LeftLaserBypass
         {
-            get => DOModule.GetState(clsDOModule.DO_ITEM.Left_LsrBypass);
-            set => DOModule.SetState(clsDOModule.DO_ITEM.Left_LsrBypass, value);
+            get => DOModule.GetState(DO_ITEM.Left_LsrBypass);
+            set => DOModule.SetState(DO_ITEM.Left_LsrBypass, value);
         }
 
         /// <summary>
@@ -156,7 +157,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             if (_mode_int == mode_int)
                 return;
 
-            bool[] lsSet= mode_int.To4Booleans();
+            bool[] lsSet = mode_int.To4Booleans();
             bool IN_1 = lsSet[0];
             bool IN_2 = lsSet[1];
             bool IN_3 = lsSet[2];
@@ -164,29 +165,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             DOModule.PauseSignal.Reset();
             DIModule.PauseSignal.Reset();
             Thread.Sleep(500);
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_1, IN_1);
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_1, !IN_1);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_2, IN_2);
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_2, !IN_2);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_3, IN_3);
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_3, !IN_3);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_IN_4, IN_4);
-            DOModule.SetState(clsDOModule.DO_ITEM.Front_Protection_Sensor_CIN_4, !IN_4);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_1, IN_1);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_1, !IN_1);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_2, IN_2);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_2, !IN_2);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_3, IN_3);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_3, !IN_3);
-
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_IN_4, IN_4);
-            DOModule.SetState(clsDOModule.DO_ITEM.Back_Protection_Sensor_CIN_4, !IN_4);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, IN_1);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_1, !IN_1);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_2, IN_2);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_2, !IN_2);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_3, IN_3);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_3, !IN_3);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_4, IN_4);
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_4, !IN_4);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_1, IN_1);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_1, !IN_1);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_2, IN_2);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_2, !IN_2);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_3, IN_3);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_3, !IN_3);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_4, IN_4);
+            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_4, !IN_4);
             _mode_int = mode_int;
             DOModule.PauseSignal.Set();
             DIModule.PauseSignal.Set();
