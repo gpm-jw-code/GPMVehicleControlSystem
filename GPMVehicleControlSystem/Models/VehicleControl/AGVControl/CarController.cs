@@ -56,7 +56,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             STOP_RIGHTNOW = 101
 
         }
-        RosSocket? rosSocket;
+        public RosSocket? rosSocket;
 
         /// <summary>
         /// 地圖比對率
@@ -66,6 +66,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private LocalizationControllerResultMessage0502 LocalizationControllerResult = new LocalizationControllerResultMessage0502();
 
         public event EventHandler<ModuleInformation> OnModuleInformationUpdated;
+        public event EventHandler<LocalizationControllerResultMessage0502> OnSickDataUpdated;
 
         /// <summary>
         /// 機器人任務結束且是成功完成的狀態
@@ -235,6 +236,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal void BackFarArea2LaserRecoveryHandler(object? sender, EventArgs e)
         {
             IsBackArea2LaserRecovery = true;
+
+
             Console.Error.WriteLine($"BackFarArea 2 雷射解除,速度恢復請求.");
             CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery, "");
             //if (IsFrontArea1LaserRecovery && IsBackArea1LaserRecovery)
@@ -343,15 +346,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         private void SickStateCallback(LocalizationControllerResultMessage0502 _LocalizationControllerResult)
         {
             LocalizationControllerResult = _LocalizationControllerResult;
+            OnSickDataUpdated?.Invoke(this, _LocalizationControllerResult);
         }
 
         private void ModuleInformationCallback(ModuleInformation _ModuleInformation)
         {
             module_info = _ModuleInformation;
+            if (module_info.AlarmCode.Length > 0)
+            {
+
+            }
         }
 
-        internal void CarSpeedControl(ROBOT_CONTROL_CMD cmd)
+        internal async Task CarSpeedControl(ROBOT_CONTROL_CMD cmd)
         {
+            await Task.Delay(1);
             CarSpeedControl(cmd, RunningTaskData.Task_Name);
         }
         public bool CarSpeedControl(ROBOT_CONTROL_CMD cmd, string task_id)
@@ -426,20 +435,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             }
             LOG.TRACE($"AGVC Accept Task and Start Executing：Path Tracking = {new_path}");
             return true;
-
-        }
-
-        internal int GetCurrentTagIndexOfTrajectory(int currentTag)
-        {
-            try
-            {
-                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == currentTag));
-
-            }
-            catch (Exception)
-            {
-                return 0;
-            }
 
         }
 

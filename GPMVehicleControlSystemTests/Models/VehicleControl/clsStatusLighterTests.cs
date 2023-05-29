@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
+using GPMVehicleControlSystem.VehicleControl.DIOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.Tests
 {

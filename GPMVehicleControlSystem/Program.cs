@@ -4,14 +4,14 @@ using GPMVehicleControlSystem.Models;
 using GPMVehicleControlSystem.Models.Buzzer;
 using GPMVehicleControlSystem.Models.Emulators;
 using GPMVehicleControlSystem.Tools;
+using GPMVehicleControlSystem.ViewModels;
 using Microsoft.AspNetCore.Http.Json;
+using System.Reflection;
 
+StaStored.APPVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
 var builder = WebApplication.CreateBuilder(args);
-
 AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));
-
-//StaEmuManager.Start();
-
+StaEmuManager.Start();
 BuzzerPlayer.Initialize();
 DBhelper.Initialize();
 
@@ -31,12 +31,8 @@ builder.Services.Configure<JsonOptions>(options =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
 app.UseSwagger();
 app.UseSwaggerUI();
-//}
 
 app.UseAuthorization();
 app.UseWebSockets();

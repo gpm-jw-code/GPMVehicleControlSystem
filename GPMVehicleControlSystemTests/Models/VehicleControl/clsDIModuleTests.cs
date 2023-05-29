@@ -1,12 +1,6 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using GPMVehicleControlSystem.Models.VehicleControl;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Threading;
-using GPMVehicleControlSystem.Models.VehicleControl.DIOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.Tests
 {

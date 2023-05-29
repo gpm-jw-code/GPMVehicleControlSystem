@@ -4,8 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
 using Newtonsoft.Json;
+using AGVSystemCommonNet6.AGVDispatch.Messages;
+using static AGVSystemCommonNet6.clsEnums;
+using AGVSystemCommonNet6;
 
 namespace GPMVehicleControlSystem.Models.AGVDispatch.Tests
 {
@@ -51,7 +53,7 @@ namespace GPMVehicleControlSystem.Models.AGVDispatch.Tests
                 {"0105", new RunningStatus(){
 
                         Cargo_Status = 1,
-                        AGV_Status =  VehicleControl.Vehicle.MAIN_STATUS.DOWN
+                        AGV_Status =  MAIN_STATUS.DOWN
                 } }
             };
             string json = running_status_.ToJson();

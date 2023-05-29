@@ -8,7 +8,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
     public partial class clsCSTReader : CarComponent
     {
         public override COMPOENT_NAME component_name => COMPOENT_NAME.CST_READER;
-        public new CSTReaderState Data => (CSTReaderState)StateData;
+        public new CSTReaderState Data => StateData == null ? new CSTReaderState() : (CSTReaderState)StateData;
+
+        public string ValidCSTID { get; set; } = "";
+
         public override STATE CheckStateDataContent()
         {
             STATE _state = STATE.NORMAL;
@@ -26,6 +29,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             return _state;
         }
 
+        internal void UpdateCSTIDDataHandler(object? sender, string cst_id)
+        {
+            ValidCSTID = cst_id;
+        }
     }
 
 

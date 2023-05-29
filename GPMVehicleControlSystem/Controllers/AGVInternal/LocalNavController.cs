@@ -5,6 +5,7 @@ using GPMVehicleControlSystem.Models;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
 using GPMVehicleControlSystem.Models.VehicleControl;
 using AGVSystemCommonNet6.Log;
+using AGVSystemCommonNet6;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
@@ -48,8 +49,14 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 fromtag = currentTag;
             else
                 fromtag = int.Parse(from);
-
-            Map? map = await MapController.GetMapFromServer();
+            Map? map = MapManager.LoadMapFromFile();
+            try
+            {
+                map = await MapController.GetMapFromServer();
+            }
+            catch (Exception)
+            {
+            }
             var fromStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == fromtag);
             var toStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == totag);
 
@@ -73,7 +80,6 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             clsTaskDownloadData taskDataDto = null;
             taskDataDto = CreateMoveActionTaskJob(map, action, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
 
-
             clsTaskDownloadData[]? taskLinkList = CreateActionLinksTaskJobs(map, action, fromtag, totag);
 
             if (taskLinkList.Length >= 1)
@@ -82,15 +88,18 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                   {
                       foreach (clsTaskDownloadData? _taskDataDto in taskLinkList)
                       {
+                          if (agv.Sub_Status == clsEnums.SUB_STATUS.DOWN)
+                              return;
+
                           agv.ExecuteAGVSTask(this, _taskDataDto);
-                          await Task.Delay(1000);
-                          while (agv.Navigation.LastVisitedTag != _taskDataDto.Destination | agv.CurrentTaskRunStatus != TASK_RUN_STATUS.ACTION_FINISH)
+                          await Task.Delay(200);
+                          while (agv.CurrentTaskRunStatus != TASK_RUN_STATUS.ACTION_FINISH)
                           {
-                              Thread.Sleep(1000);
+                              if (agv.Sub_Status == clsEnums.SUB_STATUS.DOWN)
+                                  return;
+                              await Task.Delay(200);
                           }
                           LOG.TRACE("Local WebUI Task Allocator : Next Task Will Start..");
-                          await Task.Delay(1000);
-
                       }
 
                   });
@@ -144,13 +153,28 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             MapStation? destineStation = mapData.Points.First(i => i.Value.TagNumber == toTag).Value;
             MapStation secondaryLocStation = mapData.Points[int.Parse(destineStation.Target.First().Key)];
 
-            if (currentStation.StationType == STATION_TYPE.Charge | currentStation.StationType == STATION_TYPE.Charge_Buffer | currentStation.StationType == STATION_TYPE.Charge_STK)
+            bool isInChargeOrEqPortStation = currentStation.StationType != STATION_TYPE.Normal;
+            MapStation secondaryLocStation_of_chargeStateion = mapData.Points[int.Parse(currentStation.Target.First().Key)];
+
+            if (isInChargeOrEqPortStation)
             {
                 //Discharge
+                clsTaskDownloadData homing_move_task = new clsTaskDownloadData
+                {
+                    Task_Name = Task_Name,
+                    Task_Simplex = $"{Task_Name}-{seq}",
+                    Task_Sequence = seq,
+                    Action_Type = ACTION_TYPE.Discharge,
+                    Destination = secondaryLocStation_of_chargeStateion.TagNumber,
+                    Station_Type = secondaryLocStation_of_chargeStateion.StationType,
+                    Homing_Trajectory = pathFinder.GetTrajectory(mapData.Name, new List<MapStation> { currentStation, secondaryLocStation_of_chargeStateion })
+                };
+                taskList.Add(homing_move_task);
+                seq += 1;
             }
 
 
-            normal_move_start_tag = fromTag;
+            normal_move_start_tag = isInChargeOrEqPortStation ? secondaryLocStation_of_chargeStateion.TagNumber : fromTag;
 
             if (actionType == ACTION_TYPE.None)
                 normal_move_final_tag = toTag;
@@ -160,7 +184,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             }
 
             //add normal 
-            PathFinder.clsPathInfo? planPath = pathFinder.FindShortestPath(mapData.Points, currentStation, actionType == ACTION_TYPE.None ? destineStation : secondaryLocStation);
+            PathFinder.clsPathInfo? planPath = pathFinder.FindShortestPath(mapData.Points, isInChargeOrEqPortStation? secondaryLocStation_of_chargeStateion :  currentStation, actionType == ACTION_TYPE.None ? destineStation : secondaryLocStation);
             clsTaskDownloadData normal_move_task = new clsTaskDownloadData
             {
                 Task_Name = Task_Name,
@@ -183,7 +207,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                     Task_Sequence = seq,
                     Action_Type = actionType,
                     Destination = destineStation.TagNumber,
-                    Station_Type = STATION_TYPE.Normal,
+                    Station_Type = destineStation.StationType,
                     Homing_Trajectory = pathFinder.GetTrajectory(mapData.Name, new List<MapStation> { secondaryLocStation, destineStation })
                 };
                 taskList.Add(homing_move_task);

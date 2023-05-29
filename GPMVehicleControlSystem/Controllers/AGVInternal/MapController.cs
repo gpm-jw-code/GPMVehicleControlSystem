@@ -39,16 +39,31 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
 
             Map? map = null;
-            using (HttpClient client = new HttpClient())
+            //先 ping 看看
+            Ping ping = new Ping();
+            PingReply? reply = ping.Send(Host, 300);
+            if (reply.Status != IPStatus.Success)
             {
-                var response = await client.GetAsync(GetMapUrl);
-                if (response.StatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    var jsonStr = await response.Content.ReadAsStringAsync();
-                    map = JsonConvert.DeserializeObject<Map>(jsonStr);
-                }
+                throw new Exception("network error");
             }
-            return (map);
+            try
+            {
+                using (HttpClient client = new HttpClient())
+                {
+                    var response = await client.GetAsync(GetMapUrl);
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK)
+                    {
+                        var jsonStr = await response.Content.ReadAsStringAsync();
+                        map = JsonConvert.DeserializeObject<Map>(jsonStr);
+                    }
+                }
+                return (map);
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+
         }
 
     }

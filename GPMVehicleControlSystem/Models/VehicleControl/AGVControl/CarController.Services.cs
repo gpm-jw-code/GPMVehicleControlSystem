@@ -5,7 +5,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 {
     public partial class CarController
     {
-
+        /// <summary>
+        /// 當Reader拍照完成事件
+        /// </summary>
+        public event EventHandler<string> OnCSTReaderActionDone;
         private bool CSTActionDone = false;
         private string CSTActionResult = "";
         /// <summary>
@@ -27,6 +30,25 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         }
 
         /// <summary>
+        /// 中止 Reader 拍照
+        /// </summary>
+        /// <returns></returns>
+        /// <exception cref="NotImplementedException"></exception>
+        public async Task<(bool request_success, bool action_done)> AbortCSTReader()
+        {
+            CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action",
+              new CSTReaderCommandRequest() { command = "stop", model = "FORK" });
+            if (response == null)
+            {
+                LOG.TRACE("Stop CST Reader fail. CSTReader no reply");
+                return (false, false);
+            }
+            else
+            {
+                return (true, true);
+            }
+        }
+        /// <summary>
         /// 請求CST拍照
         /// </summary>
         /// <returns></returns>
@@ -35,14 +57,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             CSTReaderCommandResponse? response = rosSocket.CallServiceAndWait<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_action",
                 new CSTReaderCommandRequest() { command = "read_try", model = "FORK" });
 
-            if (response == null )
+            if (response == null)
             {
                 LOG.TRACE("Trigger CST Reader fail. CSTReader no reply");
+                OnCSTReaderActionDone?.Invoke(this, "");
                 return (false, false);
             }
             if (!response.confirm)
             {
                 LOG.TRACE("Trigger CST Reader fail. Confirm=False");
+                OnCSTReaderActionDone?.Invoke(this, "");
                 return (false, false);
             }
             else
@@ -66,11 +90,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 {
                     TK.Wait(waitCstActionDoneCts.Token);
                     LOG.TRACE($"CST Reader  Action Done ..{CSTActionResult}--");
+
+                    _ = Task.Factory.StartNew(async () =>
+                    {
+                        await Task.Delay(100);
+                        OnCSTReaderActionDone?.Invoke(this, this.module_info.CSTReader.data);
+                    });
                     return (true, true);
                 }
                 catch (OperationCanceledException)
                 {
                     LOG.WARN("Trigger CST Reader Timeout");
+                    AbortCSTReader();
+                    OnCSTReaderActionDone?.Invoke(this, "");
                     return (true, false);
                 }
 

@@ -11,7 +11,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public override COMPOENT_NAME component_name => COMPOENT_NAME.BARCODE_READER;
 
-        public new BarcodeReaderState Data => (BarcodeReaderState)StateData;
+        public new BarcodeReaderState Data => StateData == null ? new BarcodeReaderState() : (BarcodeReaderState)StateData;
         public int CurrentTag => Data == null ? 0 : (int)Data.tagID;
         private uint PreviousTag = 0;
         public override STATE CheckStateDataContent()

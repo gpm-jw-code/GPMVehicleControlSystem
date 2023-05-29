@@ -9,6 +9,7 @@ using GPMVehicleControlSystem.Models.Buzzer;
 using static GPMVehicleControlSystem.Models.VehicleControl.Vehicle;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
 using static AGVSystemCommonNet6.clsEnums;
+using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 
 namespace GPMVehicleControlSystem.Controllers.AGVInternal
 {
@@ -98,7 +99,12 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> BateryState()
         {
             await Task.Delay(1);
-            return Ok(agv.Battery.Data);
+            if (agv.Batteries.Count == 0)
+                return Ok(new BatteryState
+                {
+                    batteryLevel = 0,
+                });
+            return Ok(agv.Batteries.Values.First().Data);
         }
 
         [HttpPost("EMO")]
@@ -148,8 +154,8 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> RemoveCassette()
         {
             await Task.Delay(1);
-            // var retcode = await agv.AGVSConnection.CarrierRemovedRequestAsync("", new string[] { agv.CSTReader.Data.data });
-            return Ok(true);
+            var retcode = await agv.RemoveCstData();
+            return Ok(retcode == RETURN_CODE.OK);
         }
 
 
@@ -187,13 +193,29 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> TriggerCSTReader()
         {
             (bool request_success, bool action_done) ret = await agv.AGVC.TriggerCSTReader();
+            string barcode = "ERROR";
             if (ret.action_done)
             {
-                Console.WriteLine(agv.CSTReader.Data.data);
+                barcode = agv.CSTReader.Data.data;
             }
-            return Ok();
+            return Ok(new { barcode });
         }
 
 
+        [HttpGet("StopCSTReader")]
+        public async Task<IActionResult> StopCSTReader()
+        {
+            _ = Task.Factory.StartNew(async () =>
+            {
+                (bool request_success, bool action_done) ret = await agv.AGVC.AbortCSTReader();
+            });
+            return Ok();
+        }
+
+        [HttpGet("RunningStatus")]
+        public async Task<IActionResult> GetRunningStatus()
+        {
+            return Ok(agv.GenRunningStateReportData());
+        }
     }
 }

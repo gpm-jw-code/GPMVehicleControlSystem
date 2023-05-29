@@ -24,6 +24,7 @@ namespace GPMVehicleControlSystem.ViewModels
 
                 AGVCStatusVM data_view_model = new AGVCStatusVM()
                 {
+                    APPVersion = StaStored.APPVersion,
                     Agv_Type = AgvEntity.AgvType,
                     Simulation = AgvEntity.SimulationMode,
                     AutoMode = AgvEntity.Operation_Mode,
@@ -35,29 +36,26 @@ namespace GPMVehicleControlSystem.ViewModels
                     MainState = AgvEntity.Main_Status.ToString(),
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
-                    CST_Data = AgvEntity.CSTReader.Data?.data,
-                    BatteryStatus = new BatteryStateVM
+                    CST_Data = AgvEntity.CSTReader.ValidCSTID,
+                    BatteryStatus = AgvEntity.Batteries.Count==0? new BatteryStateVM():  new BatteryStateVM
                     {
-                        BatteryLevel = AgvEntity.Battery.Data.batteryLevel,
-                        ChargeCurrent = AgvEntity.Battery.Data.chargeCurrent,
-                        IsCharging = AgvEntity.Battery.Data.chargeCurrent != 0,
-                        IsError = AgvEntity.Battery.State == CarComponent.STATE.ABNORMAL,
+                        BatteryLevel = AgvEntity.Batteries.Values.First().Data.batteryLevel,
+                        ChargeCurrent = AgvEntity.Batteries.Values.First().Data.chargeCurrent,
+                        IsCharging = AgvEntity.Batteries.Values.First().Data.chargeCurrent != 0,
+                        IsError = AgvEntity.Batteries.Values.First().State == CarComponent.STATE.ABNORMAL,
                         CircuitOpened = AgvEntity.WagoDO.GetState(DO_ITEM.Recharge_Circuit)
-                        
+
                     },
                     Pose = AgvEntity.Navigation.Data.robotPose.pose,
-                    Angle = AgvEntity.Navigation.Angle,
+                    Angle = AgvEntity.SickData.HeadingAngle,
                     Mileage = AgvEntity.Odometry,
                     BCR_State_MoveBase = AgvEntity.BarcodeReader.Data,
                     AlarmCodes = AlarmManager.CurrentAlarms.Values.ToArray(),
-                    //MapComparsionRate = AgvEntity.SickData.MapScore,
-                    //ZAxisDriverState = AgvEntity.ModuleInformation.Action_Driver,
-                    //ZAxisActionName = AgvEntity.currentVerticalAction,
+                    MapComparsionRate = AgvEntity.SickData.MapSocre,
+                    LocStatus = AgvEntity.SickData.Data.loc_status,
                     AGV_Direct = AgvEntity.Navigation.Direction.ToString().ToUpper(),
                     DriversStates = driverStates.ToArray(),
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
-                    //UltrSensorState = AgvEntity.ModuleInformation.UltrasonicSensor,
-                    //IsAGVPoseError = ((clsAGVPoseMonitor)ComponentMonitorManager.agvPoseMonitor).IsPoseError,
                     NavInfo = new NavStateVM
                     {
                         Destination = AgvEntity.AGVC.RunningTaskData.Destination + "",

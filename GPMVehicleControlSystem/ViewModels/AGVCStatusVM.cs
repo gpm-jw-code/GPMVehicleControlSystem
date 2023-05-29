@@ -11,6 +11,7 @@ namespace GPMVehicleControlSystem.ViewModels
 {
     public class AGVCStatusVM
     {
+        public string APPVersion { get; set; } = "1.0.0";
         public bool Simulation { get; set; }
         public AGV_TYPE Agv_Type { get; set; }
         public string MainState { get; set; } = "";
@@ -23,7 +24,7 @@ namespace GPMVehicleControlSystem.ViewModels
         public string AGVC_ID { get; set; } = "";
         public string CST_Data { get; set; } = "";
         public int Tag { get; set; }
-        public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM();
+        public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM(); //TODO Multi battery data should define
         public double Mileage { get; set; }
         public Pose Pose { get; set; } = new Pose();
         public double Angle { get; set; } = -1;
@@ -35,7 +36,10 @@ namespace GPMVehicleControlSystem.ViewModels
         /// 地圖比對率
         /// </summary>
         public double MapComparsionRate { get; set; }
-
+        /// <summary>
+        /// SICK 定位狀態
+        /// </summary>
+        public int LocStatus { get; set; }
         public bool ForkCSTExist { get; set; }
         public bool ForkFrontEndSensorTrigger { get; set; }
         public clsAlarmCode[] AlarmCodes { get; set; } = new clsAlarmCode[0];

@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using GPMVehicleControlSystem.Models.AGVDispatch.Messages;
+using AGVSystemCommonNet6.AGVDispatch;
 
 namespace GPMVehicleControlSystem.Models.AGVDispatch.Tests
 {

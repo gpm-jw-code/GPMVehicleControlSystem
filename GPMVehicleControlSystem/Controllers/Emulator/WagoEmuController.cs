@@ -44,5 +44,21 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
             StaEmuManager.wagoEmu.SetState(DI_ITEM.EMO, true);
             return Ok();
         }
+
+        [HttpGet("CST_SENSOR_ON")]
+        public async Task CST_SENSOR_ON()
+        {
+
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_1, true);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_2, true);
+        }
+
+
+        [HttpGet("CST_SENSOR_OFF")]
+        public async Task CST_SENSOR_OFF()
+        {
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_1, false);
+            StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_2, false);
+        }
     }
 }
