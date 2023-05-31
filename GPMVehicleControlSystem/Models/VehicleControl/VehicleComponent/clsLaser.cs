@@ -74,7 +74,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                     FrontLaserBypass = BackLaserBypass = LeftLaserBypass = RightLaserBypass = false;
                 }
 
-                ModeSwitch((int)value);
+                Task.Factory.StartNew(async () => await ModeSwitch((int)value));
                 _Mode = value;
             }
         }
@@ -122,18 +122,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             FrontLaserBypass = BackLaserBypass = RightLaserBypass = LeftLaserBypass = true;
         }
 
-        internal void ApplyAGVSLaserSetting()
+        internal async void ApplyAGVSLaserSetting()
         {
             LOG.TRACE($"雷射組數切換為AGVS Setting={AgvsLsrSetting}");
-            ModeSwitch(AgvsLsrSetting);
+            await ModeSwitch(AgvsLsrSetting);
         }
 
 
-        internal void LaserChangeByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION direction)
+        internal async void LaserChangeByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION direction)
         {
             if (direction == clsNavigation.AGV_DIRECTION.FORWARD)
             {
-                ModeSwitch(AgvsLsrSetting);
+                await ModeSwitch(AgvsLsrSetting);
                 LOG.INFO($"雷射設定組 = {AgvsLsrSetting}");
             }
             else // 左.右轉
@@ -152,7 +152,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             }
         }
 
-        public void ModeSwitch(int mode_int)
+        public async Task ModeSwitch(int mode_int)
         {
             if (_mode_int == mode_int)
                 return;
@@ -163,8 +163,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             bool IN_3 = lsSet[2];
             bool IN_4 = lsSet[3];
             DOModule.PauseSignal.Reset();
-            DIModule.PauseSignal.Reset();
-            Thread.Sleep(500);
+            //DIModule.PauseSignal.Reset();
+            await Task.Delay(300);
             DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, IN_1);
             DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_1, !IN_1);
             DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_2, IN_2);
@@ -183,7 +183,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_4, !IN_4);
             _mode_int = mode_int;
             DOModule.PauseSignal.Set();
-            DIModule.PauseSignal.Set();
+            //DIModule.PauseSignal.Set();
             LOG.TRACE($"Laser Mode Chaged To : {mode_int}({Mode})");
         }
     }

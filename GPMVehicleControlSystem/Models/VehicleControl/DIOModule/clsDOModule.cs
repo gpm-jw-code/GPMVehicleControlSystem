@@ -115,7 +115,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             Console.WriteLine("Reset Motor Process Start");
             SetState(DO_ITEM.Horizon_Motor_Stop, true);
 
-            //安全迴路RELAY 
+            //安全迴路RELAY
             SetState(DO_ITEM.Safety_Relays_Reset, true);
             await Task.Delay(200);
             SetState(DO_ITEM.Safety_Relays_Reset, false);
@@ -155,11 +155,11 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             if (!IsConnected())
                 Connect();
 
-            await Task.Run(() =>
+            await Task.Run(async () =>
             {
                 while (true)
                 {
-                    Thread.Sleep(10);
+                    await Task.Delay(1);
                     if (!IsConnected())
                     {
                         Connect();
