@@ -14,7 +14,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 開始與EQ進行交握_等待EQ READY
         /// </summary>
-        private async Task<(bool eqready, AlarmCodes alarmCode)> WaitEQReadyON(ACTION_TYPE action)
+        internal async Task<(bool eqready, AlarmCodes alarmCode)> WaitEQReadyON(ACTION_TYPE action)
         {
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             Task wait_eq_UL_req_ON = new Task(() =>
@@ -76,7 +76,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 開始與EQ進行交握_等待EQ READY OFF
         /// </summary>
-        private async Task<(bool eqready_off, AlarmCodes alarmCode)> WaitEQReadyOFF(ACTION_TYPE action)
+        internal async Task<(bool eqready_off, AlarmCodes alarmCode)> WaitEQReadyOFF(ACTION_TYPE action)
         {
             LOG.Critical("[EQ Handshake] 等待EQ READY OFF");
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -136,7 +136,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <summary>
         /// 等待EQ交握訊號 BUSY OFF＝＞表示ＡＧＶ可以退出了(模擬模式下:用CST在席有無表示是否BUSY結束 LOAD=>貨被拿走. Unload=>貨被放上來)
         /// </summary>
-        private async Task<(bool eq_busy_off, AlarmCodes alarmCode)> WaitEQBusyOFF(ACTION_TYPE action)
+        internal async Task<(bool eq_busy_off, AlarmCodes alarmCode)> WaitEQBusyOFF(ACTION_TYPE action)
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
 

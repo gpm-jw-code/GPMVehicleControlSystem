@@ -65,6 +65,7 @@ namespace GPMVehicleControlSystem.Models.Emulators
             TaskCommandActionServer actionServer = new TaskCommandActionServer("/barcodemovebase", rosSocket);
             actionServer.Initialize();
             actionServer.OnNAVGoalReceived += NavGaolHandle;
+            Console.WriteLine("ROS Enum Action Server Created!");
         }
 
         private void NavGaolHandle(object sender, TaskCommandGoal obj)
@@ -73,7 +74,6 @@ namespace GPMVehicleControlSystem.Models.Emulators
             Console.WriteLine($"[ROS 車控模擬器] New Task , Task Name = {obj.taskID}, Tags Path = {string.Join("->", obj.planPath.poses.Select(p => p.header.seq))}");
             actionServer.AcceptedInvoke();
 
-            actionServer.OnNAVGoalReceived -= NavGaolHandle;
             //模擬走型
             Task.Run(() =>
             {
@@ -96,9 +96,17 @@ namespace GPMVehicleControlSystem.Models.Emulators
                     module_info.reader.theta = tag_theta;
                     Thread.Sleep(1500);
                 }
+
+                actionServer.OnNAVGoalReceived -= NavGaolHandle;
                 actionServer.SucceedInvoke();
-                actionServer.Terminate();
-                InitNewTaskCommandActionServer();
+
+                Task.Factory.StartNew(async () =>
+                {
+                    await Task.Delay(500);
+                    actionServer.Terminate();
+                    actionServer = null;
+                    InitNewTaskCommandActionServer();
+                });
             });
 
         }

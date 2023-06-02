@@ -28,7 +28,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             }
             else if (Debugger.IsAttached)
             {
-                playList.sounds_folder = "/home/jinwei/param/sounds";
+                playList.sounds_folder = "/home/gpm/param/sounds";
 
             }
         }
@@ -39,8 +39,8 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             if (IsAlarmPlaying)
                 return;
             await BuzzerStop();
-            IsAlarmPlaying = true;
             Play(playList.Alarm, 5);
+            IsAlarmPlaying = true;
         }
         public static async void BuzzerAction()
         {
@@ -68,7 +68,6 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             else
                 player?.Stop();
 
-            await Task.Delay(12);
         }
 
         private static async void Play(string filePath, int total_sec = 22)
@@ -96,10 +95,14 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         {
             if (rossocket == null)
                 return;
-            PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
+
+            Task.Run(() =>
             {
-                file_path = filePath,
-                total_sec = total_sec
+                PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
+                {
+                    file_path = filePath,
+                    total_sec = total_sec
+                });
             });
         }
         private static void PlayInWindows(string filePath)

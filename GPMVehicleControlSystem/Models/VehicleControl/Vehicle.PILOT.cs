@@ -4,6 +4,7 @@ using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.HttpHelper;
 using AGVSystemCommonNet6.Log;
 using AGVSystemCommonNet6.TASK;
+using GPMVehicleControlSystem.Models.VehicleControl.TaskExecute;
 using static AGVSystemCommonNet6.clsEnums;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
@@ -15,9 +16,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             E84, MODBUS, EMULATION
         }
-        public clsTaskDownloadData RunningTaskData => AGVC.RunningTaskData;
+
+        public TaskBase ExecutingTask;
 
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
+
+        public clsTaskDownloadData RunningTaskData { get; set; } = new clsTaskDownloadData();
 
         /// <summary>
         /// 
@@ -44,68 +48,43 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             CurrentTaskRunStatus = TASK_RUN_STATUS.WAIT;
             LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
-
+            ACTION_TYPE action = taskDownloadData.Action_Type;
+            this.RunningTaskData = taskDownloadData;
             Task.Run(async () =>
             {
-                var check_result_before_Task = await ExecuteActionBeforeMoving(taskDownloadData);
 
-                if (!check_result_before_Task.confirm)
-                {
-                    AlarmManager.AddAlarm(check_result_before_Task.alarm_code);
-                    Sub_Status = SUB_STATUS.DOWN;
-                    return;
-                }
-
-                await Task.Delay(1000);
                 if (AGVC.IsAGVExecutingTask)
                 {
                     LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
-                    await AGVC.AGVSPathExpand(taskDownloadData);
+                    await ExecutingTask.AGVSPathExpand(taskDownloadData);
                 }
                 else
                 {
-                    int task_download_to_agvc_retry = 1;
-                    while (!await AGVC.AGVSTaskDownloadHandler(taskDownloadData))
+                    if (action == ACTION_TYPE.None)
+                        ExecutingTask = new NormalMoveTask(this, taskDownloadData);
+                    else if (action == ACTION_TYPE.Charge)
+                        ExecutingTask = new ChargeTask(this, taskDownloadData);
+                    else if (action == ACTION_TYPE.Discharge)
+                        ExecutingTask = new DischargeTask(this, taskDownloadData);
+                    else if (action == ACTION_TYPE.Load)
+                        ExecutingTask = new LoadTask(this, taskDownloadData);
+                    else if (action == ACTION_TYPE.Unload)
+                        ExecutingTask = new UnloadTask(this, taskDownloadData);
+                    else
                     {
-                        AlarmManager.AddWarning(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
-                        task_download_to_agvc_retry += 1;
-                        LOG.Critical($"嘗試發送任務給車控執行...({task_download_to_agvc_retry})");
-
-                        if (task_download_to_agvc_retry > 5 | Sub_Status == SUB_STATUS.DOWN)
-                        {
-                            Sub_Status = SUB_STATUS.DOWN;
-                            AlarmManager.AddAlarm(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
-                            return;
-                        }
-                        await Task.Delay(1000);
-
+                        throw new NotImplementedException();
                     }
-                    AlarmManager.ClearAlarm(AlarmCodes.Can_not_Pass_Task_to_Motion_Control);
+
                     Sub_Status = SUB_STATUS.RUN;
+                    await Task.Delay(500);
+                    await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
+                    await ExecutingTask.Execute();
+
+
                 }
             });
         }
 
-
-        /// <summary>
-        /// 當車子開始執行任務的時候
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="taskData"></param>
-        private async void CarController_OnMoveTaskStart(object? sender, clsTaskDownloadData taskData)
-        {
-            Sub_Status = SUB_STATUS.RUN;
-
-            if (taskData.Action_Type == ACTION_TYPE.None)
-            {
-                await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
-            }
-            else
-            {
-                await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_START);
-            }
-
-        }
 
 
         private void OnTagLeaveHandler(object? sender, int leaveTag)
@@ -144,21 +123,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-
-        private void CarController_OnTaskActionFinishCauseAbort(object? sender, clsTaskDownloadData e)
-        {
-        }
-
-
-        private async void AGVC_OnTaskActionFinishButNeedToExpandPath(object? sender, clsTaskDownloadData taskData)
-        {
-            await Task.Delay(200);
-            LOG.INFO($"Task Feedback when Action done but need to expand path");
-
-            await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
-
-        }
-
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
             AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task);
@@ -169,10 +133,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
             Sub_Status = SUB_STATUS.ALARM;
+            ExecutingTask.Abort();
             return true;
         }
 
-        private async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
+        internal async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {
             CurrentTaskRunStatus = status;
             await Task.Delay(1);
@@ -180,9 +145,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 return;
 
             if (VmsProtocol == VMS_PROTOCOL.TCPIP)
-                await AGVS.TryTaskFeedBackAsync(AGVC.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
+                await AGVS.TryTaskFeedBackAsync(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
             else
-                await FeedbackTaskStatusViaHttp(AGVC.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
+                await FeedbackTaskStatusViaHttp(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
 
             //if (status == TASK_RUN_STATUS.ACTION_FINISH)
             //    CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;

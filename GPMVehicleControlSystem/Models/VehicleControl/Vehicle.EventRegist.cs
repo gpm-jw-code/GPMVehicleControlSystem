@@ -48,10 +48,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             clsTaskDownloadData.OnCurrentPoseReq = CurrentPoseReqCallback;
 
-            AGVC.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
-            AGVC.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
-            AGVC.OnTaskActionFinishButNeedToExpandPath += AGVC_OnTaskActionFinishButNeedToExpandPath; ;
-            AGVC.OnMoveTaskStart += CarController_OnMoveTaskStart;
+            //AGVC.OnTaskActionFinishAndSuccess += AGVMoveTaskActionSuccessHandle;
+            //AGVC.OnTaskActionFinishCauseAbort += CarController_OnTaskActionFinishCauseAbort;
+            //AGVC.OnTaskActionFinishButNeedToExpandPath += AGVC_OnTaskActionFinishButNeedToExpandPath ;
+            //AGVC.OnMoveTaskStart += CarController_OnMoveTaskStart;
+
             AGVS.OnTaskDownload += AGVSTaskDownloadConfirm;
             AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
             AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;

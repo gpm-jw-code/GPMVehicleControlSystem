@@ -115,9 +115,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 if (_Sub_Status != value)
                 {
-                    if (value != SUB_STATUS.WARNING)
-                        BuzzerPlayer.BuzzerStop();
-
                     if (value == SUB_STATUS.DOWN | value == SUB_STATUS.ALARM | value == SUB_STATUS.Initializing)
                     {
                         if (value == SUB_STATUS.DOWN | value == SUB_STATUS.Initializing)
@@ -128,6 +125,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                     else if (value == SUB_STATUS.IDLE)
                     {
+                        BuzzerPlayer.BuzzerStop();
                         Main_Status = MAIN_STATUS.IDLE;
                         StatusLighter.IDLE();
                         DirectionLighter.CloseAll();
@@ -142,14 +140,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         StatusLighter.RUN();
                         Task.Factory.StartNew(async () =>
                         {
-                            await Task.Delay(200);
-                            if (AGVC.IsAGVExecutingTask)
-                            {
-                                if (AGVC.RunningTaskData.Action_Type == ACTION_TYPE.None)
-                                    BuzzerPlayer.BuzzerMoving();
-                                else
-                                    BuzzerPlayer.BuzzerAction();
-                            }
+                            if (AGVC.RunningTaskData.Action_Type == ACTION_TYPE.None)
+                                BuzzerPlayer.BuzzerMoving();
+                            else
+                                BuzzerPlayer.BuzzerAction();
                         });
 
                     }
@@ -265,6 +259,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             IsInitialized = true;
             StatusLighter.AbortFlash();
             Sub_Status = SUB_STATUS.IDLE;
+            AGVC.IsAGVExecutingTask = false;
             return true;
         }
         private (int tag, double locx, double locy, double theta) CurrentPoseReqCallback()
@@ -347,6 +342,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             IsInitialized = false;
             AGVC.EMOHandler("SoftwareEMO", EventArgs.Empty);
+            ExecutingTask?.Abort();
             AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
             Task.Factory.StartNew(async () =>
             {

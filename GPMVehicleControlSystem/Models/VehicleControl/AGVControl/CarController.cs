@@ -79,7 +79,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         public event EventHandler<clsTaskDownloadData> OnTaskActionFinishButNeedToExpandPath;
         public event EventHandler<clsTaskDownloadData> OnMoveTaskStart;
 
-        TaskCommandActionClient actionClient;
+        internal TaskCommandActionClient actionClient;
 
         private ActionStatus _currentTaskCmdActionStatus = ActionStatus.PENDING;
         public ActionStatus currentTaskCmdActionStatus
@@ -117,7 +117,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         /// 車控是否在執行任務
         /// </summary>
         /// <value></value>
-        public bool IsAGVExecutingTask => _currentTaskCmdActionStatus == ActionStatus.ACTIVE | _currentTaskCmdActionStatus == ActionStatus.SUCCEEDED;
+        public bool IsAGVExecutingTask { get; set; } = false;
         public bool TaskIsSegment => RunningTaskData.IsTaskSegmented;
         private bool EmergencyStopFlag = false;
         public CarController()
@@ -254,6 +254,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             Console.Error.WriteLine($"EMO 觸發,緊急停止.");
             AbortTask();
             ManualController.Stop();
+            if (wait_agvc_execute_action_cts != null)
+                wait_agvc_execute_action_cts.Cancel();
+
             _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             //CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
         }
@@ -288,6 +291,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 AbortTask();
             else
                 CycleStop();
+
         }
 
         private void CycleStop()
@@ -310,6 +314,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 actionClient.SendGoal();
             }
             DisposeTaskCommandActionClient();
+            IsAGVExecutingTask = false;
         }
 
         internal bool NavPathExpandedFlag { get; private set; } = false;
@@ -403,6 +408,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             bool agvc_accept = await SendGoal(RunningTaskData.RosTaskCommandGoal);
             return agvc_accept;
         }
+        CancellationTokenSource wait_agvc_execute_action_cts;
         internal async Task<bool> SendGoal(TaskCommandGoal rosGoal)
         {
             string new_path = string.Join("->", rosGoal.planPath.poses.Select(p => p.header.seq));
@@ -415,29 +421,29 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 $"\r\n==========================================================");
 
             EmergencyStopFlag = false;
-
-            Thread.Sleep(100);
-
             actionClient.goal = rosGoal;
             actionClient.SendGoal();
-
-
             //wait goal status change to  ACTIVE
-            CancellationTokenSource wait_cts = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+            wait_agvc_execute_action_cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             while (currentTaskCmdActionStatus != ActionStatus.ACTIVE)
             {
-                if (wait_cts.IsCancellationRequested)
+                ////  LOG.INFO(currentTaskCmdActionStatus.ToString());
+                if (wait_agvc_execute_action_cts.IsCancellationRequested)
                 {
                     LOG.Critical($"Send Goal To AGVC But Status Not Change To ACTIVE(AGV NOT RUNNING.)");
                     return false;
                 }
-                await Task.Delay(100);
+                await Task.Delay(1);
             }
             LOG.TRACE($"AGVC Accept Task and Start Executing：Path Tracking = {new_path}");
             return true;
 
         }
 
-
+        internal void Replan(clsTaskDownloadData taskDownloadData)
+        {
+            actionClient.goal = taskDownloadData.RosTaskCommandGoal;
+            actionClient.SendGoal();
+        }
     }
 }
