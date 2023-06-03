@@ -12,7 +12,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             this.DOModule = DOModule;
         }
 
-        public override void CloseAll()
+        public override async void CloseAll()
         {
             AbortFlash();
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
@@ -31,10 +31,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public void TurnRight(bool opened = true)
         {
-
+            CloseAll();
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, false);
+            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, true);
             if (opened)
                 Flash(DO_ITEM.AGV_DiractionLight_Right);
             else
@@ -45,10 +46,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
         public void TurnLeft(bool opened = true)
         {
-
+            CloseAll();
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, false);
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, false);
+            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, true);
             if (opened)
                 Flash(DO_ITEM.AGV_DiractionLight_Left);
             else

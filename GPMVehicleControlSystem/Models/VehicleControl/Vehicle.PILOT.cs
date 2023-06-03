@@ -21,7 +21,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
 
-        public clsTaskDownloadData RunningTaskData { get; set; } = new clsTaskDownloadData();
+        public clsTaskDownloadData RunningTaskData { get; set; }
 
         /// <summary>
         /// 
@@ -140,12 +140,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {
             CurrentTaskRunStatus = status;
-            await Task.Delay(1);
-            if (Remote_Mode == REMOTE_MODE.OFFLINE)
-                return;
+            await Task.Delay(1000);
+            //if (Remote_Mode == REMOTE_MODE.OFFLINE)
+            //    return;
 
             if (VmsProtocol == VMS_PROTOCOL.TCPIP)
-                await AGVS.TryTaskFeedBackAsync(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
+                await AGVS.TryTaskFeedBackAsync(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status, Navigation.LastVisitedTag);
             else
                 await FeedbackTaskStatusViaHttp(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
 
@@ -179,7 +179,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             try
             {
-                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == BarcodeReader.CurrentTag));
+                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == Navigation.LastVisitedTag));
 
             }
             catch (Exception)

@@ -120,7 +120,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             await Task.Delay(200);
             SetState(DO_ITEM.Safety_Relays_Reset, false);
 
-
             SetState(DO_ITEM.Horizon_Motor_Stop, false);
             SetState(DO_ITEM.Horizon_Motor_Reset, true);
             await Task.Delay(200);
@@ -131,12 +130,34 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         public void SetState(string address, bool state)
         {
-            VCSOutputs.FirstOrDefault(k => k.Address == address + "").State = state;
+            if (!IsConnected())
+                Connect();
+            clsIOSignal? DO = VCSOutputs.FirstOrDefault(k => k.Address == address + "");
+            DO.State = state;
+            master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+
         }
 
         public void SetState(DO_ITEM signal, bool state)
         {
-            VCSOutputs.FirstOrDefault(k => k.Name == signal + "").State = state;
+            try
+            {
+                if (!IsConnected())
+                    Connect();
+                clsIOSignal? DO = VCSOutputs.FirstOrDefault(k => k.Name == signal + "");
+                if (DO != null)
+                {
+                    DO.State = state;
+                    master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+                }
+
+            }
+            catch (Exception)
+            {
+                master = null;
+                SetState(signal, state);
+            }
+
         }
         public new bool GetState(DO_ITEM signal)
         {
@@ -155,27 +176,27 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             if (!IsConnected())
                 Connect();
 
-            await Task.Run(async () =>
-            {
-                while (true)
-                {
-                    await Task.Delay(1);
-                    if (!IsConnected())
-                    {
-                        Connect();
-                        continue;
-                    }
-                    PauseSignal.WaitOne();
-                    try
-                    {
-                        master?.WriteMultipleCoils(Start, VCSOutputs.Select(si => si.State).ToArray());
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-                }
-            });
+            //await Task.Run(async () =>
+            //{
+            //    while (true)
+            //    {
+            //        await Task.Delay(1);
+            //        if (!IsConnected())
+            //        {
+            //            Connect();
+            //            continue;
+            //        }
+            //        PauseSignal.WaitOne();
+            //        try
+            //        {
+            //            master?.WriteMultipleCoils(Start, VCSOutputs.Select(si => si.State).ToArray());
+            //        }
+            //        catch (Exception ex)
+            //        {
+            //            Console.WriteLine(ex.Message);
+            //        }
+            //    }
+            //});
         }
 
     }

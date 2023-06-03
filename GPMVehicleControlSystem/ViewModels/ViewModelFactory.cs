@@ -37,7 +37,7 @@ namespace GPMVehicleControlSystem.ViewModels
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
                     CST_Data = AgvEntity.CSTReader.ValidCSTID,
-                    BatteryStatus = AgvEntity.Batteries.Count==0? new BatteryStateVM():  new BatteryStateVM
+                    BatteryStatus = AgvEntity.Batteries.Count == 0 ? new BatteryStateVM() : new BatteryStateVM
                     {
                         BatteryLevel = AgvEntity.Batteries.Values.First().Data.batteryLevel,
                         ChargeCurrent = AgvEntity.Batteries.Values.First().Data.chargeCurrent,
@@ -58,9 +58,9 @@ namespace GPMVehicleControlSystem.ViewModels
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
                     NavInfo = new NavStateVM
                     {
-                        Destination = AgvEntity.AGVC.RunningTaskData.Destination + "",
+                        Destination = AgvEntity.RunningTaskData == null ? "" : AgvEntity.RunningTaskData.Destination + "",
                         Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit,
-                        PathPlan = AgvEntity.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
+                        PathPlan = AgvEntity.RunningTaskData == null ? new int[0] : AgvEntity.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },
                     Current_LASER_MODE = AgvEntity.Laser.Mode.ToString(),
                     LightsStates = new AGV_VMS.ViewModels.LightsStatesVM

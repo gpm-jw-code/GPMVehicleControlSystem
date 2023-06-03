@@ -11,13 +11,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             this.rosSocket = rosSocket;
             this.vehicle = vehicle;
         }
-        public MoveControl( RosSocket rosSocket)
+        public MoveControl(RosSocket rosSocket)
         {
             this.rosSocket = rosSocket;
         }
         public RosSocket rosSocket { get; set; }
 
-        private Vehicle vehicle;
+        public Vehicle vehicle;
         private bool CheckSwitchState = false;
 
         public void Stop()

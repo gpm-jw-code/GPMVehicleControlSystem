@@ -99,7 +99,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public OPERATOR_MODE Operation_Mode { get; internal set; } = OPERATOR_MODE.MANUAL;
 
         public MAIN_STATUS Main_Status { get; internal set; } = MAIN_STATUS.DOWN;
-        public bool AGV_Reset_Flag { get; internal set; } = false;
+        public bool AGV_Reset_Flag { get; internal set; }
 
         public MoveControl ManualController => AGVC.ManualController;
 
@@ -140,7 +140,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         StatusLighter.RUN();
                         Task.Factory.StartNew(async () =>
                         {
-                            if (AGVC.RunningTaskData.Action_Type == ACTION_TYPE.None)
+                            if (RunningTaskData.Action_Type == ACTION_TYPE.None)
                                 BuzzerPlayer.BuzzerMoving();
                             else
                                 BuzzerPlayer.BuzzerAction();
@@ -182,6 +182,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 await Task.Delay(1).ContinueWith(t =>
                 AGVC.Connect());
+                AGVC.ManualController.vehicle = this;
                 BuzzerPlayer.rossocket = AGVC.rosSocket;
                 BuzzerPlayer.BuzzerAlarm();
             });
@@ -189,7 +190,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task WagoDOConnTask = new Task(() =>
             {
                 WagoDO.Connect();
-                WagoDO.StartAsync();
+                Laser.Mode = LASER_MODE.Bypass;
             });
 
             Task WagoDIConnTask = new Task(() =>
@@ -293,7 +294,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
         {
-            if (Operation_Mode == OPERATOR_MODE.AUTO && RunningTaskData.Action_Type == ACTION_TYPE.None)
+            if (Operation_Mode == OPERATOR_MODE.AUTO && RunningTaskData?.Action_Type == ACTION_TYPE.None)
                 Sub_Status = SUB_STATUS.WARNING;
         }
 
@@ -459,15 +460,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 double[] batteryLevels = Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
                 return new RunningStatus
                 {
-                    Cargo_Status = (!WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1) | !WagoDI.GetState(clsDIModule.DI_ITEM.Cst_Sensor_1)) ? 1 : 0,
+                    Cargo_Status = HasAnyCargoOnAGV() ? 1 : 0,
                     AGV_Status = _Main_Status,
                     Electric_Volume = batteryLevels,
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
                     Corrdination = clsCorrdination,
-                    CSTID = new string[] { CSTReader.ValidCSTID },
+                    CSTID = CSTReader.ValidCSTID == "" ? new string[0] : new string[] { CSTReader.ValidCSTID },
                     Odometry = Odometry,
                     AGV_Reset_Flag = AGV_Reset_Flag,
-                    Alarm_Code = alarm_codes
+                    Alarm_Code = alarm_codes,
+                    Escape_Flag = RunningTaskData == null ? false : RunningTaskData.Escape_Flag
                 };
             }
             catch (Exception ex)

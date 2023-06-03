@@ -30,7 +30,7 @@ namespace AGVSystemCommonNet6.Abstracts
 
                     bool previous_state_on = DOModule.GetState(light_DO);
                     this.DOModule.SetState(light_DO, !previous_state_on);
-                    await Task.Delay(flash_period);
+                    await Task.Delay(flash_period, flash_cts.Token);
                 }
             });
         }

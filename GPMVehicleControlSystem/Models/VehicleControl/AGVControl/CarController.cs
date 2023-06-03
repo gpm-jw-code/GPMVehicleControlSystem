@@ -341,10 +341,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             if (actionClient != null)
             {
-                actionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
-                actionClient.Terminate();
-                actionClient.Dispose();
-                actionClient = null;
+                try
+                {
+                    actionClient.OnTaskCommandActionDone -= OnTaskCommandActionDone;
+                    actionClient.Terminate();
+                    actionClient.Dispose();
+                    actionClient = null;
+
+                }
+                catch (Exception ex)
+                {
+                    LOG.WARN("DisposeTaskCommandActionClient Exception Occur :　" + ex.Message);
+                }
             }
         }
 
@@ -408,6 +416,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             bool agvc_accept = await SendGoal(RunningTaskData.RosTaskCommandGoal);
             return agvc_accept;
         }
+
         CancellationTokenSource wait_agvc_execute_action_cts;
         internal async Task<bool> SendGoal(TaskCommandGoal rosGoal)
         {

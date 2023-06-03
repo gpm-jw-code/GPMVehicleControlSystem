@@ -197,7 +197,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         public override bool IsConnected()
         {
-            return master != null;
+            return master != null ;
         }
 
         internal void SetState(string address, bool state)
