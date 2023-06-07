@@ -9,13 +9,45 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
     public abstract class TaskBase
     {
         public Vehicle Agv { get; }
-        public clsTaskDownloadData RunningTaskData { get; set; } = new clsTaskDownloadData();
-        public abstract ACTION_TYPE action { get; set; }
+        private clsTaskDownloadData _RunningTaskData;
+        public Action<string> OnTaskFinish;
+        public clsTaskDownloadData RunningTaskData
+        {
+            get => _RunningTaskData;
+            set
+            {
 
+                if (_RunningTaskData == null | value.Task_Name != _RunningTaskData?.Task_Name)
+                {
+                    TrackingTags = value.TagsOfTrajectory;
+                }
+                else
+                {
+                    List<int> newTrackingTags = value.TagsOfTrajectory;
+
+                    if (TrackingTags.First() != newTrackingTags.First())
+                    {
+                        //1 2 3 
+                        //5
+                    }
+                    else
+                    {
+                        TrackingTags = newTrackingTags;
+
+                    }
+                }
+                _RunningTaskData = value;
+            }
+        }
+        public abstract ACTION_TYPE action { get; set; }
+        public List<int> TrackingTags { get; private set; } = new List<int>();
         public TaskBase(Vehicle Agv, clsTaskDownloadData taskDownloadData)
         {
             this.Agv = Agv;
             RunningTaskData = taskDownloadData;
+
+            LOG.INFO($"New Task : \r\nTask Name:{taskDownloadData.Task_Name}\r\n Task_Simplex:{taskDownloadData.Task_Simplex}\r\nTask_Sequence:{taskDownloadData.Task_Sequence}");
+
         }
 
         /// <summary>
@@ -24,13 +56,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         public async Task Execute()
         {
             Agv.AGVC.IsAGVExecutingTask = true;
+            Agv.AGVC.OnTaskActionFinishAndSuccess += AfterMoveFinishHandler;
+
             (bool confirm, AlarmCodes alarm_code) checkResult = await BeforeExecute();
+
             if (!checkResult.confirm)
             {
                 AlarmManager.AddAlarm(checkResult.alarm_code);
                 Agv.Sub_Status = SUB_STATUS.ALARM;
             }
-            Agv.AGVC.OnTaskActionFinishAndSuccess += AfterMoveFinish;
             bool agvc_executing = await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
             if (!agvc_executing)
             {
@@ -39,25 +73,38 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             }
         }
 
-        private async void AfterMoveFinish(object? sender, clsTaskDownloadData e)
+        internal async Task AGVSPathExpand(clsTaskDownloadData taskDownloadData)
+        {
+            string new_path = string.Join("->", taskDownloadData.TagsOfTrajectory);
+            Agv.AGVC.Replan(taskDownloadData);
+            string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
+            LOG.TRACE($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
+            RunningTaskData = taskDownloadData;
+        }
+
+        private async void AfterMoveFinishHandler(object? sender, clsTaskDownloadData e)
         {
 
             LOG.INFO($" [{action}] move task done. Reach  Tag = {Agv.Navigation.LastVisitedTag} ");
 
-            Agv.AGVC.OnTaskActionFinishAndSuccess -= AfterMoveFinish;
-
+            Agv.AGVC.OnTaskActionFinishAndSuccess -= AfterMoveFinishHandler;
             (bool confirm, AlarmCodes alarm_code) check_result = await AfterMoveDone();
             if (!check_result.confirm)
             {
                 AlarmManager.AddAlarm(check_result.alarm_code);
             }
+
+            Agv.Sub_Status = SUB_STATUS.IDLE;
+            Agv.AGVC.IsAGVExecutingTask = false;
+            OnTaskFinish(RunningTaskData.Task_Simplex);
         }
 
         public virtual async Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
         {
+            Agv.Laser.LeftLaserBypass = false;
+            Agv.Laser.RightLaserBypass = false;
             Agv.Sub_Status = SUB_STATUS.IDLE;
             Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
-            Agv.AGVC.IsAGVExecutingTask = false;
             return (true, AlarmCodes.None);
 
         }
@@ -70,7 +117,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         {
             DirectionLighterSwitchBeforeTaskExecute();
             LaserSettingBeforeTaskExecute();
-
             return (true, AlarmCodes.None);
         }
 
@@ -90,24 +136,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             await Agv.AGVC.CarSpeedControl(AGVControl.CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
         }
 
-        internal async Task AGVSPathExpand(clsTaskDownloadData taskDownloadData)
-        {
-            RunningTaskData = taskDownloadData;
-            string new_path = string.Join("->", taskDownloadData.TagsOfTrajectory);
-            if (RunningTaskData.Task_Name != taskDownloadData.Task_Name)
-            {
-                throw new Exception("任務ID不同");
-            }
-            Agv.AGVC.Replan(taskDownloadData);
-
-
-            string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
-            LOG.TRACE($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
-        }
-
         internal void Abort()
         {
-            Agv.AGVC.OnTaskActionFinishAndSuccess -= AfterMoveFinish;
+            Agv.AGVC.OnTaskActionFinishAndSuccess -= AfterMoveFinishHandler;
         }
     }
 }

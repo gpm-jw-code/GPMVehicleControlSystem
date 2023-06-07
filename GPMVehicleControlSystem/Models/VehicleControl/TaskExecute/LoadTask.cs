@@ -4,6 +4,7 @@ using GPMVehicleControlSystem.Tools;
 using static AGVSystemCommonNet6.clsEnums;
 using System.Diagnostics;
 using AGVSystemCommonNet6.Log;
+using GPMVehicleControlSystem.Models.Buzzer;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 {
@@ -12,52 +13,63 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
     /// </summary>
     public class LoadTask : TaskBase
     {
+
         public override ACTION_TYPE action { get; set; } = ACTION_TYPE.Load;
+        private bool back_to_secondary_flag = false;
         public LoadTask(Vehicle Agv, clsTaskDownloadData taskDownloadData) : base(Agv, taskDownloadData)
         {
         }
         public override void LaserSettingBeforeTaskExecute()
         {
+            Agv.Laser.LeftLaserBypass = true;
+            Agv.Laser.RightLaserBypass = true;
             Agv.Laser.Mode = VehicleComponent.clsLaser.LASER_MODE.Loading;
         }
-
         public override async Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
         {
+            Agv.DirectionLighter.CloseAll();
             (bool eqready, AlarmCodes alarmCode) HSResult = await Agv.WaitEQBusyOFF(action);
             if (!HSResult.eqready)
             {
                 return (false, HSResult.alarmCode);
             }
-
+            Agv.DirectionLighter.CloseAll();
             //檢查在席
             (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckAfterEQBusyOff(action);
             if (!CstExistCheckResult.confirm)
                 return (false, CstExistCheckResult.alarmCode);
 
+            back_to_secondary_flag = false;
             //下Homing Trajectory 任務讓AGV退出
-            Agv.AGVC.OnTaskActionFinishAndSuccess += AGVC_OnBackTOSecondary;
-            RunningTaskData = RunningTaskData.TurnToBackTaskData();
+            await Task.Factory.StartNew(async () =>
+                       {
+                           Agv.DirectionLighter.Backward(delay: 800);
+                           RunningTaskData = RunningTaskData.TurnToBackTaskData();
+                           Agv.ExecutingTask.RunningTaskData = RunningTaskData;
+                           await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
+                           Agv.AGVC.OnTaskActionFinishAndSuccess += AGVC_OnBackTOSecondary;
+                       });
 
-            Agv.RunningTaskData = RunningTaskData;
-            
-            bool agvc_executing = await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
-            if (!agvc_executing)
+            while (!back_to_secondary_flag)
             {
-                AlarmManager.AddAlarm(AlarmCodes.Cant_TransferTask_TO_AGVC);
-                Agv.Sub_Status = SUB_STATUS.ALARM;
+                Thread.Sleep(1);
             }
+            Agv.AGVC.OnTaskActionFinishAndSuccess -= AGVC_OnBackTOSecondary;
 
             return (true, AlarmCodes.None);
         }
 
         private void AGVC_OnBackTOSecondary(object? sender, clsTaskDownloadData e)
         {
-            Agv.Sub_Status = SUB_STATUS.IDLE;
-            Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
+            back_to_secondary_flag = true;
+            LOG.INFO($"AGV Back to Secondary Point Done!. Action Finish");
         }
 
         public override async Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
+            Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_START);
+
+            BuzzerPlayer.BuzzerAction();
 
             (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckBeforeHSStartInFrontOfEQ(action);
             if (!CstExistCheckResult.confirm)
@@ -71,8 +83,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
                     return (false, HSResult.alarmCode);
                 }
             }
-
-
             StartFrontendObstcleDetection(action);
             return await base.BeforeExecute();
         }
@@ -138,6 +148,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// <returns></returns>
         private (bool confirm, AlarmCodes alarmCode) CstExistCheckBeforeHSStartInFrontOfEQ(ACTION_TYPE action)
         {
+            if (Debugger.IsAttached)
+                return (true, AlarmCodes.None);
             // "CST_EXIST_DETECTION": {
             //            "Before_In": false,
             //            "After_EQ_Busy_Off": false
@@ -163,6 +175,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// <returns></returns>
         private (bool confirm, AlarmCodes alarmCode) CstExistCheckAfterEQBusyOff(ACTION_TYPE action)
         {
+
+            if (Debugger.IsAttached)
+                return (true, AlarmCodes.None);
             // "CST_EXIST_DETECTION": {
             //            "Before_In": false,
             //            "After_EQ_Busy_Off": false

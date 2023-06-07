@@ -21,8 +21,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
 
-        public clsTaskDownloadData RunningTaskData { get; set; }
-
         /// <summary>
         /// 
         /// </summary>
@@ -37,7 +35,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             return true;
         }
-
+        Dictionary<string, List<int>> TaskTrackingTags = new Dictionary<string, List<int>>();
 
         /// <summary>
         /// 執行派車系統任務
@@ -49,27 +47,45 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             CurrentTaskRunStatus = TASK_RUN_STATUS.WAIT;
             LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
             ACTION_TYPE action = taskDownloadData.Action_Type;
-            this.RunningTaskData = taskDownloadData;
+
+            if (!TaskTrackingTags.TryAdd(taskDownloadData.Task_Simplex, taskDownloadData.TagsOfTrajectory))
+            {
+                if (taskDownloadData.TagsOfTrajectory.Count != 1)
+                    TaskTrackingTags[taskDownloadData.Task_Simplex] = taskDownloadData.TagsOfTrajectory;
+            }
+
             Task.Run(async () =>
             {
-
                 if (AGVC.IsAGVExecutingTask)
                 {
-                    LOG.Critical($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
+                    LOG.INFO($"在 TAG {BarcodeReader.CurrentTag} 收到新的路徑擴充任務");
                     await ExecutingTask.AGVSPathExpand(taskDownloadData);
                 }
                 else
                 {
+                    if (ExecutingTask != null)
+                    {
+                        if (ExecutingTask.RunningTaskData.TagsOfTrajectory.Count != taskDownloadData.TagsOfTrajectory.Count)
+                        {
+
+                        }
+                    }
+
+                    clsTaskDownloadData _taskDownloadData;
+                    _taskDownloadData = taskDownloadData;
+
                     if (action == ACTION_TYPE.None)
-                        ExecutingTask = new NormalMoveTask(this, taskDownloadData);
+                        ExecutingTask = new NormalMoveTask(this, _taskDownloadData);
                     else if (action == ACTION_TYPE.Charge)
-                        ExecutingTask = new ChargeTask(this, taskDownloadData);
+                        ExecutingTask = new ChargeTask(this, _taskDownloadData);
                     else if (action == ACTION_TYPE.Discharge)
-                        ExecutingTask = new DischargeTask(this, taskDownloadData);
+                        ExecutingTask = new DischargeTask(this, _taskDownloadData);
                     else if (action == ACTION_TYPE.Load)
-                        ExecutingTask = new LoadTask(this, taskDownloadData);
+                        ExecutingTask = new LoadTask(this, _taskDownloadData);
                     else if (action == ACTION_TYPE.Unload)
-                        ExecutingTask = new UnloadTask(this, taskDownloadData);
+                        ExecutingTask = new UnloadTask(this, _taskDownloadData);
+                    else if (action == ACTION_TYPE.Park)
+                        ExecutingTask = new ParkTask(this, _taskDownloadData);
                     else
                     {
                         throw new NotImplementedException();
@@ -77,9 +93,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
                     Sub_Status = SUB_STATUS.RUN;
                     await Task.Delay(500);
-                    await FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
+                    ExecutingTask.OnTaskFinish = async (task_name) =>
+                    {
+                        await Task.Delay(5000);
+                        TaskTrackingTags.Remove(task_name);
+                    };
                     await ExecutingTask.Execute();
-
 
                 }
             });
@@ -92,7 +111,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
                 return;
 
-            if (RunningTaskData.Action_Type == ACTION_TYPE.None)
+            if (ExecutingTask.action == ACTION_TYPE.None)
                 Laser.ApplyAGVSLaserSetting();
 
         }
@@ -100,14 +119,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
                 return;
-
-            var TagPoint = RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
+            if (ExecutingTask == null)
+                return;
+            var TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
             if (TagPoint == null)
             {
                 LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
                 return;
             }
-            PathInfo? pathInfoRos = RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
+            PathInfo? pathInfoRos = ExecutingTask.RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
             if (pathInfoRos == null)
             {
                 AGVC.AbortTask();
@@ -118,7 +138,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Laser.AgvsLsrSetting = TagPoint.Laser;
 
             LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
-            if (RunningTaskData.ExecutingTrajecory.Last().Point_ID != Navigation.LastVisitedTag)
+            if (ExecutingTask.RunningTaskData.TagsOfTrajectory.Last() != Navigation.LastVisitedTag)
                 FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
         }
 
@@ -145,9 +165,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //    return;
 
             if (VmsProtocol == VMS_PROTOCOL.TCPIP)
-                await AGVS.TryTaskFeedBackAsync(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status, Navigation.LastVisitedTag);
+                await AGVS.TryTaskFeedBackAsync(ExecutingTask.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status, Navigation.LastVisitedTag);
             else
-                await FeedbackTaskStatusViaHttp(RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
+                await FeedbackTaskStatusViaHttp(ExecutingTask.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status);
 
             //if (status == TASK_RUN_STATUS.ACTION_FINISH)
             //    CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;
@@ -179,12 +199,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             try
             {
-                return RunningTaskData.ExecutingTrajecory.ToList().IndexOf(RunningTaskData.ExecutingTrajecory.First(pt => pt.Point_ID == Navigation.LastVisitedTag));
-
+                if (TaskTrackingTags.TryGetValue(ExecutingTask.RunningTaskData.Task_Simplex, out List<int> tags))
+                {
+                    return tags.IndexOf(tags.First(tag => tag == Navigation.LastVisitedTag));
+                }
+                else
+                {
+                    return -1;
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return 0;
+                LOG.ERROR("GetCurrentTagIndexOfTrajectory exception occur !", ex);
+                throw new NullReferenceException();
             }
 
         }

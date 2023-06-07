@@ -10,6 +10,7 @@ using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
 using GPMVehicleControlSystem.Tools;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using System.Diagnostics;
 using static AGVSystemCommonNet6.Abstracts.CarComponent;
 using static AGVSystemCommonNet6.clsEnums;
 using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
@@ -125,6 +126,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                     else if (value == SUB_STATUS.IDLE)
                     {
+                        AGVC.IsAGVExecutingTask = false;
                         BuzzerPlayer.BuzzerStop();
                         Main_Status = MAIN_STATUS.IDLE;
                         StatusLighter.IDLE();
@@ -140,10 +142,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         StatusLighter.RUN();
                         Task.Factory.StartNew(async () =>
                         {
-                            if (RunningTaskData.Action_Type == ACTION_TYPE.None)
-                                BuzzerPlayer.BuzzerMoving();
-                            else
-                                BuzzerPlayer.BuzzerAction();
+                            if (ExecutingTask != null)
+                            {
+                                if (ExecutingTask.action == ACTION_TYPE.None)
+                                    BuzzerPlayer.BuzzerMoving();
+                                else
+                                    BuzzerPlayer.BuzzerAction();
+                            }
                         });
 
                     }
@@ -191,6 +196,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             {
                 WagoDO.Connect();
                 Laser.Mode = LASER_MODE.Bypass;
+                StatusLighter.CloseAll();
+                StatusLighter.DOWN();
             });
 
             Task WagoDIConnTask = new Task(() =>
@@ -294,8 +301,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
         {
-            if (Operation_Mode == OPERATOR_MODE.AUTO && RunningTaskData?.Action_Type == ACTION_TYPE.None)
-                Sub_Status = SUB_STATUS.WARNING;
+            //if (Operation_Mode == OPERATOR_MODE.AUTO && ExecutingTask?.action == ACTION_TYPE.None)
+            //    Sub_Status = SUB_STATUS.WARNING;
         }
 
 
@@ -313,16 +320,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void WagoDI_OnNearAreaLaserTrigger(object? sender, EventArgs e)
         {
-            if (Operation_Mode == OPERATOR_MODE.AUTO)
+            if (Operation_Mode == OPERATOR_MODE.AUTO && Sub_Status == SUB_STATUS.RUN)
                 Sub_Status = SUB_STATUS.ALARM;
         }
 
-        private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION e)
+        private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION direction)
         {
-            if (AGVC.IsAGVExecutingTask)
+            if (AGVC.IsAGVExecutingTask && ExecutingTask.action == ACTION_TYPE.None)
             {
-                DirectionLighter.LightSwitchByAGVDirection(sender, e);
-                Laser.LaserChangeByAGVDirection(sender, e);
+
+                DirectionLighter.LightSwitchByAGVDirection(sender, direction);
+
+                if (ExecutingTask.action == ACTION_TYPE.None && direction != clsNavigation.AGV_DIRECTION.STOP)
+                    Laser.LaserChangeByAGVDirection(sender, direction);
             }
         }
 
@@ -428,11 +438,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <returns></returns>
         internal RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
         {
-            RunningStatus.clsCorrdination clsCorrdination = new RunningStatus.clsCorrdination();
+            RunningStatus.clsCoordination clsCorrdination = new RunningStatus.clsCoordination();
             MAIN_STATUS _Main_Status = Main_Status;
             if (getLastPtPoseOfTrajectory)
             {
-                var lastPt = RunningTaskData.ExecutingTrajecory.Last();
+                var lastPt = ExecutingTask.RunningTaskData.ExecutingTrajecory.Last();
                 clsCorrdination.X = lastPt.X;
                 clsCorrdination.Y = lastPt.Y;
                 clsCorrdination.Theta = lastPt.Theta;
@@ -457,19 +467,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             try
             {
-                double[] batteryLevels = Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
+                double[] batteryLevels = Debugger.IsAttached ? new double[2] { 88, 88 } : Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
                 return new RunningStatus
                 {
                     Cargo_Status = HasAnyCargoOnAGV() ? 1 : 0,
                     AGV_Status = _Main_Status,
                     Electric_Volume = batteryLevels,
                     Last_Visited_Node = Navigation.Data.lastVisitedNode.data,
-                    Corrdination = clsCorrdination,
+                    Coordination = clsCorrdination,
                     CSTID = CSTReader.ValidCSTID == "" ? new string[0] : new string[] { CSTReader.ValidCSTID },
                     Odometry = Odometry,
                     AGV_Reset_Flag = AGV_Reset_Flag,
                     Alarm_Code = alarm_codes,
-                    Escape_Flag = RunningTaskData == null ? false : RunningTaskData.Escape_Flag
+                    Escape_Flag = ExecutingTask == null ? false : ExecutingTask.RunningTaskData.Escape_Flag
                 };
             }
             catch (Exception ex)
@@ -601,8 +611,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //向AGVS請求移除卡匣
             string currentCSTID = CSTReader.Data.data;
             string toRemoveCSTID = currentCSTID.ToLower() == "error" ? "" : currentCSTID;
-
-            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID, RunningTaskData.Task_Name);
+            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID, ExecutingTask == null ? "" : ExecutingTask.RunningTaskData.Task_Name);
             //清帳
             if (retCode == RETURN_CODE.OK)
                 CSTReader.ValidCSTID = "";

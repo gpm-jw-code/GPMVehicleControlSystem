@@ -1,5 +1,6 @@
 ﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using GPMVehicleControlSystem.Models.Buzzer;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 {
@@ -11,20 +12,25 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         }
 
 
+        public override void DirectionLighterSwitchBeforeTaskExecute()
+        {
+        }
+
         public override void LaserSettingBeforeTaskExecute()
         {
             Agv.Laser.Mode = VehicleComponent.clsLaser.LASER_MODE.Bypass;
             base.LaserSettingBeforeTaskExecute();
         }
 
+        public override Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
+        {
+            BuzzerPlayer.BuzzerMoving();
+            return base.BeforeExecute();
+        }
+
         public override async Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
         {
-            if (RunningTaskData.Destination != Agv.Navigation.LastVisitedTag)
-            {
-                return (true, AlarmCodes.None);
-            }
-            else
-                return await base.AfterMoveDone();
+            return await base.AfterMoveDone();
         }
 
     }

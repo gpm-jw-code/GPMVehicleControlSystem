@@ -179,7 +179,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             }
 
-            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 10 : 90));
+            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 5 : 90));
 
             try
             {
@@ -191,6 +191,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             catch (OperationCanceledException)
             {
+                if (Debugger.IsAttached)
+                    return (true, AlarmCodes.None);
+
                 return (false, AlarmCodes.Handshake_Fail_EQ_BUSY_OFF);
 
             }

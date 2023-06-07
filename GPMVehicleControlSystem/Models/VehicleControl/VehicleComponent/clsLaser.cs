@@ -3,6 +3,7 @@ using AGVSystemCommonNet6;
 using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
+using System.Reflection;
 using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
@@ -173,28 +174,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             bool IN_2 = lsSet[1];
             bool IN_3 = lsSet[2];
             bool IN_4 = lsSet[3];
-            DOModule.PauseSignal.Reset();
             //DIModule.PauseSignal.Reset();
-            await Task.Delay(300);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, IN_1);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_1, !IN_1);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_2, IN_2);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_2, !IN_2);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_3, IN_3);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_3, !IN_3);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_4, IN_4);
-            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_CIN_4, !IN_4);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_1, IN_1);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_1, !IN_1);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_2, IN_2);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_2, !IN_2);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_3, IN_3);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_3, !IN_3);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_IN_4, IN_4);
-            DOModule.SetState(DO_ITEM.Back_Protection_Sensor_CIN_4, !IN_4);
+            bool[] writeStates = new bool[]
+            {
+                IN_1,!IN_1,  IN_2,!IN_2,  IN_3,!IN_3,  IN_4,!IN_4,IN_1,!IN_1,  IN_2,!IN_2,  IN_3,!IN_3,  IN_4,!IN_4,
+            };
+            DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, writeStates);
             _mode_int = mode_int;
-            DOModule.PauseSignal.Set();
-            //DIModule.PauseSignal.Set();
             LOG.TRACE($"Laser Mode Chaged To : {mode_int}({Mode})");
         }
     }

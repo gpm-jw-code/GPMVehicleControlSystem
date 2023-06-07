@@ -27,11 +27,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnBackArea2LaserRecovery += AGVC.BackFarArea2LaserRecoveryHandler;
 
             WagoDI.OnFrontArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
-            WagoDI.OnBackArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
-            WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnNearAreaLaserTrigger;
+            WagoDI.OnBackArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
             WagoDI.OnBackArea2LaserTrigger += WagoDI_OnNearAreaLaserTrigger;
-            WagoDI.OnBackArea2LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
 
             WagoDI.OnFrontArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
             WagoDI.OnBackArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;

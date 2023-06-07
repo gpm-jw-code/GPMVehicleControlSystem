@@ -58,9 +58,9 @@ namespace GPMVehicleControlSystem.ViewModels
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
                     NavInfo = new NavStateVM
                     {
-                        Destination = AgvEntity.RunningTaskData == null ? "" : AgvEntity.RunningTaskData.Destination + "",
+                        Destination = AgvEntity.ExecutingTask== null ? "" : AgvEntity.ExecutingTask.RunningTaskData.Destination + "",
                         Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit,
-                        PathPlan = AgvEntity.RunningTaskData == null ? new int[0] : AgvEntity.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
+                        PathPlan = AgvEntity.ExecutingTask == null ? new int[0] : AgvEntity.ExecutingTask.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },
                     Current_LASER_MODE = AgvEntity.Laser.Mode.ToString(),
                     LightsStates = new AGV_VMS.ViewModels.LightsStatesVM

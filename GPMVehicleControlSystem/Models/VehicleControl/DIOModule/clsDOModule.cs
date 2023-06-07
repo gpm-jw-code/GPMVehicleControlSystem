@@ -1,6 +1,7 @@
 ﻿using GPMVehicleControlSystem.Tools;
 using System.Linq;
 using System.Net.Sockets;
+using static AGVSystemCommonNet6.Abstracts.CarComponent;
 
 namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
@@ -156,6 +157,31 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             {
                 master = null;
                 SetState(signal, state);
+            }
+
+        }
+
+        internal void SetState(DO_ITEM start_signal, bool[] writeStates)
+        {
+            try
+            {
+                if (!IsConnected())
+                    Connect();
+                clsIOSignal? DO_Start = VCSOutputs.FirstOrDefault(k => k.Name == start_signal + "");
+                if (DO_Start != null)
+                {
+                    for (int i = 0; i < writeStates.Length; i++)
+                    {
+                        clsIOSignal? _DO = VCSOutputs.FirstOrDefault(k => k.index == DO_Start.index + i);
+                        _DO.State = writeStates[i];
+                    }
+                    master?.WriteMultipleCoils((ushort)(Start + DO_Start.index), writeStates);
+                }
+            }
+            catch (Exception)
+            {
+                master = null;
+                SetState(start_signal, writeStates);
             }
 
         }

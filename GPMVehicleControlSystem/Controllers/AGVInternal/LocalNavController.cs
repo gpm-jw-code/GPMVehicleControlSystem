@@ -1,5 +1,4 @@
-﻿using AGVSystemCommonNet6.AGVMessage;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using AGVSystemCommonNet6.MAP;
 using GPMVehicleControlSystem.Models;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
