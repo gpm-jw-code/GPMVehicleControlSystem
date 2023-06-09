@@ -31,14 +31,37 @@ namespace GPMVehicleControlSystem.Models.Buzzer
                 playList.sounds_folder = "/home/gpm/param/sounds";
 
             }
+
+            // Task.Run(() => MusicWatchDog());
         }
 
+        private static async Task MusicWatchDog()
+        {
+            while (true)
+            {
+                await Task.Delay(1);
+                var agv = StaStored.CurrentVechicle;
+
+                if (agv.Sub_Status == AGVSystemCommonNet6.clsEnums.SUB_STATUS.RUN)
+                {
+                    if (agv.ExecutingTask.action == AGVSystemCommonNet6.AGVDispatch.Messages.ACTION_TYPE.None && !IsMovingPlaying)
+                    {
+                        BuzzerMoving();
+                        LOG.WARN("Music Watch Dog Trigger, Buzzer Moving");
+                    }
+                    if (agv.ExecutingTask.action != AGVSystemCommonNet6.AGVDispatch.Messages.ACTION_TYPE.None && !IsActionPlaying)
+                    {
+                        BuzzerAction();
+                        LOG.WARN("Music Watch Dog Trigger, Buzzer Action ");
+                    }
+                }
+            }
+        }
 
         public static async void BuzzerAlarm()
         {
             if (IsAlarmPlaying)
                 return;
-            await BuzzerStop();
             Play(playList.Alarm, 5);
             IsAlarmPlaying = true;
         }
@@ -46,28 +69,25 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         {
             if (IsActionPlaying)
                 return;
-            await BuzzerStop();
-            IsActionPlaying = true;
             Play(playList.Action, 24);
+            IsActionPlaying = true;
         }
         public static async void BuzzerMoving()
         {
             if (IsMovingPlaying)
                 return;
-            await BuzzerStop();
-            IsMovingPlaying = true;
             Play(playList.Moving, 24);
+            IsMovingPlaying = true;
         }
         private static bool _linux_music_stopped = false;
         internal static async Task BuzzerStop()
         {
             _linux_music_stopped = false;
-            IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
             if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
                 PlayWithRosService("");
             else
                 player?.Stop();
-
+            IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
         }
 
         private static async void Play(string filePath, int total_sec = 22)

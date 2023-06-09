@@ -310,23 +310,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             //LOG.TRACE($"要求車控 {cmd},Result: {(res.confirm ? "OK" : "NG")}");
             return res.confirm;
         }
-        internal async Task AGVSPathExpand(clsTaskDownloadData taskDownloadData)
-        {
-            NavPathExpandedFlag = true;
-            RunningTaskData = taskDownloadData;
-
-            string new_path = string.Join("->", taskDownloadData.TagsOfTrajectory);
-
-            if (RunningTaskData.Task_Name != taskDownloadData.Task_Name)
-            {
-                throw new Exception("任務ID不同");
-            }
-            actionClient.goal = taskDownloadData.RosTaskCommandGoal;
-            actionClient.SendGoal();
-
-            string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
-            LOG.INFO($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
-        }
+     
         internal async Task<bool> AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
         {
             NavPathExpandedFlag = false;
@@ -363,5 +347,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             actionClient.goal = taskDownloadData.RosTaskCommandGoal;
             actionClient.SendGoal();
         }
+
     }
 }

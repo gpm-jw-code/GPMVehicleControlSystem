@@ -14,6 +14,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
     /// </summary>
     public class LoadTask : TaskBase
     {
+        protected AlarmCodes FrontendSecondarSensorTriggerAlarmCode = AlarmCodes.EQP_LOAD_BUT_EQP_HAS_OBSTACLE;
         public virtual bool CSTTrigger
         {
             get
@@ -22,6 +23,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             }
         }
         public override ACTION_TYPE action { get; set; } = ACTION_TYPE.Load;
+
         private bool back_to_secondary_flag = false;
         public LoadTask(Vehicle Agv, clsTaskDownloadData taskDownloadData) : base(Agv, taskDownloadData)
         {
@@ -32,9 +34,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         {
             Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_START);
 
-            BuzzerPlayer.BuzzerAction();
-
-            (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckBeforeHSStartInFrontOfEQ(action);
+            (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckBeforeHSStartInFrontOfEQ();
             if (!CstExistCheckResult.confirm)
                 return (false, CstExistCheckResult.alarmCode);
 
@@ -52,7 +52,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
                     return (false, HSResult.alarmCode);
                 }
             }
-            StartFrontendObstcleDetection(action);
+            StartFrontendObstcleDetection();
             return await base.BeforeExecute();
         }
 
@@ -63,11 +63,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             (bool busyoff, AlarmCodes alarmCode) HSResult = await Agv.WaitEQBusyOFF(action);
             if (!HSResult.busyoff)
             {
+                Agv.DirectionLighter.CloseAll();
                 return (false, HSResult.alarmCode);
             }
             Agv.DirectionLighter.CloseAll();
             //檢查在席
-            (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckAfterEQBusyOff(action);
+            (bool confirm, AlarmCodes alarmCode) CstExistCheckResult = CstExistCheckAfterEQBusyOff();
             if (!CstExistCheckResult.confirm)
                 return (false, CstExistCheckResult.alarmCode);
 
@@ -91,8 +92,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             (bool confirm, AlarmCodes alarmCode) CstBarcodeCheckResult = await CSTBarcodeReadAfterAction();
             if (!CstBarcodeCheckResult.confirm)
                 return (false, CstBarcodeCheckResult.alarmCode);
-
-
 
             return await base.AfterMoveDone();
         }
@@ -141,13 +140,15 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// <summary>
         /// 車頭二次檢Sensor檢察功能
         /// </summary>
-        protected void StartFrontendObstcleDetection(ACTION_TYPE action)
+        protected virtual void StartFrontendObstcleDetection()
         {
             bool Enable = AppSettingsHelper.GetValue<bool>($"VCS:LOAD_OBS_DETECTION:Enable_{action}");
+
             if (!Enable)
                 return;
+
             int DetectionTime = AppSettingsHelper.GetValue<int>("VCS:LOAD_OBS_DETECTION:Duration");
-            LOG.WARN($"前方二次檢Sensor 偵側開始 [{action}](偵測持續時間={DetectionTime} s)");
+            LOG.WARN($"前方二次檢Sensor 偵側開始 (偵測持續時間={DetectionTime} s)");
             CancellationTokenSource cancelDetectCTS = new CancellationTokenSource(TimeSpan.FromSeconds(DetectionTime));
             Stopwatch stopwatch = Stopwatch.StartNew();
             bool detected = false;
@@ -159,19 +160,18 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
                 {
                     cancelDetectCTS.Cancel();
                     stopwatch.Stop();
-                    LOG.Critical($"[{action}] 前方二次檢Sensor觸發(第 {stopwatch.ElapsedMilliseconds / 1000.0} 秒)");
+                    LOG.Critical($" 前方二次檢Sensor觸發(第 {stopwatch.ElapsedMilliseconds / 1000.0} 秒)");
                     try
                     {
                         Agv.AGVC.EMOHandler(this, EventArgs.Empty);
-                        AlarmManager.AddAlarm(AlarmCodes.EQP_LOAD_BUT_EQP_HAS_OBSTACLE);
+                        Agv.ExecutingTask.Abort();
+                        Agv.Sub_Status = SUB_STATUS.ALARM;
+                        AlarmManager.AddAlarm(FrontendSecondarSensorTriggerAlarmCode, false);
                     }
                     catch (Exception ex)
                     {
                         throw ex;
                     }
-                    Agv.Sub_Status = SUB_STATUS.DOWN;
-                    Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
-                    Agv.Online_Mode_Switch(REMOTE_MODE.OFFLINE);
                 }
             }
             Agv.WagoDI.OnFrontSecondObstacleSensorDetected += FrontendObsSensorDetectAction;
@@ -191,52 +191,42 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
 
         /// <summary>
-        /// Load作業(放貨)=>車上應該有貨/ Unload(取貨)=>車上應該無貨
+        /// Load作業(放貨)=>車上應該有貨
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        private (bool confirm, AlarmCodes alarmCode) CstExistCheckBeforeHSStartInFrontOfEQ(ACTION_TYPE action)
+        protected virtual (bool confirm, AlarmCodes alarmCode) CstExistCheckBeforeHSStartInFrontOfEQ()
         {
             if (!AppSettingsHelper.GetValue<bool>("VCS:CST_EXIST_DETECTION:Before_In"))
                 return (true, AlarmCodes.None);
 
-            if (action == ACTION_TYPE.Load && !Agv.HasAnyCargoOnAGV())
-            {
+            if (!Agv.HasAnyCargoOnAGV())
                 return (false, AlarmCodes.Has_Job_Without_Cst);
-            }
-            else if (action == ACTION_TYPE.Unload && Agv.HasAnyCargoOnAGV())
-            {
-                return (false, AlarmCodes.Has_Cst_Without_Job);
-            }
+
             return (true, AlarmCodes.None);
         }
 
         /// <summary>
-        /// Load完成(放貨)=>車上應該有無貨/ Unload完成(取貨)=>車上應該有貨
+        /// Load完成(放貨)=>車上應該有無貨
         /// </summary>
         /// <param name="action"></param>
         /// <returns></returns>
-        private (bool confirm, AlarmCodes alarmCode) CstExistCheckAfterEQBusyOff(ACTION_TYPE action)
+        protected virtual (bool confirm, AlarmCodes alarmCode) CstExistCheckAfterEQBusyOff()
         {
             if (!AppSettingsHelper.GetValue<bool>("VCS:CST_EXIST_DETECTION:After_EQ_Busy_Off"))
                 return (true, AlarmCodes.None);
 
-            if (action == ACTION_TYPE.Load && Agv.HasAnyCargoOnAGV())
-            {
+            if (Agv.HasAnyCargoOnAGV())
                 return (false, AlarmCodes.Has_Cst_Without_Job);
-            }
-            else if (action == ACTION_TYPE.Unload && !Agv.HasAnyCargoOnAGV())
-            {
-                return (false, AlarmCodes.Has_Job_Without_Cst);
-            }
 
-            if (action == ACTION_TYPE.Load)
-            {
-                Agv.CSTReader.ValidCSTID = "";
-            }
+            Agv.CSTReader.ValidCSTID = "";
 
             return (true, AlarmCodes.None);
         }
 
+        public override void DirectionLighterSwitchBeforeTaskExecute()
+        {
+            Agv.DirectionLighter.Forward();
+        }
     }
 }

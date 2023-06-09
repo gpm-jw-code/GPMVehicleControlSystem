@@ -107,10 +107,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             }
         }
 
-        public async void ResetMotor(object? sender, EventArgs e)
-        {
-            await ResetMotor();
-        }
         public async Task ResetMotor()
         {
             Console.WriteLine("Reset Motor Process Start");

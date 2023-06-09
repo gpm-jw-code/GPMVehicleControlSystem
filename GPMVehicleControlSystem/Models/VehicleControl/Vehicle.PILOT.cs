@@ -136,7 +136,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             Laser.AgvsLsrSetting = TagPoint.Laser;
 
-            LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
+           // LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
             if (ExecutingTask.RunningTaskData.TagsOfTrajectory.Last() != Navigation.LastVisitedTag)
                 FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
         }
@@ -147,8 +147,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             CurrentTaskRunStatus = status;
             await Task.Delay(1000);
-            //if (Remote_Mode == REMOTE_MODE.OFFLINE)
-            //    return;
+
+            if (Remote_Mode == REMOTE_MODE.OFFLINE)
+                return;
 
             if (VmsProtocol == VMS_PROTOCOL.TCPIP)
                 await AGVS.TryTaskFeedBackAsync(ExecutingTask.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status, Navigation.LastVisitedTag);

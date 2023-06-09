@@ -21,7 +21,6 @@ namespace GPMVehicleControlSystem.Models.WebsocketMiddleware
 
         public static void ClientRequest(HttpContext _HttpContext, WEBSOCKET_CLIENT_ACTION client_req)
         {
-            Console.WriteLine("WS_CLient IN");
             var webSocket = _HttpContext.WebSockets.AcceptWebSocketAsync().Result;
             byte[] buffer = new byte[256];
             var bufferSegment = new ArraySegment<byte>(buffer);
@@ -32,14 +31,6 @@ namespace GPMVehicleControlSystem.Models.WebsocketMiddleware
                 try
                 {
                     webSocket.ReceiveAsync(bufferSegment, CancellationToken.None);
-
-                    //string s = Encoding.ASCII.GetString(buffer);
-                    //s = s.Replace("\0", "");
-                    //if (s == "alive")
-                    //    sw.Restart();
-                    //if (sw.ElapsedMilliseconds > 10000)
-                    //    break;
-
                     object viewmodel = null;
                     switch (client_req)
                     {
@@ -60,9 +51,6 @@ namespace GPMVehicleControlSystem.Models.WebsocketMiddleware
                             // viewmodel = ViewModelFactory.GetForkTestStateVM();
                             break;
                         case WEBSOCKET_CLIENT_ACTION.GETAGVSMSGIODATA:
-                            // manualResetEvent.WaitOne();
-                            //  manualResetEvent.Reset();
-                            // viewmodel = new {Time=agvs_msg_io_data.time, Direction = agvs_msg_io_data.direction , Message = agvs_msg_io_data.revStr };
                             break;
                         default:
                             break;
@@ -77,11 +65,8 @@ namespace GPMVehicleControlSystem.Models.WebsocketMiddleware
                     LOG.ERROR(ex.Message);
                     break;
                 }
-
-
             }
             webSocket.Dispose();
-            Console.WriteLine($"{webSocket.SubProtocol} CLIENT CLOSED");
         }
     }
 }

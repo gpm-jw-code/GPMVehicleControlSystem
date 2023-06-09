@@ -181,7 +181,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             };
             DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, writeStates);
             _mode_int = mode_int;
-            LOG.INFO($"Laser Mode Chaged To : {mode_int}({Mode})");
+            //LOG.INFO($"Laser Mode Chaged To : {mode_int}({Mode})");
         }
     }
 }

@@ -24,7 +24,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
         public override Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
-            BuzzerPlayer.BuzzerMoving();
             return base.BeforeExecute();
         }
 

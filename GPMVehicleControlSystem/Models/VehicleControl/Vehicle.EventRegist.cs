@@ -6,6 +6,9 @@ using static AGVSystemCommonNet6.clsEnums;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDIModule;
+using static GPMVehicleControlSystem.Models.VehicleControl.AGVControl.CarController;
+using AGVSystemCommonNet6.Log;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
@@ -18,41 +21,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGVC.OnModuleInformationUpdated += CarController_OnModuleInformationUpdated;
             AGVC.OnSickDataUpdated += CarController_OnSickDataUpdated;
             WagoDI.OnEMO += WagoDI_OnEMO;
+            WagoDI.OnBumpSensorPressed += WagoDI_OnBumpSensorPressed;
             WagoDI.OnEMO += AGVC.EMOHandler;
-            WagoDI.OnResetButtonPressing += () => ResetAlarmsAsync();
-            WagoDI.OnResetButtonPressed += WagoDO.ResetMotor;
-            WagoDI.OnResetButtonPressed += WagoDI_OnResetButtonPressed;
-            WagoDI.OnFrontArea1LaserTrigger += AGVC.FarArea1LaserTriggerHandler;
-            WagoDI.OnBackArea1LaserTrigger += AGVC.FarArea1LaserTriggerHandler;
-            WagoDI.OnFrontArea2LaserTrigger += AGVC.FarArea2LaserTriggerHandler;
-            WagoDI.OnBackArea2LaserTrigger += AGVC.FarArea2LaserTriggerHandler;
-
-            WagoDI.OnFrontArea1LaserRecovery += AGVC.FrontFarArea1LaserRecoveryHandler;
-            WagoDI.OnFrontArea2LaserRecovery += AGVC.FrontFarArea2LaserRecoveryHandler;
-            WagoDI.OnBackArea1LaserRecovery += AGVC.BackFarArea1LaserRecoveryHandler;
-            WagoDI.OnBackArea2LaserRecovery += AGVC.BackFarArea2LaserRecoveryHandler;
-
-            //WagoDI.OnFrontArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
-            //WagoDI.OnBackArea1LaserTrigger += WagoDI_OnFarAreaLaserTrigger;
-            //WagoDI.OnFrontArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
-            //WagoDI.OnBackArea1LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
-            //WagoDI.OnFrontArea2LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
-            //WagoDI.OnBackArea2LaserRecovery += WagoDI_OnFarAreaLaserRecovery;
+            WagoDI.OnResetButtonPressed += async (s, e) => await ResetAlarmsAsync(true);
+            WagoDI.OnLaserDIRecovery += AGVC.LaserRecoveryHandler;
+            WagoDI.OnFarLaserDITrigger += AGVC.FarLaserTriggerHandler;
+            WagoDI.OnNearLaserDiTrigger += AGVC.NearLaserTriggerHandler;
 
 
-
-            WagoDI.OnFrontArea2LaserTrigger += WagoDI_OnFronNearAreaLaserTrigger;
-            WagoDI.OnBackArea2LaserTrigger += WagoDI_OnBackNearAreaLaserTrigger;
-
-            WagoDI.OnFrontNearAreaLaserTrigger += WagoDI_OnFronNearAreaLaserTrigger;
-            WagoDI.OnBackNearAreaLaserTrigger += WagoDI_OnBackNearAreaLaserTrigger;
-
-            WagoDI.OnFrontArea2LaserRecovery += WagoDI_OnFrontNearAreaLaserRecovery;
-            WagoDI.OnBackArea2LaserRecovery += WagoDI_OnBackNearAreaLaserRecovery;
-
-
-            WagoDI.OnFrontNearAreaLaserRecovery += WagoDI_OnFrontNearAreaLaserRecovery;
-            WagoDI.OnBackNearAreaLaserRecovery += WagoDI_OnBackNearAreaLaserRecovery;
+            WagoDI.OnLaserDIRecovery += LaserRecoveryHandler;
+            WagoDI.OnFarLaserDITrigger += FarLaserTriggerHandler;
+            WagoDI.OnNearLaserDiTrigger += NearLaserTriggerHandler;
 
             Navigation.OnDirectionChanged += Navigation_OnDirectionChanged;
 
@@ -65,9 +44,65 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Navigation.OnTagReach += OnTagReachHandler;
             BarcodeReader.OnTagLeave += OnTagLeaveHandler;
 
-
             AGVC.OnCSTReaderActionDone += CSTReader.UpdateCSTIDDataHandler;
 
+            AlarmManager.OnUnRecoverableAlarmOccur += AlarmManager_OnUnRecoverableAlarmOccur;
+
+        }
+
+
+        private async void AlarmManager_OnUnRecoverableAlarmOccur(object? sender, EventArgs e)
+        {
+
+            _ = Online_Mode_Switch(REMOTE_MODE.OFFLINE);
+        }
+
+        private void NearLaserTriggerHandler(object? sender, EventArgs e)
+        {
+            if (Operation_Mode == OPERATOR_MODE.AUTO && AGVC.IsAGVExecutingTask)
+            {
+                Sub_Status = SUB_STATUS.ALARM;
+
+                clsIOSignal LaserSignal = sender as clsIOSignal;
+                DI_ITEM LaserType = LaserSignal.DI_item;
+
+                AlarmCodes alarm_code = AlarmCodes.None;
+                if (LaserType == DI_ITEM.RightProtection_Area_Sensor_2)
+                    alarm_code = AlarmCodes.RightProtection_Area3;
+                if (LaserType == DI_ITEM.LeftProtection_Area_Sensor_2)
+                    alarm_code = AlarmCodes.LeftProtection_Area3;
+
+                if (LaserType == DI_ITEM.FrontProtection_Area_Sensor_2 | LaserType == DI_ITEM.FrontProtection_Area_Sensor_3)
+                    alarm_code = AlarmCodes.FrontProtection_Area3;
+
+                if (LaserType == DI_ITEM.BackProtection_Area_Sensor_2 | LaserType == DI_ITEM.BackProtection_Area_Sensor_3)
+                    alarm_code = AlarmCodes.BackProtection_Area3;
+
+                if (alarm_code != AlarmCodes.None)
+                    AlarmManager.AddAlarm(alarm_code, true);
+                else
+                {
+                    LOG.WARN("Near Laser Trigger but NO Alarm Added!");
+                }
+            }
+        }
+
+        private void FarLaserTriggerHandler(object? sender, EventArgs e)
+        {
+        }
+
+        private void LaserRecoveryHandler(object? sender, ROBOT_CONTROL_CMD cmd)
+        {
+            if (Operation_Mode != OPERATOR_MODE.AUTO)
+                return;
+            if (!AGVC.IsAGVExecutingTask)
+                return;
+
+            AlarmManager.ClearAlarm(AlarmCodes.RightProtection_Area3);
+            AlarmManager.ClearAlarm(AlarmCodes.LeftProtection_Area3);
+            AlarmManager.ClearAlarm(AlarmCodes.FrontProtection_Area3);
+            AlarmManager.ClearAlarm(AlarmCodes.BackProtection_Area3);
+            Sub_Status = SUB_STATUS.RUN;
 
         }
 
@@ -88,70 +123,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
         {
-            AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task);
+            if (!AGVC.IsAGVExecutingTask)
+                return true;
+
+            AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task, false);
             AGV_Reset_Flag = true;
             Task.Factory.StartNew(async () =>
             {
-                AGVC.AbortTask(mode);
+                AGVC.AbortTask(RESET_MODE.ABORT);
                 await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
             Sub_Status = SUB_STATUS.ALARM;
             ExecutingTask.Abort();
             return true;
         }
-        private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
-        {
-            //if (Operation_Mode == OPERATOR_MODE.AUTO && ExecutingTask?.action == ACTION_TYPE.None)
-            //    Sub_Status = SUB_STATUS.WARNING;
-        }
 
-
-        private void WagoDI_OnFrontNearAreaLaserRecovery(object? sender, EventArgs e)
-        {
-            if (Operation_Mode != OPERATOR_MODE.AUTO)
-                return;
-
-            if (Main_Status == MAIN_STATUS.RUN)
-                Sub_Status = SUB_STATUS.RUN;
-            else if (Main_Status == MAIN_STATUS.IDLE)
-                Sub_Status = SUB_STATUS.IDLE;
-            else if (Main_Status == MAIN_STATUS.DOWN)
-                Sub_Status = SUB_STATUS.DOWN;
-
-            AlarmManager.ClearAlarm(AlarmCodes.FrontProtection_Area3);
-        }
-
-        private void WagoDI_OnBackNearAreaLaserRecovery(object? sender, EventArgs e)
-        {
-            if (Operation_Mode != OPERATOR_MODE.AUTO)
-                return;
-
-            if (Main_Status == MAIN_STATUS.RUN)
-                Sub_Status = SUB_STATUS.RUN;
-            else if (Main_Status == MAIN_STATUS.IDLE)
-                Sub_Status = SUB_STATUS.IDLE;
-            else if (Main_Status == MAIN_STATUS.DOWN)
-                Sub_Status = SUB_STATUS.DOWN;
-
-            AlarmManager.ClearAlarm(AlarmCodes.BackProtection_Area3);
-        }
-        private void WagoDI_OnFronNearAreaLaserTrigger(object? sender, EventArgs e)
-        {
-            if (Operation_Mode == OPERATOR_MODE.AUTO && Sub_Status == SUB_STATUS.RUN)
-            {
-                Sub_Status = SUB_STATUS.ALARM;
-                AlarmManager.AddAlarm(AlarmCodes.FrontProtection_Area3);
-            }
-        }
-
-        private void WagoDI_OnBackNearAreaLaserTrigger(object? sender, EventArgs e)
-        {
-            if (Operation_Mode == OPERATOR_MODE.AUTO && Sub_Status == SUB_STATUS.RUN)
-            {
-                Sub_Status = SUB_STATUS.ALARM;
-                AlarmManager.AddAlarm(AlarmCodes.BackProtection_Area3);
-            }
-        }
         private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION direction)
         {
             if (AGVC.IsAGVExecutingTask && ExecutingTask.action == ACTION_TYPE.None)
@@ -166,30 +152,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void WagoDI_OnEMO(object? sender, EventArgs e)
         {
-            SoftwareEMO();
+            IsInitialized = false;
+            ExecutingTask?.Abort();
+            AGVSRemoteModeChangeReq(REMOTE_MODE.OFFLINE);
+            Sub_Status = SUB_STATUS.ALARM;
         }
 
-
-        private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
+        private void WagoDI_OnBumpSensorPressed(object? sender, EventArgs e)
         {
-
-            if (Operation_Mode != OPERATOR_MODE.AUTO)
-                return;
-
-            if (Main_Status == MAIN_STATUS.RUN)
-                Sub_Status = SUB_STATUS.RUN;
-            else if (Main_Status == MAIN_STATUS.IDLE)
-                Sub_Status = SUB_STATUS.IDLE;
-            else if (Main_Status == MAIN_STATUS.DOWN)
-                Sub_Status = SUB_STATUS.DOWN;
-
-            //bool frontLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_4);
-            //bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
-            //if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
-            //    AGVC.FarAreaLaserRecoveryHandler(sender, e);
-
+            IsInitialized = false;
+            ExecutingTask?.Abort();
+            AlarmManager.AddAlarm(AlarmCodes.Bumper, false);
+            Sub_Status = SUB_STATUS.ALARM;
         }
-
 
         private void CarController_OnModuleInformationUpdated(object? sender, ModuleInformation _ModuleInformation)
         {
@@ -264,7 +239,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void WagoDI_OnResetButtonPressed(object? sender, EventArgs e)
         {
-            Console.WriteLine("Try Reset Alarms");
+
         }
 
 

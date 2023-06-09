@@ -235,14 +235,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             if (!WagoDI.GetState(clsDIModule.DI_ITEM.EMO))
             {
-                AlarmManager.AddAlarm(AlarmCodes.EMO_Button);
+                AlarmManager.AddAlarm(AlarmCodes.EMO_Button, false);
                 BuzzerPlayer.BuzzerAlarm();
                 return false;
             }
 
             if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
             {
-                AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error);
+                AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error, false);
                 BuzzerPlayer.BuzzerAlarm();
                 return false;
             }
@@ -293,25 +293,28 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 Sub_Status = SUB_STATUS.DOWN;
                 await Task.Delay(100);
                 Sub_Status = SUB_STATUS.ALARM;
-                AlarmManager.AddAlarm(AlarmCodes.SoftwareEMS);
+                AlarmManager.AddAlarm(AlarmCodes.SoftwareEMS, false);
             });
 
         }
 
-        internal async Task ResetAlarmsAsync()
+        internal async Task ResetAlarmsAsync(bool IsTriggerByButton)
         {
             BuzzerPlayer.BuzzerStop();
 
-            //if (AlarmManager.CurrentAlarms.Count == 0)
-            //    return;
             _ = Task.Factory.StartNew(async () =>
              {
-                 //if (WheelDrivers.Any(dr => dr.State != STATE.NORMAL) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_1) | WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Error_2))
-                 await WagoDO.ResetMotor();
-                 AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
-                 FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
+                 if (!IsTriggerByButton)
+                     await WagoDO.ResetMotor();
+                 else
+                     await Task.Delay(2000);
 
-                 if (!AlarmManager.CurrentAlarms.Values.Any(alarm => alarm.ELevel == clsAlarmCode.LEVEL.Alarm))
+                 if (AlarmManager.CurrentAlarms.Values.All(alarm => !alarm.IsRecoverable))
+                 {
+                     FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
+                     Sub_Status = SUB_STATUS.STOP;
+                 }
+                 else
                  {
                      if (CurrentTaskRunStatus == TASK_RUN_STATUS.NAVIGATING)
                      {
@@ -322,6 +325,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                          if (Sub_Status != SUB_STATUS.IDLE)
                              Sub_Status = SUB_STATUS.STOP;
                      }
+                     AGVC.CarSpeedControl(CarController.ROBOT_CONTROL_CMD.SPEED_Reconvery);
                  }
                  AlarmManager.ClearAlarm();
              });
@@ -395,15 +399,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             RunningStatus.clsAlarmCode[] alarm_codes = AlarmManager.CurrentAlarms.Select(alarm => new RunningStatus.clsAlarmCode
             {
                 Alarm_ID = alarm.Value.Code,
-                Alarm_Level = (int)alarm.Value.ELevel,
+                Alarm_Level = alarm.Value.IsRecoverable ? 0 : 1,
                 Alarm_Description = alarm.Value.Description,
-                Alarm_Category = alarm.Value.ELevel == clsAlarmCode.LEVEL.Warning ? 0 : (int)alarm.Value.ELevel
+                Alarm_Category = alarm.Value.IsRecoverable ? 0 : 1,
+
 
             }).ToArray();
 
             try
             {
-                double[] batteryLevels = Debugger.IsAttached ? new double[2] { 88, 88 } : Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
+                double[] batteryLevels = Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
                 return new RunningStatus
                 {
                     Cargo_Status = HasAnyCargoOnAGV() ? 1 : 0,
@@ -448,7 +453,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         private bool OnlineModeChangingFlag = false;
         internal async Task<(bool success, RETURN_CODE return_code)> Online_Mode_Switch(REMOTE_MODE mode)
         {
-            (bool success, RETURN_CODE return_code) result = await AGVS.TrySendOnlineModeChangeRequest(BarcodeReader.CurrentTag, mode);
+            (bool success, RETURN_CODE return_code) result = await AGVS.TrySendOnlineModeChangeRequest(Navigation.LastVisitedTag, mode);
             if (!result.success)
                 LOG.ERROR($"車輛上線失敗 : Return Code : {result.return_code}");
             else

@@ -62,13 +62,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
             if (!checkResult.confirm)
             {
-                AlarmManager.AddAlarm(checkResult.alarm_code);
+                AlarmManager.AddAlarm(checkResult.alarm_code, false);
                 Agv.Sub_Status = SUB_STATUS.ALARM;
             }
             bool agvc_executing = await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
             if (!agvc_executing)
             {
-                AlarmManager.AddAlarm(AlarmCodes.Cant_TransferTask_TO_AGVC);
+                AlarmManager.AddAlarm(AlarmCodes.Cant_TransferTask_TO_AGVC, false);
                 Agv.Sub_Status = SUB_STATUS.ALARM;
             }
         }
@@ -91,10 +91,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             (bool confirm, AlarmCodes alarm_code) check_result = await AfterMoveDone();
             if (!check_result.confirm)
             {
-                AlarmManager.AddAlarm(check_result.alarm_code);
+                AlarmManager.AddAlarm(check_result.alarm_code, false);
+                Agv.Sub_Status = SUB_STATUS.ALARM;
             }
+            else
+                Agv.Sub_Status = SUB_STATUS.IDLE;
 
-            Agv.Sub_Status = SUB_STATUS.IDLE;
             Agv.AGVC.IsAGVExecutingTask = false;
             OnTaskFinish(RunningTaskData.Task_Simplex);
         }
@@ -123,10 +125,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// <summary>
         /// 任務開始前的方向燈切換
         /// </summary>
-        public virtual void DirectionLighterSwitchBeforeTaskExecute()
-        {
-            Agv.DirectionLighter.Forward();
-        }
+        public abstract void DirectionLighterSwitchBeforeTaskExecute();
 
         /// <summary>
         /// 任務開始前的雷射設定

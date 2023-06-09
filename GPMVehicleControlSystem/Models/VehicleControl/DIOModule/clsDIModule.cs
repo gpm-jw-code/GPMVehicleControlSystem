@@ -1,7 +1,9 @@
 ﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Tools;
 using Modbus.Device;
 using System.Net.Sockets;
+using static GPMVehicleControlSystem.Models.VehicleControl.AGVControl.CarController;
 
 namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 {
@@ -48,77 +50,23 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         public ManualResetEvent PauseSignal = new ManualResetEvent(true);
 
 
+        public event EventHandler<ROBOT_CONTROL_CMD> OnLaserDIRecovery;
+        public event EventHandler OnFarLaserDITrigger;
+        public event EventHandler OnNearLaserDiTrigger;
 
         /// <summary>
         /// EMO按壓
         /// </summary>
         public event EventHandler OnEMO;
 
+        /// <summary>
+        /// Bump Sensor觸發
+        /// </summary>
+        public event EventHandler OnBumpSensorPressed;
+
         public event EventHandler OnResetButtonPressed;
 
 
-        /// <summary>
-        /// 前方遠處雷射觸發
-        /// </summary>
-        public event EventHandler OnFrontArea1LaserTrigger;
-        /// <summary>
-        /// 後方遠處雷射觸發
-        /// </summary>
-        public event EventHandler OnBackArea1LaserTrigger;
-
-
-        /// <summary>
-        /// 前方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnFrontArea1LaserRecovery;
-        /// <summary>
-        /// 後方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnBackArea1LaserRecovery;
-
-
-
-
-        /// <summary>
-        /// 前方遠處雷射觸發
-        /// </summary>
-        public event EventHandler OnFrontArea2LaserTrigger;
-        /// <summary>
-        /// 後方遠處雷射觸發
-        /// </summary>
-        public event EventHandler OnBackArea2LaserTrigger;
-
-
-        /// <summary>
-        /// 前方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnFrontArea2LaserRecovery;
-        /// <summary>
-        /// 後方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnBackArea2LaserRecovery;
-
-
-        /// <summary>
-        /// 前方近處雷射觸發
-        /// </summary>
-        public event EventHandler OnFrontNearAreaLaserTrigger;
-        /// <summary>
-        /// 後方近處雷射觸發
-        /// </summary>
-        public event EventHandler OnBackNearAreaLaserTrigger;
-
-
-
-
-        /// <summary>
-        /// 前方近處處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnFrontNearAreaLaserRecovery;
-        /// <summary>
-        /// 後方遠處雷射觸發恢復
-        /// </summary>
-        public event EventHandler OnBackNearAreaLaserRecovery;
         public event EventHandler OnFrontSecondObstacleSensorDetected;
         public Action OnResetButtonPressing { get; set; }
 
@@ -155,7 +103,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                     var reg = new clsIOSignal(RigisterName, Address);
                     if (RigisterName != "")
                     {
-
                         var di_item = Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().First(di => di.ToString() == RigisterName);
                         if (di_item != DI_ITEM.Unknown)
                         {
@@ -197,7 +144,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         public override bool IsConnected()
         {
-            return master != null ;
+            return master != null;
         }
 
         internal void SetState(string address, bool state)
@@ -212,29 +159,88 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         protected virtual void RegistSignalEvents()
         {
             VCSInputs[INPUT_INDEXS[DI_ITEM.EMO]].OnSignalOFF += (s, e) => OnEMO?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.Bumper_Sensor]].OnSignalOFF += (s, e) => OnBumpSensorPressed?.Invoke(s, e);
             VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressed?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnFrontArea1LaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnFrontArea2LaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnBackArea1LaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnBackArea2LaserTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.RightProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.LeftProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnFrontArea1LaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnFrontArea2LaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalON += (s, e) => OnBackArea1LaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalON += (s, e) => OnBackArea2LaserRecovery?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.RightProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
+            VCSInputs[INPUT_INDEXS[DI_ITEM.LeftProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnFrontNearAreaLaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalON += (s, e) => OnBackNearAreaLaserRecovery?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnFrontNearAreaLaserTrigger?.Invoke(s, e);
-            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnBackNearAreaLaserTrigger?.Invoke(s, e);
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnFarLaserDITrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalOFF += (s, e) => OnFarLaserDITrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalOFF += (s, e) => OnNearLaserDiTrigger?.Invoke(s, e);
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalON += LaserRecoveryHandle;
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
+            VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_3]].OnSignalON += LaserRecoveryHandle;
+
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_1]].OnSignalON += LaserRecoveryHandle;
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
+            VCSInputs[INPUT_INDEXS[DI_ITEM.BackProtection_Area_Sensor_3]].OnSignalON += LaserRecoveryHandle;
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Obstacle_Sensor]].OnSignalOFF += (s, e) => OnFrontSecondObstacleSensorDetected?.Invoke(s, e);
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.Panel_Reset_PB]].OnSignalON += (s, e) => OnResetButtonPressing();
+        }
 
-            VCSInputs[INPUT_INDEXS[DI_ITEM.EQ_READY]].OnSignalON += (s, e) => OnResetButtonPressing();
+        private void LaserRecoveryHandle(object? sender, EventArgs e)
+        {
+            clsIOSignal laserSignal = sender as clsIOSignal;
+            DI_ITEM DI = laserSignal.DI_item;
+            LOG.INFO($"{DI} Laser Reconvery");
 
+            bool isFrontLaserA1Trigger = !GetState(DI_ITEM.FrontProtection_Area_Sensor_1);
+            bool isFrontLaserA2Trigger = !GetState(DI_ITEM.FrontProtection_Area_Sensor_2);
+            bool isFrontLaserA3Trigger = !GetState(DI_ITEM.FrontProtection_Area_Sensor_3);
+            bool isFrontLaserA4Trigger = !GetState(DI_ITEM.FrontProtection_Area_Sensor_4);
+
+            bool isBackLaserA1Trigger = !GetState(DI_ITEM.BackProtection_Area_Sensor_1);
+            bool isBackLaserA2Trigger = !GetState(DI_ITEM.BackProtection_Area_Sensor_2);
+            bool isBackLaserA3Trigger = !GetState(DI_ITEM.BackProtection_Area_Sensor_3);
+            bool isBackLaserA4Trigger = !GetState(DI_ITEM.BackProtection_Area_Sensor_4);
+
+            bool isRightLaserTrigger = !GetState(DI_ITEM.RightProtection_Area_Sensor_2);
+            bool isLeftLaserTrigger = !GetState(DI_ITEM.LeftProtection_Area_Sensor_2);
+
+            if (DI == DI_ITEM.RightProtection_Area_Sensor_2 | DI == DI_ITEM.LeftProtection_Area_Sensor_2) //左右雷射復原
+            {
+
+                if (isFrontLaserA1Trigger | isFrontLaserA2Trigger | isFrontLaserA3Trigger | isFrontLaserA4Trigger | isBackLaserA1Trigger | isBackLaserA2Trigger | isBackLaserA3Trigger | isBackLaserA4Trigger | isRightLaserTrigger | isLeftLaserTrigger)
+                {
+                    LOG.INFO($"{DI} Laser Reconvery But LEFT or RIGHT Laser Not Recovery");
+                    return;
+                }
+            }
+
+            if (DI == DI_ITEM.FrontProtection_Area_Sensor_1 | DI == DI_ITEM.BackProtection_Area_Sensor_1)
+            {
+                if (isFrontLaserA1Trigger | isBackLaserA1Trigger)
+                    return;
+            }
+
+            if (DI == DI_ITEM.FrontProtection_Area_Sensor_2 | DI == DI_ITEM.BackProtection_Area_Sensor_2)
+            {
+                if (isFrontLaserA2Trigger | isBackLaserA2Trigger)
+                    return;
+                else
+                {
+                    OnLaserDIRecovery?.Invoke(this, ROBOT_CONTROL_CMD.DECELERATE);
+                    return;
+                }
+            }
+
+            if (DI == DI_ITEM.FrontProtection_Area_Sensor_3 | DI == DI_ITEM.FrontProtection_Area_Sensor_4 | DI == DI_ITEM.BackProtection_Area_Sensor_3 | DI == DI_ITEM.BackProtection_Area_Sensor_4)
+            {
+                OnLaserDIRecovery?.Invoke(this, ROBOT_CONTROL_CMD.STOP);
+                return;
+            }
+            OnLaserDIRecovery?.Invoke(this, ROBOT_CONTROL_CMD.SPEED_Reconvery);
 
         }
 

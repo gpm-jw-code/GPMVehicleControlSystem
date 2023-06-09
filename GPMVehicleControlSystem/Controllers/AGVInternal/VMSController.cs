@@ -53,7 +53,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
             try
             {
-                if (agv.BarcodeReader.CurrentTag == 0)
+                if (agv.BarcodeReader.CurrentTag == 0 && mode == REMOTE_MODE.ONLINE)
                 {
                     return Ok(new
                     {
@@ -137,7 +137,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> ResetAlarm()
         {
             await Task.Delay(1);
-            await agv.ResetAlarmsAsync();
+            await agv.ResetAlarmsAsync(false);
             return Ok("OK");
         }
 
