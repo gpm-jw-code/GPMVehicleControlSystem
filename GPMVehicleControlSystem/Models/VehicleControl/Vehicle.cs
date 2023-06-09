@@ -120,6 +120,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     {
                         if (value == SUB_STATUS.DOWN | value == SUB_STATUS.Initializing)
                             Main_Status = MAIN_STATUS.DOWN;
+
                         if (value != SUB_STATUS.Initializing)
                             BuzzerPlayer.BuzzerAlarm();
                         StatusLighter.DOWN();
@@ -160,6 +161,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public Vehicle()
         {
+            ReadTaskNameFromFile();
             IsSystemInitialized = false;
             string AGVS_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:IP");
             int AGVS_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Port");
@@ -226,11 +228,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        private void CarController_OnSickDataUpdated(object? sender, LocalizationControllerResultMessage0502 e)
-        {
-            SickData.StateData = e;
-        }
-
         internal async Task<bool> Initialize()
         {
             BuzzerPlayer.BuzzerStop();
@@ -279,70 +276,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             return new(tag, x, y, theta);
         }
 
-        private void WagoDI_OnFarAreaLaserRecovery(object? sender, EventArgs e)
-        {
-
-            if (Operation_Mode != OPERATOR_MODE.AUTO)
-                return;
-
-            if (Main_Status == MAIN_STATUS.RUN)
-                Sub_Status = SUB_STATUS.RUN;
-            else if (Main_Status == MAIN_STATUS.IDLE)
-                Sub_Status = SUB_STATUS.IDLE;
-            else if (Main_Status == MAIN_STATUS.DOWN)
-                Sub_Status = SUB_STATUS.DOWN;
-
-            //bool frontLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.FrontProtection_Area_Sensor_4);
-            //bool backLaserArea3Triggering = !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_3) | !WagoDI.GetState(clsDIModule.DI_ITEM.BackProtection_Area_Sensor_4);
-            //if (!frontLaserArea3Triggering | !backLaserArea3Triggering)
-            //    AGVC.FarAreaLaserRecoveryHandler(sender, e);
-
-        }
-
-        private void WagoDI_OnFarAreaLaserTrigger(object? sender, EventArgs e)
-        {
-            //if (Operation_Mode == OPERATOR_MODE.AUTO && ExecutingTask?.action == ACTION_TYPE.None)
-            //    Sub_Status = SUB_STATUS.WARNING;
-        }
-
-
-        private void WagoDI_OnNearAreaLaserRecovery(object? sender, EventArgs e)
-        {
-            if (Operation_Mode != OPERATOR_MODE.AUTO)
-                return;
-            if (Main_Status == MAIN_STATUS.RUN)
-                Sub_Status = SUB_STATUS.RUN;
-            else if (Main_Status == MAIN_STATUS.IDLE)
-                Sub_Status = SUB_STATUS.IDLE;
-            else if (Main_Status == MAIN_STATUS.DOWN)
-                Sub_Status = SUB_STATUS.DOWN;
-        }
-
-        private void WagoDI_OnNearAreaLaserTrigger(object? sender, EventArgs e)
-        {
-            if (Operation_Mode == OPERATOR_MODE.AUTO && Sub_Status == SUB_STATUS.RUN)
-                Sub_Status = SUB_STATUS.ALARM;
-        }
-
-        private void Navigation_OnDirectionChanged(object? sender, clsNavigation.AGV_DIRECTION direction)
-        {
-            if (AGVC.IsAGVExecutingTask && ExecutingTask.action == ACTION_TYPE.None)
-            {
-
-                DirectionLighter.LightSwitchByAGVDirection(sender, direction);
-
-                if (ExecutingTask.action == ACTION_TYPE.None && direction != clsNavigation.AGV_DIRECTION.STOP)
-                    Laser.LaserChangeByAGVDirection(sender, direction);
-            }
-        }
-
-        private void WagoDI_OnEMO(object? sender, EventArgs e)
-        {
-            SoftwareEMO();
-        }
-
-
-
 
         internal async Task<bool> CancelInitialize()
         {
@@ -385,7 +318,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                          Sub_Status = SUB_STATUS.RUN;
                      }
                      else
-                         Sub_Status = SUB_STATUS.IDLE;
+                     {
+                         if (Sub_Status != SUB_STATUS.IDLE)
+                             Sub_Status = SUB_STATUS.STOP;
+                     }
                  }
                  AlarmManager.ClearAlarm();
              });
@@ -491,81 +427,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
 
 
-        private void CarController_OnModuleInformationUpdated(object? sender, ModuleInformation _ModuleInformation)
-        {
-            Odometry = _ModuleInformation.Mileage;
-            Navigation.StateData = _ModuleInformation.nav_state;
-
-            ushort battery_id = _ModuleInformation.Battery.batteryID;
-            if (Batteries.TryGetValue(battery_id, out var battery))
-            {
-                battery.StateData = _ModuleInformation.Battery;
-            }
-            else
-            {
-                Batteries.Add(battery_id, new clsBattery()
-                {
-                    StateData = _ModuleInformation.Battery
-                });
-            }
-
-            IMU.StateData = _ModuleInformation.IMU;
-            GuideSensor.StateData = _ModuleInformation.GuideSensor;
-            BarcodeReader.StateData = _ModuleInformation.reader;
-            CSTReader.StateData = _ModuleInformation.CSTReader;
-            for (int i = 0; i < _ModuleInformation.Wheel_Driver.driversState.Length; i++)
-                WheelDrivers[i].StateData = _ModuleInformation.Wheel_Driver.driversState[i];
-
-            //Task.Factory.StartNew(async() =>
-            //{
-            //    await Task.Delay(1000);
-
-            //    foreach (var item in CarComponents.Select(comp => comp.ErrorCodes).ToList())
-            //    {
-            //        foreach (var alarm in item.Keys)
-            //        {
-            //            AlarmManager.AddWarning(alarm);
-            //        }
-            //    }
-
-            //});
-            if (Batteries.Values.Any(battery => battery.IsCharging))
-            {
-                if (Batteries.Values.All(battery => battery.Data.batteryLevel >= 99))
-                    WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);//充滿電切斷充電迴路
-                Sub_Status = SUB_STATUS.Charging;
-            }
-            else
-            {
-                //Task.Factory.StartNew(async () =>
-                //{
-                //    await Task.Delay(3000);
-                //    if (IsInitialized)
-                //    {
-
-                //        if (CarController.IsAGVExecutingTask)
-                //        {
-                //            Sub_Status = SUB_STATUS.RUN;
-                //        }
-                //        else
-                //        {
-                //            Sub_Status = SUB_STATUS.IDLE;
-                //        }
-                //    }
-                //    else
-                //    {
-                //        Sub_Status = SUB_STATUS.DOWN;
-                //    }
-                //});
-
-            }
-
-        }
-
-        private void WagoDI_OnResetButtonPressed(object? sender, EventArgs e)
-        {
-            Console.WriteLine("Try Reset Alarms");
-        }
         /// <summary>
         /// Auto/Manual 模式切換
         /// </summary>
@@ -611,7 +472,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //向AGVS請求移除卡匣
             string currentCSTID = CSTReader.Data.data;
             string toRemoveCSTID = currentCSTID.ToLower() == "error" ? "" : currentCSTID;
-            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID, ExecutingTask == null ? "" : ExecutingTask.RunningTaskData.Task_Name);
+            var retCode = await AGVS.TryRemoveCSTData(toRemoveCSTID, "");
             //清帳
             if (retCode == RETURN_CODE.OK)
                 CSTReader.ValidCSTID = "";

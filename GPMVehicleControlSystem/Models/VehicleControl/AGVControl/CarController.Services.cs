@@ -40,7 +40,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
               new CSTReaderCommandRequest() { command = "stop", model = "FORK" });
             if (response == null)
             {
-                LOG.TRACE("Stop CST Reader fail. CSTReader no reply");
+                LOG.INFO("Stop CST Reader fail. CSTReader no reply");
                 return (false, false);
             }
             else
@@ -59,19 +59,19 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
             if (response == null)
             {
-                LOG.TRACE("Trigger CST Reader fail. CSTReader no reply");
+                LOG.INFO("Trigger CST Reader fail. CSTReader no reply");
                 OnCSTReaderActionDone?.Invoke(this, "");
                 return (false, false);
             }
             if (!response.confirm)
             {
-                LOG.TRACE("Trigger CST Reader fail. Confirm=False");
+                LOG.INFO("Trigger CST Reader fail. Confirm=False");
                 OnCSTReaderActionDone?.Invoke(this, "");
                 return (false, false);
             }
             else
             {
-                LOG.TRACE("Trigger CST Reader Success. Wait CST Reader Action Done.");
+                LOG.INFO("Trigger CST Reader Success. Wait CST Reader Action Done.");
                 CSTActionDone = false;
                 CancellationTokenSource waitCstActionDoneCts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
 
@@ -89,7 +89,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
                 try
                 {
                     TK.Wait(waitCstActionDoneCts.Token);
-                    LOG.TRACE($"CST Reader  Action Done ..{CSTActionResult}--");
+                    LOG.INFO($"CST Reader  Action Done ..{CSTActionResult}--");
 
                     _ = Task.Factory.StartNew(async () =>
                     {

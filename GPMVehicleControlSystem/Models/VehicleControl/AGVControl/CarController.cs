@@ -325,7 +325,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             actionClient.SendGoal();
 
             string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
-            LOG.TRACE($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
+            LOG.INFO($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
         }
         internal async Task<bool> AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
         {
@@ -353,7 +353,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             actionClient.SendGoal();
             //wait goal status change to  ACTIVE
             wait_agvc_execute_action_cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            LOG.TRACE($"AGVC Accept Task and Start Executing：Path Tracking = {new_path}");
+            LOG.INFO($"AGVC Accept Task and Start Executing：Path Tracking = {new_path}");
             return true;
 
         }

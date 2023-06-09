@@ -78,7 +78,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             string new_path = string.Join("->", taskDownloadData.TagsOfTrajectory);
             Agv.AGVC.Replan(taskDownloadData);
             string ori_path = string.Join("->", RunningTaskData.TagsOfTrajectory);
-            LOG.TRACE($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
+            LOG.INFO($"AGV導航路徑變更\r\n-原路徑：{ori_path}\r\n新路徑:{new_path}");
             RunningTaskData = taskDownloadData;
         }
 

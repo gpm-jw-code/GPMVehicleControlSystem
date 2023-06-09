@@ -3,6 +3,7 @@ using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.VehicleControl.DIOModule;
 using System.Diagnostics;
+using static GPMVehicleControlSystem.VehicleControl.DIOModule.clsDOModule;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
@@ -140,12 +141,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
 
-            DirectionLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Right, 200);
-            DirectionLighter.Flash(clsDOModule.DO_ITEM.AGV_DiractionLight_Left, 200);
-
+            DirectionLighter.Flash(new DO_ITEM[] { DO_ITEM.AGV_DiractionLight_Right, DO_ITEM.AGV_DiractionLight_Left }, 200);
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
-            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_BUSY, false);
-            WagoDO.SetState(clsDOModule.DO_ITEM.AGV_AGV_READY, true);
+            WagoDO.SetState(DO_ITEM.AGV_BUSY, false);
+            WagoDO.SetState(DO_ITEM.AGV_AGV_READY, true);
 
             Task wait_eq_busy_ON = new Task(() =>
             {
@@ -179,7 +178,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 }
             }
 
-            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 5 : 90));
+            waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(Debugger.IsAttached ? 15 : 90));
 
             try
             {
@@ -191,14 +190,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
             catch (OperationCanceledException)
             {
-                if (Debugger.IsAttached)
-                    return (true, AlarmCodes.None);
-
                 return (false, AlarmCodes.Handshake_Fail_EQ_BUSY_OFF);
 
             }
-
-
         }
 
 

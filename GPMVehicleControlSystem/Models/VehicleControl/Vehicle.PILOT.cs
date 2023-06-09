@@ -5,12 +5,14 @@ using AGVSystemCommonNet6.HttpHelper;
 using AGVSystemCommonNet6.Log;
 using AGVSystemCommonNet6.TASK;
 using GPMVehicleControlSystem.Models.VehicleControl.TaskExecute;
+using YamlDotNet.Core;
 using static AGVSystemCommonNet6.clsEnums;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
     public partial class Vehicle
     {
+        private string TaskName = "";
         public TASK_RUN_STATUS CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;
         public enum HS_METHOD
         {
@@ -21,20 +23,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="taskDownloadData"></param>
-        /// <returns></returns>
-        internal bool AGVSTaskDownloadConfirm(clsTaskDownloadData taskDownloadData)
-        {
-            AGV_Reset_Flag = false;
-
-            if (Main_Status == MAIN_STATUS.DOWN) //TODO More Status Confirm when recieve AGVS Task
-                return false;
-
-            return true;
-        }
         Dictionary<string, List<int>> TaskTrackingTags = new Dictionary<string, List<int>>();
 
         /// <summary>
@@ -44,6 +32,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <param name="taskDownloadData"></param>
         internal void ExecuteAGVSTask(object? sender, clsTaskDownloadData taskDownloadData)
         {
+            WriteTaskNameToFile(taskDownloadData.Task_Name);
             CurrentTaskRunStatus = TASK_RUN_STATUS.WAIT;
             LOG.INFO($"Task Download: Task Name = {taskDownloadData.Task_Name} , Task Simple = {taskDownloadData.Task_Simplex}");
             ACTION_TYPE action = taskDownloadData.Action_Type;
@@ -104,7 +93,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             });
         }
 
+        private void WriteTaskNameToFile(string task_Name)
+        {
+            TaskName = task_Name;
+            File.WriteAllText("task_name.txt", task_Name);
+        }
 
+        private void ReadTaskNameFromFile()
+        {
+            if (File.Exists("task_name.txt"))
+                TaskName = File.ReadAllText("task_name.txt");
+        }
 
         private void OnTagLeaveHandler(object? sender, int leaveTag)
         {
@@ -143,19 +142,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        internal bool AGVSTaskResetReqHandle(RESET_MODE mode)
-        {
-            AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task);
-            AGV_Reset_Flag = true;
-            Task.Factory.StartNew(async () =>
-            {
-                AGVC.AbortTask(mode);
-                await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
-            });
-            Sub_Status = SUB_STATUS.ALARM;
-            ExecutingTask.Abort();
-            return true;
-        }
 
         internal async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {

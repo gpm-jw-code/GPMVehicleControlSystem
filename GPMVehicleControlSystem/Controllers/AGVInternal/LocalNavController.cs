@@ -98,7 +98,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                                   return;
                               await Task.Delay(200);
                           }
-                          LOG.TRACE("Local WebUI Task Allocator : Next Task Will Start..");
+                          LOG.INFO("Local WebUI Task Allocator : Next Task Will Start..");
                       }
 
                   });
@@ -183,7 +183,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             }
 
             //add normal 
-            PathFinder.clsPathInfo? planPath = pathFinder.FindShortestPath(mapData.Points, isInChargeOrEqPortStation? secondaryLocStation_of_chargeStateion :  currentStation, actionType == ACTION_TYPE.None ? destineStation : secondaryLocStation);
+            PathFinder.clsPathInfo? planPath = pathFinder.FindShortestPath(mapData.Points, isInChargeOrEqPortStation ? secondaryLocStation_of_chargeStateion : currentStation, actionType == ACTION_TYPE.None ? destineStation : secondaryLocStation);
             clsTaskDownloadData normal_move_task = new clsTaskDownloadData
             {
                 Task_Name = Task_Name,

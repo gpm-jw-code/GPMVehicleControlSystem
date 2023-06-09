@@ -13,6 +13,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
         public override Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
+            Agv.Laser.LeftLaserBypass = Agv.Laser.RightLaserBypass = true;
             Buzzer.BuzzerPlayer.BuzzerAction();
             return base.BeforeExecute();
         }

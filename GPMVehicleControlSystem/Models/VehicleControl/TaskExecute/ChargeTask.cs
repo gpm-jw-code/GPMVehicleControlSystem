@@ -22,10 +22,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             Agv.Laser.Mode = LASER_MODE.Loading;
             base.LaserSettingBeforeTaskExecute();
         }
-        public override Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
-        {
-            return base.AfterMoveDone();
-        }
+
         public override Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
             BuzzerPlayer.BuzzerAction();

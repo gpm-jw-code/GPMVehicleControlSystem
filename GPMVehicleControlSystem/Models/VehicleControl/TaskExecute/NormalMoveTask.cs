@@ -28,10 +28,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             return base.BeforeExecute();
         }
 
-        public override async Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
-        {
-            return await base.AfterMoveDone();
-        }
 
     }
 }

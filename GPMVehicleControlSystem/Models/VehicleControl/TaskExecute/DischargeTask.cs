@@ -23,6 +23,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
         public override async Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
+            Agv.Laser.LeftLaserBypass = Agv.Laser.RightLaserBypass = true;
             BuzzerPlayer.BuzzerAction();
             Agv.WagoDO.SetState(DO_ITEM.Recharge_Circuit, false);
             return (true, AlarmCodes.None);

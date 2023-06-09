@@ -136,7 +136,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         internal async void ApplyAGVSLaserSetting()
         {
-            LOG.TRACE($"雷射組數切換為AGVS Setting={AgvsLsrSetting}");
+            LOG.INFO($"雷射組數切換為AGVS Setting={AgvsLsrSetting}");
             await ModeSwitch(AgvsLsrSetting);
         }
 
@@ -181,7 +181,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             };
             DOModule.SetState(DO_ITEM.Front_Protection_Sensor_IN_1, writeStates);
             _mode_int = mode_int;
-            LOG.TRACE($"Laser Mode Chaged To : {mode_int}({Mode})");
+            LOG.INFO($"Laser Mode Chaged To : {mode_int}({Mode})");
         }
     }
 }
