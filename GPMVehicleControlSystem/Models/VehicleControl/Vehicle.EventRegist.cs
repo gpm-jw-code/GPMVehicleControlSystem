@@ -24,10 +24,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnBumpSensorPressed += WagoDI_OnBumpSensorPressed;
             WagoDI.OnEMO += AGVC.EMOHandler;
             WagoDI.OnResetButtonPressed += async (s, e) => await ResetAlarmsAsync(true);
-            WagoDI.OnLaserDIRecovery += AGVC.LaserRecoveryHandler;
-            WagoDI.OnFarLaserDITrigger += AGVC.FarLaserTriggerHandler;
-            WagoDI.OnNearLaserDiTrigger += AGVC.NearLaserTriggerHandler;
-
 
             WagoDI.OnLaserDIRecovery += LaserRecoveryHandler;
             WagoDI.OnFarLaserDITrigger += FarLaserTriggerHandler;
@@ -59,24 +55,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private void NearLaserTriggerHandler(object? sender, EventArgs e)
         {
+
             if (Operation_Mode == OPERATOR_MODE.AUTO && AGVC.IsAGVExecutingTask)
             {
-                Sub_Status = SUB_STATUS.ALARM;
+                AGVC.NearLaserTriggerHandler(sender, e);
 
+                Sub_Status = SUB_STATUS.ALARM;
                 clsIOSignal LaserSignal = sender as clsIOSignal;
                 DI_ITEM LaserType = LaserSignal.DI_item;
 
-                AlarmCodes alarm_code = AlarmCodes.None;
-                if (LaserType == DI_ITEM.RightProtection_Area_Sensor_2)
-                    alarm_code = AlarmCodes.RightProtection_Area3;
-                if (LaserType == DI_ITEM.LeftProtection_Area_Sensor_2)
-                    alarm_code = AlarmCodes.LeftProtection_Area3;
-
-                if (LaserType == DI_ITEM.FrontProtection_Area_Sensor_2 | LaserType == DI_ITEM.FrontProtection_Area_Sensor_3)
-                    alarm_code = AlarmCodes.FrontProtection_Area3;
-
-                if (LaserType == DI_ITEM.BackProtection_Area_Sensor_2 | LaserType == DI_ITEM.BackProtection_Area_Sensor_3)
-                    alarm_code = AlarmCodes.BackProtection_Area3;
+                AlarmCodes alarm_code = GetAlarmCodeByLsrDI(LaserType);
 
                 if (alarm_code != AlarmCodes.None)
                     AlarmManager.AddAlarm(alarm_code, true);
@@ -87,21 +75,44 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
         }
 
+        private static AlarmCodes GetAlarmCodeByLsrDI(DI_ITEM LaserType)
+        {
+            AlarmCodes alarm_code = AlarmCodes.None;
+            if (LaserType == DI_ITEM.RightProtection_Area_Sensor_2)
+                alarm_code = AlarmCodes.RightProtection_Area3;
+            if (LaserType == DI_ITEM.LeftProtection_Area_Sensor_2)
+                alarm_code = AlarmCodes.LeftProtection_Area3;
+
+            if (LaserType == DI_ITEM.FrontProtection_Area_Sensor_2 | LaserType == DI_ITEM.FrontProtection_Area_Sensor_3)
+                alarm_code = AlarmCodes.FrontProtection_Area3;
+
+            if (LaserType == DI_ITEM.BackProtection_Area_Sensor_2 | LaserType == DI_ITEM.BackProtection_Area_Sensor_3)
+                alarm_code = AlarmCodes.BackProtection_Area3;
+            return alarm_code;
+        }
+
         private void FarLaserTriggerHandler(object? sender, EventArgs e)
         {
+            AGVC.FarLaserTriggerHandler(sender, e);
+
         }
 
         private void LaserRecoveryHandler(object? sender, ROBOT_CONTROL_CMD cmd)
         {
+
+            AGVC.LaserRecoveryHandler(sender, cmd);
+
+            clsIOSignal LaserSignal = sender as clsIOSignal;
+            DI_ITEM LaserType = LaserSignal.DI_item;
+
+            AlarmCodes alarm_code = GetAlarmCodeByLsrDI(LaserType);
+            if (alarm_code != AlarmCodes.None)
+                AlarmManager.ClearAlarm(alarm_code);
+
             if (Operation_Mode != OPERATOR_MODE.AUTO)
                 return;
             if (!AGVC.IsAGVExecutingTask)
                 return;
-
-            AlarmManager.ClearAlarm(AlarmCodes.RightProtection_Area3);
-            AlarmManager.ClearAlarm(AlarmCodes.LeftProtection_Area3);
-            AlarmManager.ClearAlarm(AlarmCodes.FrontProtection_Area3);
-            AlarmManager.ClearAlarm(AlarmCodes.BackProtection_Area3);
             Sub_Status = SUB_STATUS.RUN;
 
         }

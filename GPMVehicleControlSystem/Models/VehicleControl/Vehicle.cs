@@ -176,8 +176,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             SID = AppSettingsHelper.GetValue<string>("VCS:SID");
             CarName = AppSettingsHelper.GetValue<string>("VCS:EQName");
 
-            WagoDO = new clsDOModule(Wago_IP, Wago_Port);
-            WagoDI = new clsDIModule(Wago_IP, Wago_Port);
+            WagoDO = new clsDOModule(Wago_IP, Wago_Port, null);
+            WagoDI = new clsDIModule(Wago_IP, Wago_Port, WagoDO);
             AGVC = new CarController(RosBridge_IP, RosBridge_Port);
             AGVS = new clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
 

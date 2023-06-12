@@ -53,8 +53,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             /// <summary>
             /// 立即停止請求，需附帶任務 ID
             /// </summary>
-            STOP_RIGHTNOW = 101
-
+            STOP_RIGHTNOW = 101,
+            NONE = 090
         }
         public RosSocket? rosSocket;
 
@@ -310,7 +310,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             //LOG.TRACE($"要求車控 {cmd},Result: {(res.confirm ? "OK" : "NG")}");
             return res.confirm;
         }
-     
+
         internal async Task<bool> AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
         {
             NavPathExpandedFlag = false;
