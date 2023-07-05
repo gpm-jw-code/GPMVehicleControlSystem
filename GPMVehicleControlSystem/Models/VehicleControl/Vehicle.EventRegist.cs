@@ -136,15 +136,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (!AGVC.IsAGVExecutingTask)
                 return true;
-
-            AlarmManager.AddAlarm(AlarmCodes.AGVs_Abort_Task, false);
             AGV_Reset_Flag = true;
             Task.Factory.StartNew(async () =>
             {
                 AGVC.AbortTask(RESET_MODE.ABORT);
                 await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
-            Sub_Status = SUB_STATUS.ALARM;
+            Sub_Status = SUB_STATUS.IDLE;
             ExecutingTask.Abort();
             return true;
         }

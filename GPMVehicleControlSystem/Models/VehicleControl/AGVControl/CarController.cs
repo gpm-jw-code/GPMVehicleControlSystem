@@ -228,12 +228,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             EmergencyStopFlag = true;
-            if (actionClient != null)
-            {
-                actionClient.goal = new TaskCommandGoal();
-                actionClient.SendGoal();
-            }
-            DisposeTaskCommandActionClient();
+            CarSpeedControl(ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
             IsAGVExecutingTask = false;
         }
 
@@ -314,7 +309,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         internal async Task<bool> AGVSTaskDownloadHandler(clsTaskDownloadData taskDownloadData)
         {
             NavPathExpandedFlag = false;
-            this.RunningTaskData = taskDownloadData;
+            RunningTaskData = taskDownloadData;
             InitTaskCommandActionClient();
             bool agvc_accept = await SendGoal(RunningTaskData.RosTaskCommandGoal);
             return agvc_accept;
