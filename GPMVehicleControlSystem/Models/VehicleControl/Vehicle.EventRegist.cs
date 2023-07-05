@@ -140,6 +140,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task.Factory.StartNew(async () =>
             {
                 AGVC.AbortTask(RESET_MODE.ABORT);
+                await Task.Delay(500);
                 await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
             Sub_Status = SUB_STATUS.IDLE;
