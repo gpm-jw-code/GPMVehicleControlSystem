@@ -1,6 +1,7 @@
 ﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using static AGVSystemCommonNet6.clsEnums;
+using static GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent.clsLaser;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 {
@@ -13,7 +14,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
 
         public override Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
-            Agv.Laser.LeftLaserBypass = Agv.Laser.RightLaserBypass = true;
             return base.BeforeExecute();
         }
 
@@ -23,9 +23,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
             Agv.FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             return (true, AlarmCodes.None);
         }
-
+        public override void LaserSettingBeforeTaskExecute()
+        {
+            Agv.Laser.LeftLaserBypass = true;
+            Agv.Laser.RightLaserBypass = true;
+            Agv.Laser.Mode = LASER_MODE.Loading;
+            base.LaserSettingBeforeTaskExecute();
+        }
         public override void DirectionLighterSwitchBeforeTaskExecute()
         {
+            Agv.DirectionLighter.Forward();
         }
     }
 }

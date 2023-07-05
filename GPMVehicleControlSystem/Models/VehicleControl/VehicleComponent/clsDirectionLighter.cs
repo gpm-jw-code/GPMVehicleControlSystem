@@ -14,11 +14,17 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
         public override async void CloseAll()
         {
-            AbortFlash();
-            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
-            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, false);
-            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, false);
-            this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, false);
+            try
+            {
+                AbortFlash();
+                this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Front, false);
+                this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Back, false);
+                this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Right, false);
+                this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, false);
+            }
+            catch (Exception ex)
+            {
+            }
         }
 
         public override void OpenAll()

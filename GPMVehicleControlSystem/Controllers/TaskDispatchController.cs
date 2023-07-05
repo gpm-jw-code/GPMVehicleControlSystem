@@ -14,13 +14,12 @@ namespace GPMVehicleControlSystem.Controllers
         [HttpPost("Execute")]
         public async Task<IActionResult> Execute([FromBody] object taskDto)
         {
-            var data = JsonConvert.DeserializeObject<clsTaskDownloadData>(taskDto.ToString());
+            clsTaskDownloadData? data = JsonConvert.DeserializeObject<clsTaskDownloadData>(taskDto.ToString());
             StaStored.CurrentVechicle.ExecuteAGVSTask(this, data);
             await Task.Delay(200);
-            clsTaskDto clsTaskDto = new clsTaskDto()
+            SimpleRequestResponse clsTaskDto = new SimpleRequestResponse()
             {
-                RecieveTime = DateTime.Now,
-                State = TASK_RUN_STATUS.NAVIGATING
+                ReturnCode = RETURN_CODE.OK
             };
             return Ok(clsTaskDto);
         }

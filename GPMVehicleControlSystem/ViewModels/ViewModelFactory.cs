@@ -16,11 +16,11 @@ namespace GPMVehicleControlSystem.ViewModels
         internal static AGVCStatusVM GetVMSStatesVM()
         {
 
-            List<DriverState> driverStates = new List<DriverState>();
-            driverStates.AddRange(AgvEntity.WheelDrivers.Select(d => d.Data).ToArray());
-
             try
             {
+                List<DriverState> driverStates = new List<DriverState>();
+                driverStates.AddRange(AgvEntity.WheelDrivers.Select(d => d.Data).ToArray());
+
 
                 AGVCStatusVM data_view_model = new AGVCStatusVM()
                 {
@@ -58,7 +58,7 @@ namespace GPMVehicleControlSystem.ViewModels
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
                     NavInfo = new NavStateVM
                     {
-                        Destination = AgvEntity.ExecutingTask== null ? "" : AgvEntity.ExecutingTask.RunningTaskData.Destination + "",
+                        Destination = AgvEntity.ExecutingTask == null ? "" : AgvEntity.ExecutingTask.RunningTaskData.Destination + "",
                         Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit,
                         PathPlan = AgvEntity.ExecutingTask == null ? new int[0] : AgvEntity.ExecutingTask.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },

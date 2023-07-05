@@ -64,10 +64,18 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         Dictionary<DO_ITEM, int> OUTPUT_INDEXS = new Dictionary<DO_ITEM, int>();
 
         public List<clsIOSignal> VCSOutputs = new List<clsIOSignal>();
-        public clsDOModule(string IP, int Port,clsDOModule  DoModuleRef) : base(IP, Port, DoModuleRef)
+        public clsDOModule() : base()
+        {
+
+        }
+        public clsDOModule(string IP, int Port) : base(IP, Port)
+        {
+
+        }
+        public clsDOModule(string IP, int Port, clsDOModule DoModuleRef) : base(IP, Port, DoModuleRef)
         {
         }
-     
+
         protected override void RegistSignalEvents()
         {
         }

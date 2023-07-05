@@ -12,20 +12,26 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
     public class MapController : ControllerBase
     {
         public static string Host = "192.168.0.1";
-        public static string GetMapUrl => $"http://{Host}:6600/map/get";
+        public static string GetMapUrl
+        {
+            get
+            {
+                return AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:MapUrl");
+            }
+        }
 
         [HttpGet("GetMapFromServer")]
         public async Task<IActionResult> GetMap()
         {
             try
             {
-                //先 ping 看看
-                Ping ping = new Ping();
-                PingReply? reply = ping.Send(Host, 1000);
-                if (reply.Status != IPStatus.Success)
-                {
-                    return Ok(MapManager.LoadMapFromFile(Path.Combine(Environment.CurrentDirectory, "param/Map_UMTC_3F_Yellow.json")));
-                }
+                ////先 ping 看看
+                //Ping ping = new Ping();
+                //PingReply? reply = ping.Send(Host, 1000);
+                //if (reply.Status != IPStatus.Success)
+                //{
+                //    return Ok(MapManager.LoadMapFromFile(Path.Combine(Environment.CurrentDirectory, "param/Map_UMTC_3F_Yellow.json")));
+                //}
 
                 return Ok(await GetMapFromServer());
             }
@@ -39,13 +45,6 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         {
 
             Map? map = null;
-            //先 ping 看看
-            Ping ping = new Ping();
-            PingReply? reply = ping.Send(Host, 300);
-            if (reply.Status != IPStatus.Success)
-            {
-                throw new Exception("network error");
-            }
             try
             {
                 using (HttpClient client = new HttpClient())

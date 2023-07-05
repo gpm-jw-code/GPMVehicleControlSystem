@@ -40,10 +40,14 @@ namespace GPMVehicleControlSystem.Controllers
         {
             if (agv.Sub_Status != clsEnums.SUB_STATUS.IDLE)
             {
-                return Ok(new clsAPIRequestResult { Success = false, Message = $"當前狀態不可上線({agv.Sub_Status})" });
+                return Ok(new { ReturnCode = 4231, Message = $"當前狀態不可上線({agv.Sub_Status})" });
             }
             agv.Remote_Mode = REMOTE_MODE.ONLINE;
-            return Ok(new clsAPIRequestResult { Success = true });
+            return Ok(new
+            {
+                ReturnCode = 0,
+                Message = ""
+            });
         }
 
 

@@ -16,7 +16,6 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
             StaStored.CurrentVechicle.AGVS.OnTaskDownload.Invoke(new clsTaskDownloadData
             {
                 Task_Name = task_name,
-                Task_Simplex = task_name + "_1",
                 Task_Sequence = 1,
                 Destination = 7,
                 Action_Type = ACTION_TYPE.None,

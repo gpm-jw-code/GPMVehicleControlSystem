@@ -1,11 +1,13 @@
 ﻿using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.AGVDispatch;
 using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.AGVDispatch.Model;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages.SickMsg;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Models.Buzzer;
+using GPMVehicleControlSystem.Models.Emulators;
 using GPMVehicleControlSystem.Models.VehicleControl.AGVControl;
 using GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent;
 using GPMVehicleControlSystem.Tools;
@@ -60,6 +62,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// 里程數
         /// </summary>
         public double Odometry;
+        VehicleEmu emulator;
 
         private List<CarComponent> CarComponents
         {
@@ -86,6 +89,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             set
             {
                 _Remote_Mode = value;
+                if (SimulationMode)
+                    return;
                 if (value == REMOTE_MODE.ONLINE)
                 {
                     StatusLighter.ONLINE();
@@ -163,6 +168,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             ReadTaskNameFromFile();
             IsSystemInitialized = false;
+            SimulationMode = AppSettingsHelper.GetValue<bool>("VCS:SimulationMode");
+            emulator = new VehicleEmu(7);
             string AGVS_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:IP");
             int AGVS_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Port");
             string AGVS_LocalIP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:LocalIP");
@@ -172,7 +179,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
             string RosBridge_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:RosBridge:IP");
             int RosBridge_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:RosBridge:Port");
-
             SID = AppSettingsHelper.GetValue<string>("VCS:SID");
             CarName = AppSettingsHelper.GetValue<string>("VCS:EQName");
 
@@ -180,6 +186,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI = new clsDIModule(Wago_IP, Wago_Port, WagoDO);
             AGVC = new CarController(RosBridge_IP, RosBridge_Port);
             AGVS = new clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
+            AGVS.UseWebAPI = VmsProtocol == VMS_PROTOCOL.HTTP;
 
             DirectionLighter = new clsDirectionLighter(WagoDO);
             StatusLighter = new clsStatusLighter(WagoDO);
@@ -207,12 +214,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 WagoDI.Connect();
                 WagoDI.StartAsync();
             });
-
-            RosConnTask.Start();
-            WagoDOConnTask.Start();
-            WagoDIConnTask.Start();
             EventsRegist();
-            Laser.Mode = LASER_MODE.Bypass;
+            if (!SimulationMode)
+            {
+                RosConnTask.Start();
+                WagoDOConnTask.Start();
+                WagoDIConnTask.Start();
+                Laser.Mode = LASER_MODE.Bypass;
+            }
             AGVSMessageFactory.Setup(SID, CarName);
             //Pilot = new AGVPILOT(this);
             IsSystemInitialized = true;
@@ -220,9 +229,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             Task.Factory.StartNew(async () =>
             {
                 await Task.Delay(1000);
-
-                if (VmsProtocol == VMS_PROTOCOL.TCPIP)
-                    AGVS.Start();
+                AGVS.Start();
             });
 
         }
@@ -231,6 +238,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task<bool> Initialize()
         {
             BuzzerPlayer.BuzzerStop();
+            if (SimulationMode)
+            {
+                IsInitialized = true;
+                AGVC.IsAGVExecutingTask = false;
+                _Sub_Status = SUB_STATUS.IDLE;
+                emulator.Runstatus.AGV_Status = Main_Status = MAIN_STATUS.IDLE;
+                return true;
+            }
             WagoDO.ResetHandshakeSignals();
 
             if (!WagoDI.GetState(clsDIModule.DI_ITEM.EMO))
@@ -378,7 +393,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         /// <returns></returns>
         internal RunningStatus GenRunningStateReportData(bool getLastPtPoseOfTrajectory = false)
         {
-            RunningStatus.clsCoordination clsCorrdination = new RunningStatus.clsCoordination();
+            clsCoordination clsCorrdination = new clsCoordination();
             MAIN_STATUS _Main_Status = Main_Status;
             if (getLastPtPoseOfTrajectory)
             {
@@ -409,7 +424,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             try
             {
                 double[] batteryLevels = Batteries.Select(battery => (double)battery.Value.Data.batteryLevel).ToArray();
-                return new RunningStatus
+                return SimulationMode ? emulator.Runstatus : new RunningStatus
                 {
                     Cargo_Status = HasAnyCargoOnAGV() ? 1 : 0,
                     AGV_Status = _Main_Status,

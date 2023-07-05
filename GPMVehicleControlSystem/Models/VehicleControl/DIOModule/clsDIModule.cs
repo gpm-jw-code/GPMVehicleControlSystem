@@ -91,6 +91,17 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         public ushort Start { get; set; }
         public ushort Size { get; set; }
 
+        public clsDIModule()
+        {
+
+        }
+        public clsDIModule(string IP, int Port)
+        {
+            this.IP = IP;
+            this.Port = Port;
+            ReadIOSettingsFromIniFile();
+            RegistSignalEvents();
+        }
         public clsDIModule(string IP, int Port, clsDOModule DoModuleRef)
         {
             this.IP = IP;
@@ -204,7 +215,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             clsIOSignal laserSignal = sender as clsIOSignal;
             DI_ITEM DI = laserSignal.DI_item;
 
-            if (DI == DI_ITEM.RightProtection_Area_Sensor_2 &&IsRightLsrBypass)
+            if (DI == DI_ITEM.RightProtection_Area_Sensor_2 && IsRightLsrBypass)
                 return;
 
             if (DI == DI_ITEM.LeftProtection_Area_Sensor_2 && IsLeftLsrBypass)

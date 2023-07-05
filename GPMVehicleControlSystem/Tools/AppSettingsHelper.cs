@@ -14,10 +14,10 @@ namespace GPMVehicleControlSystem.Tools
                 try
                 {
                     var configBuilder = new ConfigurationBuilder()
-                        .SetBasePath(Directory.GetCurrentDirectory())
-                        .AddJsonFile(Debugger.IsAttached? "appsettings.Development.json" : "appsettings.json");
+                        .SetBasePath(Environment.CurrentDirectory)
+                        .AddJsonFile(Debugger.IsAttached ? "appsettings.Development.json" : "appsettings.json");
                     var configuration = configBuilder.Build();
-                    
+
                     return configuration;
                 }
                 catch (Exception ex)

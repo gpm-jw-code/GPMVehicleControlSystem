@@ -133,8 +133,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 Task_Name = TaskName,
                 Station_Type = STATION_TYPE.Normal,
                 Task_Sequence = Task_Sequence,
-                Task_Simplex = $"{TaskName}-{Task_Sequence}",
-                Trajectory = pathFinder.GetTrajectory(mapData.Name, pathPlanDto.stations),
+                Trajectory = PathFinder.GetTrajectory(mapData.Name, pathPlanDto.stations),
             };
             return actionData;
         }
@@ -148,12 +147,12 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             int normal_move_final_tag;
             List<clsTaskDownloadData> taskList = new List<clsTaskDownloadData>();
 
-            MapStation? currentStation = mapData.Points.First(i => i.Value.TagNumber == agv.Navigation.LastVisitedTag).Value;
-            MapStation? destineStation = mapData.Points.First(i => i.Value.TagNumber == toTag).Value;
-            MapStation secondaryLocStation = mapData.Points[int.Parse(destineStation.Target.First().Key)];
+            MapPoint? currentStation = mapData.Points.First(i => i.Value.TagNumber == agv.Navigation.LastVisitedTag).Value;
+            MapPoint? destineStation = mapData.Points.First(i => i.Value.TagNumber == toTag).Value;
+            MapPoint secondaryLocStation = mapData.Points[destineStation.Target.First().Key];
 
             bool isInChargeOrEqPortStation = currentStation.StationType != STATION_TYPE.Normal;
-            MapStation secondaryLocStation_of_chargeStateion = mapData.Points[int.Parse(currentStation.Target.First().Key)];
+            MapPoint secondaryLocStation_of_chargeStateion = mapData.Points[currentStation.Target.First().Key];
 
             if (isInChargeOrEqPortStation)
             {
@@ -161,12 +160,11 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 clsTaskDownloadData homing_move_task = new clsTaskDownloadData
                 {
                     Task_Name = Task_Name,
-                    Task_Simplex = $"{Task_Name}-{seq}",
                     Task_Sequence = seq,
                     Action_Type = ACTION_TYPE.Discharge,
                     Destination = secondaryLocStation_of_chargeStateion.TagNumber,
                     Station_Type = secondaryLocStation_of_chargeStateion.StationType,
-                    Homing_Trajectory = pathFinder.GetTrajectory(mapData.Name, new List<MapStation> { currentStation, secondaryLocStation_of_chargeStateion })
+                    Homing_Trajectory = PathFinder.GetTrajectory(mapData.Name, new List<MapPoint> { currentStation, secondaryLocStation_of_chargeStateion })
                 };
                 taskList.Add(homing_move_task);
                 seq += 1;
@@ -187,12 +185,11 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             clsTaskDownloadData normal_move_task = new clsTaskDownloadData
             {
                 Task_Name = Task_Name,
-                Task_Simplex = $"{Task_Name}-{seq}",
                 Task_Sequence = seq,
                 Action_Type = ACTION_TYPE.None,
                 Destination = normal_move_final_tag,
                 Station_Type = STATION_TYPE.Normal,
-                Trajectory = pathFinder.GetTrajectory(mapData.Name, planPath.stations)
+                Trajectory = PathFinder.GetTrajectory(mapData.Name, planPath.stations)
             };
             taskList.Add(normal_move_task);
             seq += 1;
@@ -202,12 +199,11 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 clsTaskDownloadData homing_move_task = new clsTaskDownloadData
                 {
                     Task_Name = Task_Name,
-                    Task_Simplex = $"{Task_Name}-{seq}",
                     Task_Sequence = seq,
                     Action_Type = actionType,
                     Destination = destineStation.TagNumber,
                     Station_Type = destineStation.StationType,
-                    Homing_Trajectory = pathFinder.GetTrajectory(mapData.Name, new List<MapStation> { secondaryLocStation, destineStation })
+                    Homing_Trajectory = PathFinder.GetTrajectory(mapData.Name, new List<MapPoint> { secondaryLocStation, destineStation })
                 };
                 taskList.Add(homing_move_task);
             }
