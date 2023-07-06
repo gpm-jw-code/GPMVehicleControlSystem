@@ -1,6 +1,7 @@
 ﻿using AGVSystemCommonNet6;
 using AGVSystemCommonNet6.Abstracts;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
+using RosSharp.RosBridgeClient.MessageTypes.Geometry;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 {
@@ -17,7 +18,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         public event EventHandler<AGV_DIRECTION> OnDirectionChanged;
         public event EventHandler<int> OnTagReach;
 
+        public double LinearSpeed { get; private set; } = 0;
+        public double AngularSpeed { get; private set; } = 0;
+
         private int _previousTag = 0;
+        private Point last_position { get; set; } = new Point();
+        private double last_theta { get; set; } = 0;
+
         private AGV_DIRECTION _previousDirection = AGV_DIRECTION.STOP;
         public AGV_DIRECTION Direction
         {
@@ -60,8 +67,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
         public override STATE CheckStateDataContent()
         {
+            LinearSpeed = CalculateLinearSpeed(Data.robotPose.pose.position);
+            AngularSpeed = CalculateAngularSpeed(Angle);
             Direction = ConvertToDirection(Data.robotDirect);
             LastVisitedTag = Data.lastVisitedNode.data;
+            last_position = Data.robotPose.pose.position;
+            last_theta = Angle;
             if (Data.errorCode != 0)
             {
                 return STATE.ABNORMAL;
@@ -71,6 +82,21 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
 
             }
             return STATE.NORMAL;
+        }
+        //180d 3.14  
+        private double CalculateAngularSpeed(double angle)
+        {
+            double angle_diff = angle - last_theta;
+            double time_period = (DateTime.Now - lastUpdateTime).TotalSeconds;
+            return Math.Round(Math.Abs(angle_diff) / time_period * Math.PI / 180.0, 2);
+        }
+
+        private double CalculateLinearSpeed(Point currentPosition)
+        {
+            double time_period = (DateTime.Now - lastUpdateTime).TotalSeconds;
+            //移動距離 (m)
+            var displacement = Math.Sqrt(Math.Pow((currentPosition.x - last_position.x), 2) + Math.Pow((currentPosition.y - last_position.y), 2)); //m
+            return Math.Round(displacement / time_period, 1);
         }
     }
 }

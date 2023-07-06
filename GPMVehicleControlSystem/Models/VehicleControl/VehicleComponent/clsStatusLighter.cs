@@ -72,5 +72,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             {
             }
         }
+        public void INITIALIZE()
+        {
+            Flash(new DO_ITEM[] {
+                 DO_ITEM.AGV_DiractionLight_R,
+                  DO_ITEM.AGV_DiractionLight_G,
+                  DO_ITEM.AGV_DiractionLight_Y,
+            }, 200);
+        }
     }
 }

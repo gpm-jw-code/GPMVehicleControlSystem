@@ -8,6 +8,14 @@
 		<InformationalVersion>23.5.24</InformationalVersion>
 	</PropertyGroup>
 
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <Optimize>False</Optimize>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <Optimize>False</Optimize>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<PackageReference Include="GitVersion.Core" Version="5.12.0" />
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.1" />

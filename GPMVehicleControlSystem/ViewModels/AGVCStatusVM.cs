@@ -6,6 +6,7 @@ using AGVSystemCommonNet6.AGVDispatch.Messages;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.GPMRosMessageNet.Messages;
 using static AGVSystemCommonNet6.clsEnums;
+using AGVSystemCommonNet6.MAP;
 
 namespace GPMVehicleControlSystem.ViewModels
 {
@@ -24,9 +25,13 @@ namespace GPMVehicleControlSystem.ViewModels
         public string AGVC_ID { get; set; } = "";
         public string CST_Data { get; set; } = "";
         public int Tag { get; set; }
+        public MapPoint Last_Visit_MapPoint { get; set; } = new MapPoint();
+        public int Last_Visited_Tag { get; set; }
         public BatteryStateVM BatteryStatus { get; set; } = new BatteryStateVM(); //TODO Multi battery data should define
         public double Mileage { get; set; }
         public Pose Pose { get; set; } = new Pose();
+        public double LinearSpeed { get; set; } = 0;
+        public double AngularSpeed { get; set; } = 0;
         public double Angle { get; set; } = -1;
         public string AGV_Direct { get; set; }
         public BarcodeReaderState BCR_State_MoveBase { get; set; } = new BarcodeReaderState();
@@ -72,5 +77,6 @@ namespace GPMVehicleControlSystem.ViewModels
         public string Current_LASER_MODE { get; set; } = "";
 
         public LightsStatesVM LightsStates { get; set; } = new LightsStatesVM();
+
     }
 }

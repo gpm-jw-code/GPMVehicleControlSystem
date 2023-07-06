@@ -60,8 +60,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         public override async Task<(bool confirm, AlarmCodes alarm_code)> AfterMoveDone()
         {
             Agv.DirectionLighter.CloseAll();
-            (bool busyoff, AlarmCodes alarmCode) HSResult = await Agv.WaitEQBusyOFF(action);
-            if (!HSResult.busyoff)
+            (bool hs_success, AlarmCodes alarmCode) HSResult = await Agv.WaitEQBusyOFF(action);
+            if (!HSResult.hs_success)
             {
                 Agv.DirectionLighter.CloseAll();
                 return (false, HSResult.alarmCode);
@@ -73,6 +73,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
                 return (false, CstExistCheckResult.alarmCode);
 
             back_to_secondary_flag = false;
+            await Task.Delay(1000);
             //下Homing Trajectory 任務讓AGV退出
             await Task.Factory.StartNew(async () =>
             {
@@ -88,6 +89,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
                 Thread.Sleep(1);
             }
             Agv.AGVC.OnTaskActionFinishAndSuccess -= AGVC_OnBackTOSecondary;
+            HSResult = await Agv.WaitEQReadyOFF(action);
+            if (!HSResult.hs_success)
+            {
+                return (false, HSResult.alarmCode);
+            }
+
 
             (bool confirm, AlarmCodes alarmCode) CstBarcodeCheckResult = await CSTBarcodeReadAfterAction();
             if (!CstBarcodeCheckResult.confirm)
@@ -228,5 +235,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         {
             Agv.DirectionLighter.Forward();
         }
+
     }
 }

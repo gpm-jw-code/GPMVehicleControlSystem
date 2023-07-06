@@ -174,10 +174,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             Console.Error.WriteLine($"EMO 觸發,緊急停止.");
             AbortTask();
-            ManualController.Stop();
+            ManualController?.Stop();
             if (wait_agvc_execute_action_cts != null)
                 wait_agvc_execute_action_cts.Cancel();
-
             _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             //CarSpeedControl(ROBOT_CONTROL_CMD.STOP, "");
         }
@@ -216,11 +215,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
 
         private void CycleStop()
         {
-            CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE);
-            while (module_info.reader.tagID == 0)
-            {
-                Thread.Sleep(1);
-            }
+            CarSpeedControl(ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
             AbortTask();
         }
 
@@ -228,7 +223,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
         {
             _currentTaskCmdActionStatus = ActionStatus.ABORTED;
             EmergencyStopFlag = true;
-            CarSpeedControl(ROBOT_CONTROL_CMD.STOP_WHEN_REACH_GOAL);
+            if (actionClient != null)
+            {
+                actionClient.goal = new TaskCommandGoal();
+                actionClient.SendGoal();
+            }
+            DisposeTaskCommandActionClient();
             IsAGVExecutingTask = false;
         }
 

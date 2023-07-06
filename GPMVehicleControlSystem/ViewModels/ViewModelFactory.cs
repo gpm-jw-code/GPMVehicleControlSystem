@@ -21,7 +21,6 @@ namespace GPMVehicleControlSystem.ViewModels
                 List<DriverState> driverStates = new List<DriverState>();
                 driverStates.AddRange(AgvEntity.WheelDrivers.Select(d => d.Data).ToArray());
 
-
                 AGVCStatusVM data_view_model = new AGVCStatusVM()
                 {
                     APPVersion = StaStored.APPVersion,
@@ -36,6 +35,8 @@ namespace GPMVehicleControlSystem.ViewModels
                     MainState = AgvEntity.Main_Status.ToString(),
                     SubState = AgvEntity.Sub_Status.ToString(),
                     Tag = AgvEntity.BarcodeReader.CurrentTag,
+                    Last_Visit_MapPoint = AgvEntity.lastVisitedMapPoint,
+                    Last_Visited_Tag = AgvEntity.Navigation.LastVisitedTag,
                     CST_Data = AgvEntity.CSTReader.ValidCSTID,
                     BatteryStatus = AgvEntity.Batteries.Count == 0 ? new BatteryStateVM() : new BatteryStateVM
                     {
@@ -54,11 +55,14 @@ namespace GPMVehicleControlSystem.ViewModels
                     MapComparsionRate = AgvEntity.SickData.MapSocre,
                     LocStatus = AgvEntity.SickData.Data.loc_status,
                     AGV_Direct = AgvEntity.Navigation.Direction.ToString().ToUpper(),
+                    LinearSpeed = AgvEntity.Navigation.LinearSpeed,
+                    AngularSpeed = AgvEntity.Navigation.AngularSpeed,
                     DriversStates = driverStates.ToArray(),
                     Laser_Mode = (int)AgvEntity.Laser.Mode,
                     NavInfo = new NavStateVM
                     {
                         Destination = AgvEntity.ExecutingTask == null ? "" : AgvEntity.ExecutingTask.RunningTaskData.Destination + "",
+                        DestinationMapPoint = AgvEntity.DestinationMapPoint,
                         Speed_max_limit = AgvEntity.AGVC.CurrentSpeedLimit,
                         PathPlan = AgvEntity.ExecutingTask == null ? new int[0] : AgvEntity.ExecutingTask.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },
@@ -73,7 +77,7 @@ namespace GPMVehicleControlSystem.ViewModels
                         Down = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_R),
                         Idle = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Y),
                         Online = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_B),
-                    }
+                    },
                 };
                 return data_view_model;
             }
@@ -112,6 +116,7 @@ namespace GPMVehicleControlSystem.ViewModels
             {
                 Inputs = AgvEntity.WagoDI.VCSInputs.ToList(),
                 Outputs = AgvEntity.WagoDO.VCSOutputs.ToList(),
+                IsE84HsUseEmulator = AgvEntity.EQ_HS_Method == Vehicle.EQ_HS_METHOD.EMULATION
             };
         }
 

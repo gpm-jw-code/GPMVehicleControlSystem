@@ -116,7 +116,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             if (rossocket == null)
                 return;
 
-            Task.Run(() =>
+            Task.Factory.StartNew(() =>
             {
                 PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
                 {

@@ -48,16 +48,9 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
                 fromtag = currentTag;
             else
                 fromtag = int.Parse(from);
-            Map? map = MapManager.LoadMapFromFile();
-            try
-            {
-                map = await MapController.GetMapFromServer();
-            }
-            catch (Exception)
-            {
-            }
-            var fromStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == fromtag);
-            var toStationFound = map.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == totag);
+
+            var fromStationFound = agv.NavingMap.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == fromtag);
+            var toStationFound = agv.NavingMap.Points.Values.ToList().FirstOrDefault(st => st.TagNumber == totag);
 
             if (fromStationFound == null)
             {
@@ -77,9 +70,9 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
             }
 
             clsTaskDownloadData taskDataDto = null;
-            taskDataDto = CreateMoveActionTaskJob(map, action, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
+            taskDataDto = CreateMoveActionTaskJob(agv.NavingMap, action, $"AGV_LOCAL_{DateTime.Now.ToString("yyyyMMdd_HHmmssffff")}", fromtag, int.Parse(to), 0);
 
-            clsTaskDownloadData[]? taskLinkList = CreateActionLinksTaskJobs(map, action, fromtag, totag);
+            clsTaskDownloadData[]? taskLinkList = CreateActionLinksTaskJobs(agv.NavingMap, action, fromtag, totag);
 
             if (taskLinkList.Length >= 1)
             {

@@ -31,6 +31,7 @@ builder.Services.Configure<JsonOptions>(options =>
     options.SerializerOptions.PropertyNameCaseInsensitive = false;
     options.SerializerOptions.WriteIndented = true;
 });
+AlarmManager.AddAlarm(AlarmCodes.None, true);
 
 var app = builder.Build();
 

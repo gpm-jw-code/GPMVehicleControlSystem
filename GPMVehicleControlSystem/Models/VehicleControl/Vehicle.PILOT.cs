@@ -14,14 +14,22 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
     {
         private string TaskName = "";
         public TASK_RUN_STATUS CurrentTaskRunStatus = TASK_RUN_STATUS.NO_MISSION;
-        public enum HS_METHOD
+        public enum EQ_HS_METHOD
         {
-            E84, MODBUS, EMULATION
+            E84,
+            MODBUS,
+            /// <summary>
+            /// 模擬
+            /// </summary>
+            EMULATION
         }
 
         public TaskBase ExecutingTask;
 
-        public HS_METHOD Hs_Method = HS_METHOD.EMULATION;
+        /// <summary>
+        /// 與設備交握之交握訊號來源方式
+        /// </summary>
+        public EQ_HS_METHOD EQ_HS_Method = EQ_HS_METHOD.EMULATION;
 
         Dictionary<string, List<int>> TaskTrackingTags = new Dictionary<string, List<int>>();
 
@@ -75,6 +83,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         ExecutingTask = new UnloadTask(this, _taskDownloadData);
                     else if (action == ACTION_TYPE.Park)
                         ExecutingTask = new ParkTask(this, _taskDownloadData);
+                    else if (action == ACTION_TYPE.Unpark)
+                        ExecutingTask = new UnParkTask(this, _taskDownloadData);
                     else
                     {
                         throw new NotImplementedException();

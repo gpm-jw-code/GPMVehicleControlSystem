@@ -55,22 +55,31 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// </summary>
         public async Task Execute()
         {
-            Agv.AGVC.IsAGVExecutingTask = true;
-            Agv.AGVC.OnTaskActionFinishAndSuccess += AfterMoveFinishHandler;
-
-            (bool confirm, AlarmCodes alarm_code) checkResult = await BeforeExecute();
-
-            if (!checkResult.confirm)
+            try
             {
-                AlarmManager.AddAlarm(checkResult.alarm_code, false);
-                Agv.Sub_Status = SUB_STATUS.ALARM;
+                Agv.AGVC.IsAGVExecutingTask = true;
+                Agv.AGVC.OnTaskActionFinishAndSuccess += AfterMoveFinishHandler;
+                DirectionLighterSwitchBeforeTaskExecute();
+                (bool confirm, AlarmCodes alarm_code) checkResult = await BeforeExecute();
+
+                if (!checkResult.confirm)
+                {
+                    AlarmManager.AddAlarm(checkResult.alarm_code, false);
+                    Agv.Sub_Status = SUB_STATUS.ALARM;
+                    return;
+                }
+                bool agvc_executing = await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
+                if (!agvc_executing)
+                {
+                    AlarmManager.AddAlarm(AlarmCodes.Cant_TransferTask_TO_AGVC, false);
+                    Agv.Sub_Status = SUB_STATUS.ALARM;
+                }
             }
-            bool agvc_executing = await Agv.AGVC.AGVSTaskDownloadHandler(RunningTaskData);
-            if (!agvc_executing)
+            catch (Exception ex)
             {
-                AlarmManager.AddAlarm(AlarmCodes.Cant_TransferTask_TO_AGVC, false);
-                Agv.Sub_Status = SUB_STATUS.ALARM;
+                throw ex;
             }
+         
         }
 
         internal async Task AGVSPathExpand(clsTaskDownloadData taskDownloadData)
@@ -117,7 +126,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.TaskExecute
         /// <returns></returns>
         public virtual async Task<(bool confirm, AlarmCodes alarm_code)> BeforeExecute()
         {
-            DirectionLighterSwitchBeforeTaskExecute();
             LaserSettingBeforeTaskExecute();
             return (true, AlarmCodes.None);
         }

@@ -1,4 +1,5 @@
 ﻿using AGVSystemCommonNet6.Abstracts;
+using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Tools;
 using Modbus.Device;
@@ -154,8 +155,9 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             }
             catch (Exception ex)
             {
+                AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Disconnect, false);
                 master = null;
-                return false;
+                throw new SocketException();
             }
         }
 
@@ -186,9 +188,9 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.RightProtection_Area_Sensor_2]].OnSignalOFF += NearLaserDiTriggerHandle; ;
             VCSInputs[INPUT_INDEXS[DI_ITEM.LeftProtection_Area_Sensor_2]].OnSignalOFF += NearLaserDiTriggerHandle; ;
-
             VCSInputs[INPUT_INDEXS[DI_ITEM.RightProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
             VCSInputs[INPUT_INDEXS[DI_ITEM.LeftProtection_Area_Sensor_2]].OnSignalON += LaserRecoveryHandle;
+
 
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_1]].OnSignalOFF += FarLsrTriggerHandle;
             VCSInputs[INPUT_INDEXS[DI_ITEM.FrontProtection_Area_Sensor_2]].OnSignalOFF += NearLaserDiTriggerHandle;
@@ -234,11 +236,18 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         {
             clsIOSignal laserSignal = sender as clsIOSignal;
             DI_ITEM DI = laserSignal.DI_item;
-            if (DI == DI_ITEM.FrontProtection_Area_Sensor_1 && !IsFrontLsrBypass)
+            if (DI == DI_ITEM.FrontProtection_Area_Sensor_1 && IsFrontLsrBypass)
+            {
+                LOG.WARN($"前方遠處雷射觸發但Bypass");
                 return;
+            }
 
             if (DI == DI_ITEM.BackProtection_Area_Sensor_1 && IsBackLsrBypass)
+            {
+                LOG.WARN($"後方遠處雷射觸發但Bypass");
                 return;
+            }
+            LOG.WARN($"{DI} 遠處雷射觸發");
             OnFarLaserDITrigger?.Invoke(sender, e);
         }
 

@@ -1,4 +1,5 @@
-﻿using GPMVehicleControlSystem.Tools;
+﻿using AGVSystemCommonNet6.Alarm.VMS_ALARM;
+using GPMVehicleControlSystem.Tools;
 using System.Linq;
 using System.Net.Sockets;
 using static AGVSystemCommonNet6.Abstracts.CarComponent;
@@ -10,6 +11,12 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         public enum DO_ITEM : byte
         {
             Unknown = 0xFF,
+            EMU_EQ_L_REQ = 0x00,
+            EMU_EQ_U_REQ = 0x01,
+            EMU_EQ_READY = 0x02,
+            EMU_EQ_UP_READY = 0x03,
+            EMU_EQ_LOW_READY = 0x04,
+            EMU_EQ_BUSY = 0x05,
             Recharge_Circuit = 0x08,
             Safety_Relays_Reset = 0x09,
             Horizon_Motor_Stop = 0x0A,
@@ -115,28 +122,39 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         public async Task ResetMotor()
         {
-            Console.WriteLine("Reset Motor Process Start");
-            SetState(DO_ITEM.Horizon_Motor_Stop, true);
+            try
+            {
+                Console.WriteLine("Reset Motor Process Start");
+                SetState(DO_ITEM.Horizon_Motor_Stop, true);
+                //安全迴路RELAY
+                SetState(DO_ITEM.Safety_Relays_Reset, true);
+                await Task.Delay(200);
+                SetState(DO_ITEM.Safety_Relays_Reset, false);
 
-            //安全迴路RELAY
-            SetState(DO_ITEM.Safety_Relays_Reset, true);
-            await Task.Delay(200);
-            SetState(DO_ITEM.Safety_Relays_Reset, false);
+                SetState(DO_ITEM.Horizon_Motor_Stop, false);
+                SetState(DO_ITEM.Horizon_Motor_Reset, true);
+                await Task.Delay(200);
+                SetState(DO_ITEM.Horizon_Motor_Reset, false);
+                Console.WriteLine("Reset Motor Process End");
+            }
+            catch (SocketException ex)
+            {
+                AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
+            }
+            catch (Exception ex)
+            {
 
-            SetState(DO_ITEM.Horizon_Motor_Stop, false);
-            SetState(DO_ITEM.Horizon_Motor_Reset, true);
-            await Task.Delay(200);
-            SetState(DO_ITEM.Horizon_Motor_Reset, false);
-            Console.WriteLine("Reset Motor Process End");
+            }
+
 
         }
 
         public void SetState(string address, bool state)
         {
-            if (!IsConnected())
-                Connect();
             clsIOSignal? DO = VCSOutputs.FirstOrDefault(k => k.Address == address + "");
             DO.State = state;
+            if (!IsConnected())
+                Connect();
             master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
 
         }
@@ -153,12 +171,11 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                     DO.State = state;
                     master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
                 }
-
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 master = null;
-                SetState(signal, state);
+                throw ex;
             }
 
         }

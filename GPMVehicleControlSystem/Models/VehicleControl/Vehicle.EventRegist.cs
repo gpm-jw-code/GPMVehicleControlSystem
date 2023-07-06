@@ -49,8 +49,11 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async void AlarmManager_OnUnRecoverableAlarmOccur(object? sender, EventArgs e)
         {
-
-            _ = Online_Mode_Switch(REMOTE_MODE.OFFLINE);
+            _ = Task.Factory.StartNew(async () =>
+            {
+                if (Remote_Mode == REMOTE_MODE.ONLINE)
+                    await Online_Mode_Switch(REMOTE_MODE.OFFLINE);
+            });
         }
 
         private void NearLaserTriggerHandler(object? sender, EventArgs e)
@@ -101,7 +104,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
 
             AGVC.LaserRecoveryHandler(sender, cmd);
-
+            if ((cmd == ROBOT_CONTROL_CMD.NONE))
+                return;
             clsIOSignal LaserSignal = sender as clsIOSignal;
             DI_ITEM LaserType = LaserSignal.DI_item;
 
@@ -113,7 +117,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 return;
             if (!AGVC.IsAGVExecutingTask)
                 return;
-            Sub_Status = SUB_STATUS.RUN;
+            if (LaserType != DI_ITEM.FrontProtection_Area_Sensor_3 && LaserType != DI_ITEM.BackProtection_Area_Sensor_3)
+                Sub_Status = SUB_STATUS.RUN;
 
         }
 
@@ -139,7 +144,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AGV_Reset_Flag = true;
             Task.Factory.StartNew(async () =>
             {
-                AGVC.AbortTask(RESET_MODE.ABORT);
+                AGVC.AbortTask(RESET_MODE.CYCLE_STOP);
                 await Task.Delay(500);
                 await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
             });
@@ -173,7 +178,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             IsInitialized = false;
             ExecutingTask?.Abort();
             AlarmManager.AddAlarm(AlarmCodes.Bumper, false);
-            Sub_Status = SUB_STATUS.ALARM;
+            Sub_Status = SUB_STATUS.DOWN;
         }
 
         private void CarController_OnModuleInformationUpdated(object? sender, ModuleInformation _ModuleInformation)
@@ -201,6 +206,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             for (int i = 0; i < _ModuleInformation.Wheel_Driver.driversState.Length; i++)
                 WheelDrivers[i].StateData = _ModuleInformation.Wheel_Driver.driversState[i];
 
+
+            var _lastVisitedMapPoint = NavingMap.Points.Values.FirstOrDefault(pt => pt.TagNumber == this.Navigation.LastVisitedTag);
+            lastVisitedMapPoint = _lastVisitedMapPoint == null ? new AGVSystemCommonNet6.MAP.MapPoint() { Name = "Unknown" } : _lastVisitedMapPoint;
             //Task.Factory.StartNew(async() =>
             //{
             //    await Task.Delay(1000);
@@ -212,36 +220,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             //            AlarmManager.AddWarning(alarm);
             //        }
             //    }
-
             //});
             if (Batteries.Values.Any(battery => battery.IsCharging))
             {
-                if (Batteries.Values.All(battery => battery.Data.batteryLevel >= 99))
-                    WagoDO.SetState(clsDOModule.DO_ITEM.Recharge_Circuit, false);//充滿電切斷充電迴路
                 Sub_Status = SUB_STATUS.Charging;
             }
             else
             {
-                //Task.Factory.StartNew(async () =>
-                //{
-                //    await Task.Delay(3000);
-                //    if (IsInitialized)
-                //    {
-
-                //        if (CarController.IsAGVExecutingTask)
-                //        {
-                //            Sub_Status = SUB_STATUS.RUN;
-                //        }
-                //        else
-                //        {
-                //            Sub_Status = SUB_STATUS.IDLE;
-                //        }
-                //    }
-                //    else
-                //    {
-                //        Sub_Status = SUB_STATUS.DOWN;
-                //    }
-                //});
 
             }
 
