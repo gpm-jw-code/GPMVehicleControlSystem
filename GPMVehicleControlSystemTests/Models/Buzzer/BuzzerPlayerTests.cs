@@ -13,12 +13,27 @@ namespace GPMVehicleControlSystem.Models.Buzzer.Tests
     [TestClass()]
     public class BuzzerPlayerTests
     {
+        string rosbridge_host = "ws://192.168.235.128:9090";
         [TestMethod()]
-        public void PlayWithRosServiceTest()
+        public void PlayAlarmTest()
         {
-            RosSocket rosSocket = new RosSocket(new RosSharp.RosBridgeClient.Protocols.WebSocketSharpProtocol($"ws://192.168.235.128:9090"));
+            RosSocket rosSocket = new RosSocket(new WebSocketSharpProtocol(rosbridge_host));
             BuzzerPlayer.rossocket = rosSocket;
-            BuzzerPlayer.PlayWithRosService("/home/jinwei/param/sounds/action.wav");
+            BuzzerPlayer.Play(SOUNDS.Alarm);
+        }
+        [TestMethod()]
+        public void PlayMoveTest()
+        {
+            RosSocket rosSocket = new RosSocket(new WebSocketSharpProtocol(rosbridge_host));
+            BuzzerPlayer.rossocket = rosSocket;
+            BuzzerPlayer.Play(SOUNDS.Move);
+        }
+        [TestMethod()]
+        public void PlayActionTest()
+        {
+            RosSocket rosSocket = new RosSocket(new WebSocketSharpProtocol(rosbridge_host));
+            BuzzerPlayer.rossocket = rosSocket;
+            BuzzerPlayer.Play(SOUNDS.Action);
         }
     }
 }

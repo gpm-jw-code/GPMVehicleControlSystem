@@ -146,7 +146,7 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         public async Task<IActionResult> BuzzerOFF()
         {
             await Task.Delay(1);
-            BuzzerPlayer.BuzzerStop();
+            BuzzerPlayer.Stop();
             return Ok("OK");
         }
 

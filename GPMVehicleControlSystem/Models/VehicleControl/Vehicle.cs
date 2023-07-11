@@ -136,13 +136,13 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                             Main_Status = MAIN_STATUS.DOWN;
 
                         if (value != SUB_STATUS.Initializing)
-                            BuzzerPlayer.BuzzerAlarm();
+                            BuzzerPlayer.Alarm();
                         StatusLighter.DOWN();
                     }
                     else if (value == SUB_STATUS.IDLE)
                     {
                         AGVC.IsAGVExecutingTask = false;
-                        BuzzerPlayer.BuzzerStop();
+                        BuzzerPlayer.Stop();
                         Main_Status = MAIN_STATUS.IDLE;
                         StatusLighter.IDLE();
                         DirectionLighter.CloseAll();
@@ -159,12 +159,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         {
                             Task.Run(async () =>
                             {
-                                await BuzzerPlayer.BuzzerStop();
+                                await BuzzerPlayer.Stop();
                                 await Task.Delay(50);
                                 if (ExecutingTask.action == ACTION_TYPE.None)
-                                    BuzzerPlayer.BuzzerMoving();
+                                    BuzzerPlayer.Move();
                                 else
-                                    BuzzerPlayer.BuzzerAction();
+                                    BuzzerPlayer.Action();
                             });
                         }
                     }
@@ -209,7 +209,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 AGVC.Connect());
                 AGVC.ManualController.vehicle = this;
                 BuzzerPlayer.rossocket = AGVC.rosSocket;
-                BuzzerPlayer.BuzzerAlarm();
+                BuzzerPlayer.Alarm();
             });
 
             Task WagoDOConnTask = new Task(() =>
@@ -278,7 +278,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             try
             {
-                BuzzerPlayer.BuzzerStop();
+                BuzzerPlayer.Stop();
                 if (SimulationMode)
                 {
                     IsInitialized = true;
@@ -300,14 +300,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 if (!WagoDI.GetState(clsDIModule.DI_ITEM.EMO))
                 {
                     AlarmManager.AddAlarm(AlarmCodes.EMO_Button, false);
-                    BuzzerPlayer.BuzzerAlarm();
+                    BuzzerPlayer.Alarm();
                     return (false, "EMO 按鈕尚未復歸");
                 }
 
                 if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
                 {
                     AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error, false);
-                    BuzzerPlayer.BuzzerAlarm();
+                    BuzzerPlayer.Alarm();
                     return (false, "解煞車旋鈕尚未復歸");
                 }
 
@@ -374,7 +374,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         internal async Task ResetAlarmsAsync(bool IsTriggerByButton)
         {
-            BuzzerPlayer.BuzzerStop();
+            BuzzerPlayer.Stop();
 
             _ = Task.Factory.StartNew(async () =>
              {

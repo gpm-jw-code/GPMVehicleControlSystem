@@ -16,7 +16,6 @@ _ = Task.Run(() =>
     AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));
     // StaEmuManager.Start();
     //StaEmuManager.StartWagoEmu();
-    BuzzerPlayer.Initialize();
     DBhelper.Initialize();
     int AgvTypeInt = AppSettingsHelper.GetValue<int>("VCS:AgvType");
     StaStored.CurrentVechicle = new GPMVehicleControlSystem.Models.VehicleControl.Vehicle();
