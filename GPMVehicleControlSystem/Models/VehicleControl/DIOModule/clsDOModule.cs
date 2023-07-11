@@ -169,15 +169,18 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                 if (DO != null)
                 {
                     DO.State = state;
-                    Task.Factory.StartNew(() => {
+                    Task.Factory.StartNew(() =>
+                    {
                         try
                         {
-                        master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+                            master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
                         }
                         catch (Exception ex)
                         {
+                            Disconnect();
+                            AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
                         }
-                    } );
+                    });
                 }
             }
             catch (Exception ex)
@@ -210,9 +213,10 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                         }
                         catch (Exception)
                         {
-
+                            Disconnect();
+                            AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
                         }
-                    } );
+                    });
                 }
             }
             catch (Exception)
