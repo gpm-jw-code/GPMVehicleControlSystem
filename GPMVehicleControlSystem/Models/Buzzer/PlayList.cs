@@ -10,8 +10,8 @@
         {
         }
         public string sounds_folder = Path.Combine(Environment.CurrentDirectory, "param/sounds");
-        public string Alarm => $"{sounds_folder}/alarm.wav";
-        public string Moving => $"{sounds_folder}/move.wav";
-        public string Action => $"{sounds_folder}/action.wav";
+        public string Alarm =>"alarm";
+        public string Moving => "move";
+        public string Action => "action";
     }
 }

@@ -62,21 +62,21 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         {
             if (IsAlarmPlaying)
                 return;
-            Play(playList.Alarm, 5);
+            Play(playList.Alarm);
             IsAlarmPlaying = true;
         }
         public static async void BuzzerAction()
         {
             if (IsActionPlaying)
                 return;
-            Play(playList.Action, 24);
+            Play(playList.Action);
             IsActionPlaying = true;
         }
         public static async void BuzzerMoving()
         {
             if (IsMovingPlaying)
                 return;
-            Play(playList.Moving, 24);
+            Play(playList.Moving);
             IsMovingPlaying = true;
         }
         private static bool _linux_music_stopped = false;
@@ -84,34 +84,28 @@ namespace GPMVehicleControlSystem.Models.Buzzer
         {
             _linux_music_stopped = false;
             if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
-                PlayWithRosService("");
+                PlayWithRosService("stop");
             else
                 player?.Stop();
             IsAlarmPlaying = IsActionPlaying = IsMovingPlaying = false;
         }
 
-        private static async void Play(string filePath, int total_sec = 22)
+        private static async void Play(string filePath)
         {
-            if (!File.Exists(filePath) && !Debugger.IsAttached)
-            {
-                LOG.ERROR($"Can't play {filePath}, File not exist");
-                return;
-            }
             try
             {
                 if (Environment.OSVersion.Platform == PlatformID.Unix | Debugger.IsAttached)
                 {
-                    PlayWithRosService(filePath, total_sec);
+                    PlayWithRosService(filePath);
                 }
                 else
                     PlayInWindows(filePath);
-
             }
             catch (Exception ex)
             {
             }
         }
-        public static void PlayWithRosService(string filePath, int total_sec = 22)
+        public static void PlayWithRosService(string filePath)
         {
             if (rossocket == null)
                 return;
@@ -120,8 +114,7 @@ namespace GPMVehicleControlSystem.Models.Buzzer
             {
                 PlayMusicResponse response = rossocket.CallServiceAndWait<PlayMusicRequest, PlayMusicResponse>("/play_music", new PlayMusicRequest
                 {
-                    file_path = filePath,
-                    total_sec = total_sec
+                    file_path = filePath
                 });
             });
         }
