@@ -18,6 +18,7 @@ _ = Task.Run(() =>
     //StaEmuManager.StartWagoEmu();
     BuzzerPlayer.Initialize();
     DBhelper.Initialize();
+    int AgvTypeInt = AppSettingsHelper.GetValue<int>("VCS:AgvType");
     StaStored.CurrentVechicle = new GPMVehicleControlSystem.Models.VehicleControl.Vehicle();
 });
 var builder = WebApplication.CreateBuilder(args);
