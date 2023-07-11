@@ -118,7 +118,8 @@ namespace GPMVehicleControlSystem.Controllers.AGVInternal
         [HttpPost("Initialize")]
         public async Task<IActionResult> Initialize()
         {
-            return Ok(await agv.Initialize());
+            var result = await agv.Initialize();
+            return Ok(new {confirm =result.confirm,message = result.message });
         }
 
 

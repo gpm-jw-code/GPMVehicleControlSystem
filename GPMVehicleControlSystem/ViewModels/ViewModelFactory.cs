@@ -38,7 +38,10 @@ namespace GPMVehicleControlSystem.ViewModels
                     Last_Visit_MapPoint = AgvEntity.lastVisitedMapPoint,
                     Last_Visited_Tag = AgvEntity.Navigation.LastVisitedTag,
                     CST_Data = AgvEntity.CSTReader.ValidCSTID,
-                    BatteryStatus = AgvEntity.Batteries.Count == 0 ? new BatteryStateVM() : new BatteryStateVM
+                    BatteryStatus = AgvEntity.Batteries.Count == 0 ? new BatteryStateVM()
+                    {
+                        BatteryLevel = 66
+                    } : new BatteryStateVM
                     {
                         BatteryLevel = AgvEntity.Batteries.Values.First().Data.batteryLevel,
                         ChargeCurrent = AgvEntity.Batteries.Values.First().Data.chargeCurrent,
@@ -67,17 +70,7 @@ namespace GPMVehicleControlSystem.ViewModels
                         PathPlan = AgvEntity.ExecutingTask == null ? new int[0] : AgvEntity.ExecutingTask.RunningTaskData.ExecutingTrajecory.GetRemainPath(AgvEntity.Navigation.LastVisitedTag)
                     },
                     Current_LASER_MODE = AgvEntity.Laser.Mode.ToString(),
-                    LightsStates = new AGV_VMS.ViewModels.LightsStatesVM
-                    {
-                        Front = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Front),
-                        Back = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Back),
-                        Right = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Right),
-                        Left = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Left),
-                        Run = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_G),
-                        Down = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_R),
-                        Idle = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_Y),
-                        Online = AgvEntity.WagoDO.GetState(DO_ITEM.AGV_DiractionLight_B),
-                    },
+                   
                 };
                 return data_view_model;
             }

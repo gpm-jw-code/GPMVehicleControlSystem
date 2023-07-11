@@ -13,7 +13,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
         public override COMPOENT_NAME component_name => COMPOENT_NAME.NAVIGATION;
 
-        public new NavigationState Data => StateData == null ? new NavigationState() : (NavigationState)StateData;
+        public new NavigationState Data => StateData == null ? new NavigationState()
+        {
+            lastVisitedNode= new RosSharp.RosBridgeClient.MessageTypes.Std.Int32(17),
+        } : (NavigationState)StateData;
 
         public event EventHandler<AGV_DIRECTION> OnDirectionChanged;
         public event EventHandler<int> OnTagReach;
@@ -67,10 +70,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
         }
         public override STATE CheckStateDataContent()
         {
+            LastVisitedTag = Data.lastVisitedNode.data;
             LinearSpeed = CalculateLinearSpeed(Data.robotPose.pose.position);
             AngularSpeed = CalculateAngularSpeed(Angle);
             Direction = ConvertToDirection(Data.robotDirect);
-            LastVisitedTag = Data.lastVisitedNode.data;
             last_position = Data.robotPose.pose.position;
             last_theta = Angle;
             if (Data.errorCode != 0)

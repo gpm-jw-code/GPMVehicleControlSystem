@@ -1,4 +1,5 @@
 ﻿using AGVSystemCommonNet6.AGVDispatch.Messages;
+using AGVSystemCommonNet6.AGVDispatch.Model;
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.Log;
 using AGVSystemCommonNet6.MAP;
@@ -90,8 +91,10 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             }
 
         }
-        private bool EQAlarmWhenEQBusyFlag = false;
-        private bool AGVAlarmWhenEQBusyFlag = false;
+        internal bool EQAlarmWhenEQBusyFlag = false;
+        internal bool AGVAlarmWhenEQBusyFlag = false;
+
+        public clsDynamicTrafficState DynamicTrafficState { get; internal set; } = new clsDynamicTrafficState();
 
         /// <summary>
         /// 結束EQ交握_等待EQ READY OFF
@@ -215,6 +218,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async Task WatchE84AlarmWhenAGVBUSY()
         {
+            AGVAlarmWhenEQBusyFlag = false;
+            EQAlarmWhenEQBusyFlag = false;
             await Task.Delay(1);
             _ = Task.Factory.StartNew(async () =>
             {
@@ -229,6 +234,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     }
                     if (!IsEQReadyOn())//異常發生
                     {
+                        EQAlarmWhenEQBusyFlag = true;
                         AGVC.AbortTask(RESET_MODE.ABORT);
                         Sub_Status = AGVSystemCommonNet6.clsEnums.SUB_STATUS.DOWN;
                         AlarmManager.AddAlarm(AlarmCodes.Handshake_Fail_EQ_READY, false);
@@ -268,7 +274,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         waitEQSignalCST.Cancel();
                         AGVC.AbortTask(RESET_MODE.ABORT);
                         Sub_Status = AGVSystemCommonNet6.clsEnums.SUB_STATUS.DOWN;
-                        AlarmManager.AddAlarm(AlarmCodes.Handshake_Fail_EQ_READY, false);
+                        AlarmManager.AddAlarm(AlarmCodes.Handshake_Fail_Inside_EQ_EQ_GO, false);
                         await FeedbackTaskStatus(TASK_RUN_STATUS.ACTION_FINISH);
                         while (IsEQBusyOn())
                         {

@@ -15,8 +15,6 @@ namespace GPMVehicleControlSystem.Models.Emulators
         {
             INPUT_INDEXS = Enum.GetValues(typeof(DI_ITEM)).Cast<DI_ITEM>().ToDictionary(e => e, e => (int)e);
         }
-
-
         public override bool Connect()
         {
             IPAddress iPAddress = IPAddress.Parse("127.0.0.1");
@@ -45,7 +43,6 @@ namespace GPMVehicleControlSystem.Models.Emulators
             SetState(DI_ITEM.EMO,true);
             SetState(DI_ITEM.Bumper_Sensor,true);
             SetState(DI_ITEM.Horizon_Motor_Switch,true);
-         
             SetState(DI_ITEM.FrontProtection_Area_Sensor_1,true);
             SetState(DI_ITEM.FrontProtection_Area_Sensor_2,true);
             SetState(DI_ITEM.FrontProtection_Area_Sensor_3,true);

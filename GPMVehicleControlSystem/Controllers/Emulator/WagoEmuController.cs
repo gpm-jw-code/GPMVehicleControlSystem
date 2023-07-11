@@ -60,5 +60,7 @@ namespace GPMVehicleControlSystem.Controllers.Emulator
             StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_1, false);
             StaEmuManager.wagoEmu.SetState(DI_ITEM.Cst_Sensor_2, false);
         }
+
+
     }
 }

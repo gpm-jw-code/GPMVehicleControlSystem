@@ -169,7 +169,15 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                 if (DO != null)
                 {
                     DO.State = state;
-                    master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+                    Task.Factory.StartNew(() => {
+                        try
+                        {
+                        master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+                        }
+                        catch (Exception ex)
+                        {
+                        }
+                    } );
                 }
             }
             catch (Exception ex)
@@ -194,7 +202,17 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                         clsIOSignal? _DO = VCSOutputs.FirstOrDefault(k => k.index == DO_Start.index + i);
                         _DO.State = writeStates[i];
                     }
-                    master?.WriteMultipleCoils((ushort)(Start + DO_Start.index), writeStates);
+                    Task.Factory.StartNew(() =>
+                    {
+                        try
+                        {
+                            master?.WriteMultipleCoils((ushort)(Start + DO_Start.index), writeStates);
+                        }
+                        catch (Exception)
+                        {
+
+                        }
+                    } );
                 }
             }
             catch (Exception)

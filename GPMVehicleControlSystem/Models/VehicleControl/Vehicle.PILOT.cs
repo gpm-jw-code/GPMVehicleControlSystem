@@ -6,7 +6,9 @@ using AGVSystemCommonNet6.Log;
 using AGVSystemCommonNet6.TASK;
 using GPMVehicleControlSystem.Models.VehicleControl.TaskExecute;
 using YamlDotNet.Core;
+using static AGVSystemCommonNet6.AGVDispatch.Model.clsDynamicTrafficState;
 using static AGVSystemCommonNet6.clsEnums;
+using static GPMVehicleControlSystem.Models.VehicleControl.AGVControl.CarController;
 
 namespace GPMVehicleControlSystem.Models.VehicleControl
 {
@@ -97,6 +99,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         await Task.Delay(5000);
                         TaskTrackingTags.Remove(task_name);
                     };
+
+                    TrafficStop();
                     await ExecutingTask.Execute();
 
                 }
@@ -126,32 +130,66 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
         private void OnTagReachHandler(object? sender, int currentTag)
         {
-            if (Operation_Mode == OPERATOR_MODE.MANUAL)
-                return;
-            if (ExecutingTask == null)
-                return;
-            var TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
-            if (TagPoint == null)
+            Task.Factory.StartNew(() =>
             {
-                LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
-                return;
-            }
-            PathInfo? pathInfoRos = ExecutingTask.RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
-            if (pathInfoRos == null)
-            {
-                AGVC.AbortTask();
-                AlarmManager.AddAlarm(AlarmCodes.Motion_control_Tracking_Tag_Not_On_Tag_Or_Tap, true);
-                Sub_Status = SUB_STATUS.DOWN;
-                return;
-            }
-            Laser.AgvsLsrSetting = TagPoint.Laser;
+                if (Operation_Mode == OPERATOR_MODE.MANUAL)
+                    return;
+                if (ExecutingTask == null)
+                    return;
 
-            // LOG.INFO($"AGV抵達 Tag {currentTag},派車雷射設定:{Laser.AgvsLsrSetting}");
-            if (ExecutingTask.RunningTaskData.TagsOfTrajectory.Last() != Navigation.LastVisitedTag)
-                FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
+                TrafficStop();
+                clsMapPoint? TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
+                if (TagPoint == null)
+                {
+                    LOG.Critical($"AGV抵達 {currentTag} 但在任務軌跡上找不到該站點。");
+                    return;
+                }
+                PathInfo? pathInfoRos = ExecutingTask.RunningTaskData.RosTaskCommandGoal?.pathInfo.FirstOrDefault(path => path.tagid == TagPoint.Point_ID);
+                if (pathInfoRos == null)
+                {
+                    AGVC.AbortTask();
+                    AlarmManager.AddAlarm(AlarmCodes.Motion_control_Tracking_Tag_Not_On_Tag_Or_Tap, true);
+                    Sub_Status = SUB_STATUS.DOWN;
+                    return;
+                }
+                Laser.AgvsLsrSetting = TagPoint.Laser;
+                if (ExecutingTask.RunningTaskData.TagsOfTrajectory.Last() != Navigation.LastVisitedTag)
+                {
+                    FeedbackTaskStatus(TASK_RUN_STATUS.NAVIGATING);
+                }
+            });
         }
 
+        private async Task TrafficStop()
+        {
+            if (VmsProtocol == VMS_PROTOCOL.GPM_VMS)
+            {
+                clsMapPoint? TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == Navigation.LastVisitedTag);
+                var nextTagIndex = ExecutingTask.RunningTaskData.ExecutingTrajecory.ToList().IndexOf(TagPoint) + 1;
+                if (ExecutingTask.RunningTaskData.ExecutingTrajecory.Length > nextTagIndex)
+                {
+                    _ = Task.Factory.StartNew(async () =>
+                     {
+                         var NextTagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory[nextTagIndex];
+                         //取得下一個位置動態
+                         bool stopedFlag = false;
+                         while (DynamicTrafficState.GetTrafficStatusByTag(CarName, NextTagPoint.Point_ID) != TRAFFIC_ACTION.PASS)
+                         {
+                             if (!stopedFlag)
+                             {
+                                 await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE);
+                                 await Task.Delay(50);
+                                 await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.STOP);
+                                 stopedFlag = true;
+                             }
+                             await Task.Delay(1000);
+                         }
+                         await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery);
 
+                     });
+                }
+            }
+        }
 
         internal async Task FeedbackTaskStatus(TASK_RUN_STATUS status)
         {

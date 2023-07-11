@@ -148,7 +148,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.AGVControl
             }
             rosSocket.protocol.OnClosed += Protocol_OnClosed;
             LOG.INFO($"ROS Connected ! ws://{IP}:{Port}");
-            rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback));
+            rosSocket.Subscribe<ModuleInformation>("/module_information", new SubscriptionHandler<ModuleInformation>(ModuleInformationCallback), queue_length: 50);
             rosSocket.Subscribe<LocalizationControllerResultMessage0502>("localizationcontroller/out/localizationcontroller_result_message_0502", SickStateCallback, 100);
             rosSocket.AdvertiseService<CSTReaderCommandRequest, CSTReaderCommandResponse>("/CSTReader_done_action", CSTReaderDoneActionHandle);
             ManualController = new MoveControl(rosSocket);

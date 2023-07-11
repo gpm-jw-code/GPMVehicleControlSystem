@@ -15,6 +15,7 @@ _ = Task.Run(() =>
     StaStored.APPVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>().InformationalVersion;
     AlarmManager.LoadAlarmList(AppSettingsHelper.GetValue<string>("VCS:AlarmList_json_Path"));
     // StaEmuManager.Start();
+    //StaEmuManager.StartWagoEmu();
     BuzzerPlayer.Initialize();
     DBhelper.Initialize();
     StaStored.CurrentVechicle = new GPMVehicleControlSystem.Models.VehicleControl.Vehicle();

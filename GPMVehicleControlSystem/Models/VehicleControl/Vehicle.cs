@@ -30,8 +30,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         public enum VMS_PROTOCOL
         {
-            HTTP,
-            TCPIP
+            KGS,
+            GPM_VMS
         }
 
 
@@ -39,7 +39,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public clsDirectionLighter DirectionLighter { get; set; }
         public clsStatusLighter StatusLighter { get; set; }
         public clsAGVSConnection AGVS;
-        public VMS_PROTOCOL VmsProtocol = VMS_PROTOCOL.HTTP;
+        public VMS_PROTOCOL VmsProtocol = VMS_PROTOCOL.GPM_VMS;
         public clsDOModule WagoDO;
         public clsDIModule WagoDI;
         public CarController AGVC;
@@ -194,7 +194,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             string AGVS_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:IP");
             int AGVS_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Port");
             string AGVS_LocalIP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:LocalIP");
-            VmsProtocol = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Protocol") == 0 ? VMS_PROTOCOL.TCPIP : VMS_PROTOCOL.HTTP;
+            VmsProtocol = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Protocol") == 0 ? VMS_PROTOCOL.KGS : VMS_PROTOCOL.GPM_VMS;
             string Wago_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:Wago:IP");
             int Wago_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:Wago:Port");
 
@@ -207,7 +207,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI = new clsDIModule(Wago_IP, Wago_Port, WagoDO);
             AGVC = new CarController(RosBridge_IP, RosBridge_Port);
             AGVS = new clsAGVSConnection(AGVS_IP, AGVS_Port, AGVS_LocalIP);
-            AGVS.UseWebAPI = VmsProtocol == VMS_PROTOCOL.HTTP;
+            AGVS.UseWebAPI = VmsProtocol == VMS_PROTOCOL.GPM_VMS;
 
             DirectionLighter = new clsDirectionLighter(WagoDO);
             StatusLighter = new clsStatusLighter(WagoDO);
@@ -284,7 +284,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         }
 
 
-        internal async Task<bool> Initialize()
+        internal async Task<(bool confirm, string message)> Initialize()
         {
             try
             {
@@ -295,22 +295,30 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                     AGVC.IsAGVExecutingTask = false;
                     _Sub_Status = SUB_STATUS.IDLE;
                     emulator.Runstatus.AGV_Status = Main_Status = MAIN_STATUS.IDLE;
-                    return true;
+                    return (true, "");
                 }
+
+                if (EQAlarmWhenEQBusyFlag && WagoDI.GetState(clsDIModule.DI_ITEM.EQ_BUSY))
+                {
+                    return (false, $"端點設備({lastVisitedMapPoint.Name})尚未進行復歸，AGV禁止復歸");
+                }
+
+                AGVAlarmWhenEQBusyFlag = false;
+                EQAlarmWhenEQBusyFlag = false;
                 WagoDO.ResetHandshakeSignals();
 
                 if (!WagoDI.GetState(clsDIModule.DI_ITEM.EMO))
                 {
                     AlarmManager.AddAlarm(AlarmCodes.EMO_Button, false);
                     BuzzerPlayer.BuzzerAlarm();
-                    return false;
+                    return (false, "EMO 按鈕尚未復歸");
                 }
 
                 if (!WagoDI.GetState(clsDIModule.DI_ITEM.Horizon_Motor_Switch))
                 {
                     AlarmManager.AddAlarm(AlarmCodes.Switch_Type_Error, false);
                     BuzzerPlayer.BuzzerAlarm();
-                    return false;
+                    return (false, "解煞車旋鈕尚未復歸");
                 }
 
                 DirectionLighter.CloseAll();
@@ -330,16 +338,16 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 IsInitialized = true;
                 Sub_Status = SUB_STATUS.IDLE;
                 AGVC.IsAGVExecutingTask = false;
-                return true;
+                return (true, "");
             }
             catch (SocketException ex)
             {
                 AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
-                return false;
+                return (false, "WAGO IO 寫入異常");
             }
             catch (Exception ex)
             {
-                return false;
+                return (false, $"系統例外:{ex.Message}");
             }
 
         }
