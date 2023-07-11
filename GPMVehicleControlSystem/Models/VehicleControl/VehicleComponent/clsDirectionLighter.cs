@@ -83,12 +83,9 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
             this.DOModule.SetState(DO_ITEM.AGV_DiractionLight_Left, false);
         }
 
-        /// <summary>
-        /// 左右燈同時閃
-        /// </summary>
-        public void Emergency()
+        internal void WaitPassLights()
         {
-
+            Flash(new DO_ITEM[] { DO_ITEM.AGV_DiractionLight_Right, DO_ITEM.AGV_DiractionLight_Left }, 200);
         }
 
         internal void LightSwitchByAGVDirection(object? sender, clsNavigation.AGV_DIRECTION e)
@@ -105,5 +102,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl.VehicleComponent
                 CloseAll();
 
         }
+
     }
 }

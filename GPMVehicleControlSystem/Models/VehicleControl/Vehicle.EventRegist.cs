@@ -28,18 +28,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             WagoDI.OnLaserDIRecovery += LaserRecoveryHandler;
             WagoDI.OnFarLaserDITrigger += FarLaserTriggerHandler;
             WagoDI.OnNearLaserDiTrigger += NearLaserTriggerHandler;
-
             Navigation.OnDirectionChanged += Navigation_OnDirectionChanged;
-
             clsTaskDownloadData.OnCurrentPoseReq = CurrentPoseReqCallback;
-
 
             AGVS.OnTaskDownload += AGVSTaskDownloadConfirm;
             AGVS.OnTaskResetReq = AGVSTaskResetReqHandle;
             AGVS.OnTaskDownloadFeekbackDone += ExecuteAGVSTask;
             Navigation.OnTagReach += OnTagReachHandler;
             BarcodeReader.OnTagLeave += OnTagLeaveHandler;
-
             AGVC.OnCSTReaderActionDone += CSTReader.UpdateCSTIDDataHandler;
 
             AlarmManager.OnUnRecoverableAlarmOccur += AlarmManager_OnUnRecoverableAlarmOccur;

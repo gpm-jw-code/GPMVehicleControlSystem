@@ -162,7 +162,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         internal async Task<(bool eq_busy_off, AlarmCodes alarmCode)> WaitEQBusyOFF(ACTION_TYPE action)
         {
             LOG.Critical("[EQ Handshake] 等待EQ BUSY OFF");
-            DirectionLighter.Flash(new DO_ITEM[] { DO_ITEM.AGV_DiractionLight_Right, DO_ITEM.AGV_DiractionLight_Left }, 200);
+            DirectionLighter.WaitPassLights();
             CancellationTokenSource waitEQSignalCST = new CancellationTokenSource(TimeSpan.FromSeconds(10));
             WagoDO.SetState(DO_ITEM.AGV_BUSY, false);
             WagoDO.SetState(DO_ITEM.AGV_AGV_READY, true);

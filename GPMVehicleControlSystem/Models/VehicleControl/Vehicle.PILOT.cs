@@ -99,8 +99,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                         await Task.Delay(5000);
                         TaskTrackingTags.Remove(task_name);
                     };
-
-                    TrafficStop();
                     await ExecutingTask.Execute();
 
                 }
@@ -124,6 +122,8 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
                 return;
 
+            TrafficStop();
+
             if (ExecutingTask.action == ACTION_TYPE.None)
                 Laser.ApplyAGVSLaserSetting();
 
@@ -137,7 +137,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 if (ExecutingTask == null)
                     return;
 
-                TrafficStop();
                 clsMapPoint? TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == currentTag);
                 if (TagPoint == null)
                 {
@@ -162,32 +161,36 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
 
         private async Task TrafficStop()
         {
-            if (VmsProtocol == VMS_PROTOCOL.GPM_VMS)
-            {
-                clsMapPoint? TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == Navigation.LastVisitedTag);
-                var nextTagIndex = ExecutingTask.RunningTaskData.ExecutingTrajecory.ToList().IndexOf(TagPoint) + 1;
-                if (ExecutingTask.RunningTaskData.ExecutingTrajecory.Length > nextTagIndex)
-                {
-                    _ = Task.Factory.StartNew(async () =>
-                     {
-                         var NextTagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory[nextTagIndex];
-                         //取得下一個位置動態
-                         bool stopedFlag = false;
-                         while (DynamicTrafficState.GetTrafficStatusByTag(CarName, NextTagPoint.Point_ID) != TRAFFIC_ACTION.PASS)
-                         {
-                             if (!stopedFlag)
-                             {
-                                 await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE);
-                                 await Task.Delay(50);
-                                 await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.STOP);
-                                 stopedFlag = true;
-                             }
-                             await Task.Delay(1000);
-                         }
-                         await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery);
 
-                     });
-                }
+            if (VmsProtocol != VMS_PROTOCOL.GPM_VMS)
+                return;
+
+            clsMapPoint? TagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory.FirstOrDefault(pt => pt.Point_ID == Navigation.LastVisitedTag);
+            var nextTagIndex = ExecutingTask.RunningTaskData.ExecutingTrajecory.ToList().IndexOf(TagPoint) + 1;
+            if (ExecutingTask.RunningTaskData.ExecutingTrajecory.Length > nextTagIndex)
+            {
+                _ = Task.Factory.StartNew(async () =>
+                 {
+                     var NextTagPoint = ExecutingTask.RunningTaskData.ExecutingTrajecory[nextTagIndex];
+                     //取得下一個位置動態
+                     bool stopedFlag = false;
+                     while (DynamicTrafficState.GetTrafficStatusByTag(CarName, NextTagPoint.Point_ID) != TRAFFIC_ACTION.PASS)
+                     {
+                         if (!stopedFlag)
+                         {
+                             await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.DECELERATE);
+                             await Task.Delay(50);
+                             await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.STOP);
+                             stopedFlag = true;
+                             DirectionLighter.WaitPassLights();
+                         }
+                         await Task.Delay(1000);
+                     }
+                     DirectionLighter.CloseAll();
+                     DirectionLighter.Forward();
+                     await AGVC.CarSpeedControl(ROBOT_CONTROL_CMD.SPEED_Reconvery);
+
+                 });
             }
         }
 
