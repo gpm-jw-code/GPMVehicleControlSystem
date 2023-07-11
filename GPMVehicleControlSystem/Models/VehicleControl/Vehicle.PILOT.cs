@@ -204,28 +204,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             await AGVS.TryTaskFeedBackAsync(ExecutingTask.RunningTaskData, GetCurrentTagIndexOfTrajectory(), status, Navigation.LastVisitedTag);
         }
 
-        private async Task FeedbackTaskStatusViaHttp(clsTaskDownloadData runningTaskData, int pointIndex, TASK_RUN_STATUS status)
-        {
-            await Task.Delay(1);
-            try
-            {
-
-                await Http.PostAsync<FeedbackData, object>($"http://{AGVS.IP}:{AGVS.Port}/api/VmsManager/TaskFeedback", new FeedbackData
-                {
-                    TimeStamp = DateTime.Now.ToString(),
-                    TaskName = runningTaskData.Task_Name,
-                    TaskSimplex = runningTaskData.Task_Simplex,
-                    TaskSequence = runningTaskData.Task_Sequence,
-                    PointIndex = pointIndex,
-                    TaskStatus = status,
-                });
-            }
-            catch (Exception ex)
-            {
-            }
-
-        }
-
         internal int GetCurrentTagIndexOfTrajectory()
         {
             try
