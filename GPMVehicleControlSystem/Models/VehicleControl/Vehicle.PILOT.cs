@@ -121,11 +121,12 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         {
             if (Operation_Mode == OPERATOR_MODE.MANUAL)
                 return;
-
-            TrafficStop();
-
-            if (ExecutingTask.action == ACTION_TYPE.None)
-                Laser.ApplyAGVSLaserSetting();
+            Task.Factory.StartNew(() =>
+            {
+                TrafficStop();
+                if (ExecutingTask.action == ACTION_TYPE.None)
+                    Laser.ApplyAGVSLaserSetting();
+            });
 
         }
         private void OnTagReachHandler(object? sender, int currentTag)
