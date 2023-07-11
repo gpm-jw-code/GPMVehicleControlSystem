@@ -108,7 +108,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             AlarmCodes alarm_code = GetAlarmCodeByLsrDI(LaserType);
             if (alarm_code != AlarmCodes.None)
                 AlarmManager.ClearAlarm(alarm_code);
-
             if (Operation_Mode != OPERATOR_MODE.AUTO)
                 return;
             if (!AGVC.IsAGVExecutingTask)

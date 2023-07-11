@@ -84,26 +84,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 return ls;
             }
         }
-        private REMOTE_MODE _Remote_Mode = REMOTE_MODE.OFFLINE;
-        /// <summary>
-        /// Online/Offline 模式
-        /// </summary>
-        public REMOTE_MODE Remote_Mode
-        {
-            get => _Remote_Mode;
-            set
-            {
-                _Remote_Mode = value;
-                if (SimulationMode)
-                    return;
-                if (value == REMOTE_MODE.ONLINE)
-                {
-                    StatusLighter.ONLINE();
-                }
-                else
-                    StatusLighter.OFFLINE();
-            }
-        }
+   
         /// <summary>
         /// 手動/自動模式
         /// </summary>
@@ -115,6 +96,14 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
         public MoveControl ManualController => AGVC.ManualController;
 
         public AGV_TYPE AgvType { get; internal set; } = AGV_TYPE.SUBMERGED_SHIELD;
+        public int AgvTypeInt
+        {
+            get => (int)AgvType;
+            private set
+            {
+                AgvType = Enum.GetValues(typeof(AGV_TYPE)).Cast<AGV_TYPE>().FirstOrDefault(_type => (int)_type == value);
+            }
+        }
         public bool SimulationMode { get; internal set; } = false;
         public bool IsInitialized { get; internal set; }
         public bool IsSystemInitialized { get; internal set; }
@@ -191,6 +180,7 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
             IsSystemInitialized = false;
             SimulationMode = AppSettingsHelper.GetValue<bool>("VCS:SimulationMode");
             emulator = new VehicleEmu(7);
+            AgvTypeInt = AppSettingsHelper.GetValue<int>("VCS:AgvType");
             string AGVS_IP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:IP");
             int AGVS_Port = AppSettingsHelper.GetValue<int>("VCS:Connections:AGVS:Port");
             string AGVS_LocalIP = AppSettingsHelper.GetValue<string>("VCS:Connections:AGVS:LocalIP");
@@ -534,16 +524,6 @@ namespace GPMVehicleControlSystem.Models.VehicleControl
                 Laser.AllLaserDisable();
             }
             return true;
-        }
-        private bool OnlineModeChangingFlag = false;
-        internal async Task<(bool success, RETURN_CODE return_code)> Online_Mode_Switch(REMOTE_MODE mode)
-        {
-            (bool success, RETURN_CODE return_code) result = await AGVS.TrySendOnlineModeChangeRequest(Navigation.LastVisitedTag, mode);
-            if (!result.success)
-                LOG.ERROR($"車輛上線失敗 : Return Code : {result.return_code}");
-            else
-                Remote_Mode = mode;
-            return result;
         }
 
         internal bool HasAnyCargoOnAGV()
