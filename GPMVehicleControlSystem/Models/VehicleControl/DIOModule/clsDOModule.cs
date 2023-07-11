@@ -151,20 +151,31 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         public void SetState(string address, bool state)
         {
+            IOMutex.WaitOne();
             clsIOSignal? DO = VCSOutputs.FirstOrDefault(k => k.Address == address + "");
             DO.State = state;
             if (!IsConnected())
                 Connect();
-            master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+            try
+            {
+                master?.WriteSingleCoil((ushort)(Start + DO.index), DO.State);
+            }
+            catch (Exception ex)
+            {
+                AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, true);
+            }
+            IOMutex.ReleaseMutex();
 
         }
 
         public void SetState(DO_ITEM signal, bool state)
         {
+            IOMutex.WaitOne();
             try
             {
                 if (!IsConnected())
                     Connect();
+
                 clsIOSignal? DO = VCSOutputs.FirstOrDefault(k => k.Name == signal + "");
                 if (DO != null)
                 {
@@ -180,6 +191,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                             Disconnect();
                             AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
                         }
+                        IOMutex.ReleaseMutex();
                     });
                 }
             }
@@ -193,6 +205,7 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
         internal void SetState(DO_ITEM start_signal, bool[] writeStates)
         {
+            IOMutex.WaitOne();
             try
             {
                 if (!IsConnected())
@@ -216,13 +229,14 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                             Disconnect();
                             AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Write_Fail, false);
                         }
+                        IOMutex.ReleaseMutex();
                     });
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 master = null;
-                SetState(start_signal, writeStates);
+                throw ex;
             }
 
         }
@@ -242,28 +256,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         {
             if (!IsConnected())
                 Connect();
-
-            //await Task.Run(async () =>
-            //{
-            //    while (true)
-            //    {
-            //        await Task.Delay(1);
-            //        if (!IsConnected())
-            //        {
-            //            Connect();
-            //            continue;
-            //        }
-            //        PauseSignal.WaitOne();
-            //        try
-            //        {
-            //            master?.WriteMultipleCoils(Start, VCSOutputs.Select(si => si.State).ToArray());
-            //        }
-            //        catch (Exception ex)
-            //        {
-            //            Console.WriteLine(ex.Message);
-            //        }
-            //    }
-            //});
         }
 
     }

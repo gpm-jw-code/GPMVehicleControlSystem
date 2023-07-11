@@ -2,6 +2,7 @@
 using AGVSystemCommonNet6.Alarm.VMS_ALARM;
 using AGVSystemCommonNet6.Log;
 using GPMVehicleControlSystem.Tools;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Modbus.Device;
 using System.Net.Sockets;
 using static GPMVehicleControlSystem.Models.VehicleControl.AGVControl.CarController;
@@ -92,6 +93,8 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         public ushort Start { get; set; }
         public ushort Size { get; set; }
 
+        protected Mutex IOMutex = new Mutex();
+
         public clsDIModule()
         {
 
@@ -143,6 +146,8 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         }
         public override bool Connect()
         {
+            if (IP == null | Port <= 0)
+                throw new SocketException((int)SocketError.AddressNotAvailable);
             try
             {
                 var client = new TcpClient(IP, Port);
@@ -157,13 +162,14 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
             {
                 AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Disconnect, false);
                 master = null;
-                throw new SocketException();
+                throw new SocketException((int)SocketError.ConnectionAborted);
             }
         }
 
         public override void Disconnect()
         {
             master?.Dispose();
+            master = null;
         }
 
         public override bool IsConnected()
@@ -310,7 +316,6 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
 
                     try
                     {
-                        PauseSignal.WaitOne();
                         bool[]? input = master?.ReadInputs(1, Start, Size);
                         if (input == null)
                             continue;
@@ -322,6 +327,8 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
                     }
                     catch (Exception ex)
                     {
+                        AlarmManager.AddAlarm(AlarmCodes.Wago_IO_Read_Fail, false);
+                        Disconnect();
                         Console.WriteLine(ex.Message);
                     }
                 }
