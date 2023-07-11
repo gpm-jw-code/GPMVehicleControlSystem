@@ -255,15 +255,11 @@ namespace GPMVehicleControlSystem.VehicleControl.DIOModule
         {
             clsIOSignal laserSignal = sender as clsIOSignal;
             DI_ITEM DI = laserSignal.DI_item;
-            LOG.INFO($"{DI} Laser Reconvery");
             OnLaserDIRecovery?.Invoke(laserSignal, ROBOT_CONTROL_CMD.NONE);
-
             if (DI == DI_ITEM.RightProtection_Area_Sensor_2 | DI == DI_ITEM.LeftProtection_Area_Sensor_2) //左右雷射復原
             {
-
                 if (isFrontLaserA1Trigger | isFrontLaserA2Trigger | isFrontLaserA3Trigger | isFrontLaserA4Trigger | isBackLaserA1Trigger | isBackLaserA2Trigger | isBackLaserA3Trigger | isBackLaserA4Trigger | isRightLaserTrigger | isLeftLaserTrigger)
                 {
-                    LOG.INFO($"{DI} Laser Reconvery But LEFT or RIGHT Laser Not Recovery");
                     return;
                 }
             }
